@@ -132,7 +132,7 @@
         "user": false
       },
       "warnings": [],
-      "model_version": "20261001T053712Z-d05ce6c9",
+      "model_version": "20261001T060826Z-a29b8dbf",
       "ranked": [
         {
           "candidate_id": "4687@1",
@@ -358,7 +358,7 @@
         "user": true
       },
       "warnings": [],
-      "model_version": "20261001T053712Z-d05ce6c9",
+      "model_version": "20261001T060826Z-a29b8dbf",
       "ranked": [
         {
           "candidate_id": "4687@1",
