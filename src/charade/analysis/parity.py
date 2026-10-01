@@ -1,7 +1,7 @@
 """Train/serve parity (`uv run poe parity`): the API path must build the same model inputs as training.
 
 For a sample of test impressions, the online store is rebuilt by replaying every earlier impression
-of those users through the store, in time order, exactly as `POST /v1/events/impression` would.
+of those users through the store, in time order, exactly as `POST /v1/events/impression` and `/v1/events/click` would.
 Each sampled impression is then turned into an API request with its logged ad as the only
 candidate and assembled by the serving code. The encoded arrays are compared with the offline
 pipeline's encoding of the same rows. Writes `parity.json` (with the ONNX check from training).
@@ -20,7 +20,7 @@ from charade.features.spec import encode
 from charade.models.dataset import build_frame
 from charade.scoring.scorer import Scorer
 from charade.serving.assemble import AD_FIELDS, assemble, epoch_hour
-from charade.serving.store import MemoryStore
+from charade.serving.store import Impression, MemoryStore
 
 SAMPLE = 2000
 
@@ -39,7 +39,11 @@ async def _compare(
             worst = max(worst, float(np.abs(online.dense - offline.dense).max(initial=0.0)))
             mismatches += int((online.categorical != offline.categorical).any())
             checked += 1
-        await store.record(row["user"], epoch_hour(row["ts"]), row["C17"], bool(row["click"]))
+        await store.record_impression(
+            row["id"], Impression(user=row["user"], hour=epoch_hour(row["ts"]), campaign=row["C17"])
+        )
+        if row["click"]:
+            await store.record_click(row["id"])
     return worst, mismatches, checked
 
 

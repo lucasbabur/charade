@@ -132,6 +132,23 @@
         "title": "CharacterInfo",
         "type": "object"
       },
+      "ClickEvent": {
+        "additionalProperties": false,
+        "description": "A click on a served impression, possibly hours later. Idempotent on `impression_id`.",
+        "properties": {
+          "impression_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Impression Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "impression_id"
+        ],
+        "title": "ClickEvent",
+        "type": "object"
+      },
       "ColdStart": {
         "description": "Which entities the system has no history for.",
         "properties": {
@@ -149,6 +166,24 @@
           "user"
         ],
         "title": "ColdStart",
+        "type": "object"
+      },
+      "EventResult": {
+        "description": "What the store did with the event.",
+        "properties": {
+          "outcome": {
+            "enum": [
+              "recorded",
+              "duplicate"
+            ],
+            "title": "Outcome",
+            "type": "string"
+          }
+        },
+        "required": [
+          "outcome"
+        ],
+        "title": "EventResult",
         "type": "object"
       },
       "GateReason": {
@@ -196,18 +231,13 @@
       },
       "ImpressionEvent": {
         "additionalProperties": false,
-        "description": "Outcome of a served impression; updates the user's counters.",
+        "description": "A served impression. Idempotent on `impression_id` (retries are no-ops).",
         "properties": {
           "campaign_id": {
             "maxLength": 64,
             "minLength": 1,
             "title": "Campaign Id",
             "type": "string"
-          },
-          "clicked": {
-            "default": false,
-            "title": "Clicked",
-            "type": "boolean"
           },
           "device_id": {
             "maxLength": 64,
@@ -231,9 +261,17 @@
             "format": "date-time",
             "title": "Hour",
             "type": "string"
+          },
+          "impression_id": {
+            "description": "Unique per served ad; use the RankRequest request_id",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Impression Id",
+            "type": "string"
           }
         },
         "required": [
+          "impression_id",
           "hour",
           "device_id",
           "device_ip",
@@ -708,22 +746,29 @@
         ]
       }
     },
-    "/v1/events/impression": {
+    "/v1/events/click": {
       "post": {
-        "description": "Update the user's counters after an impression (and click) is observed.",
-        "operationId": "record_impression_v1_events_impression_post",
+        "description": "Attribute a click to its impression's user and hour (once per impression id).",
+        "operationId": "record_click_v1_events_click_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ImpressionEvent"
+                "$ref": "#/components/schemas/ClickEvent"
               }
             }
           },
           "required": true
         },
         "responses": {
-          "204": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResult"
+                }
+              }
+            },
             "description": "Successful Response"
           },
           "422": {
@@ -737,7 +782,49 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Record a served impression and its click",
+        "summary": "Record a click on a served impression (idempotent; late clicks go to the impression hour)",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/v1/events/impression": {
+      "post": {
+        "description": "Count a served impression in its user's history (once per impression id).",
+        "operationId": "record_impression_v1_events_impression_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpressionEvent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EventResult"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record a served impression (idempotent on impression_id)",
         "tags": [
           "events"
         ]
