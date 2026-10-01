@@ -23,6 +23,8 @@ Only commands that work today are listed. When you add a command, add it here in
 | Train + evaluate + export (GPU if available) | `uv run poe train` (then `uv run mlcheck .`) |
 | Ablations / tuning / EDA / text bake-off | `uv run poe ablate` / `tune` / `eda` / `text` |
 | Off-policy evaluation of ranking policies (after `train`) | `uv run poe ope` |
+| Train/serve parity, sample rankings | `uv run poe parity`, `uv run poe samples` |
+| Load test (needs `docker compose up -d --build`) | `uv run poe loadtest` |
 | Run the API | `uv run poe serve` |
 | One ML gate with evidence | `uv run mlcheck . --only MLM004 -v` |
 | Lint workflows | `actionlint` |

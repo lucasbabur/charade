@@ -14,14 +14,17 @@ cp .env.sample .env                            # optional: overrides and API key
 cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
 uv run poe mlcheck-data                        # check the data contract
 uv run poe train                               # train + calibrate + evaluate + export (~1 min on a GTX 1660)
+uv run poe ope && uv run poe parity            # ranking-policy evaluation, train/serve parity
+uv run mlcheck .                               # all 46 ML release gates against the run
 uv run poe serve                               # API on http://127.0.0.1:8000 (docs at /docs)
-docker compose up --build                      # or: API + Redis in containers
+docker compose up --build                      # or: API (8 workers) + Redis, bundle mounted
+uv run poe loadtest                            # latency at 400 rps against the running API
 uv run poe                                     # list every task
 ```
 
 The API contract is committed at [docs/api/openapi.json](docs/api/openapi.json) and regenerated with `uv run poe openapi`. CI fails if it is stale.
 
-> 🚧 Ranking, drift and serving are being built. Their tasks will appear in `uv run poe` as they land.
+> 🚧 Drift analysis and infrastructure are being finished; see the status column in [docs/index.md](docs/index.md).
 
 ## ⚙️ Settings
 
