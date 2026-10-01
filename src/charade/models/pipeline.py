@@ -37,6 +37,7 @@ from charade.scoring.scorer import CALIBRATOR_FILE, EVIDENCE_FILE, MODEL_FILE, S
 from charade.text.embed import Provider, derived_path
 
 REPORTS = Path("reports/models")
+GENERATED_PATHS = ("reports", "experiments/*/notebook.ipynb", "data/derived")
 PRIMARY, BASELINE, GBDT = "dcn_v2", "logreg", "lightgbm"
 
 
@@ -50,7 +51,10 @@ def _git() -> tuple[str, bool]:
     def git(*args: str) -> str:
         return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()  # noqa: S603, S607
 
-    return git("rev-parse", "HEAD"), bool(git("status", "--porcelain", "--untracked-files=no"))
+    # Generated outputs (reports, executed notebooks) are rewritten by runs themselves; they would make
+    # the second of two consecutive runs look "dirty" without any code or config change.
+    changed = git("status", "--porcelain", "--untracked-files=no", "--", ".", *(f":!{p}" for p in GENERATED_PATHS))
+    return git("rev-parse", "HEAD"), bool(changed)
 
 
 def _sha256(path: Path) -> str:
