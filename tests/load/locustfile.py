@@ -33,7 +33,13 @@ class Ranker(FastHttpUser):
             impression_id = f"{body['request_id']}-{random.getrandbits(32)}"
             self.client.post(
                 "/v1/events/impression",
-                json={**event, "impression_id": impression_id, "campaign_id": ad["C17"]},
+                json={
+                    **event,
+                    "impression_id": impression_id,
+                    "request_id": body["request_id"],
+                    "candidate_id": chosen,
+                    "campaign_id": ad["C17"],
+                },
                 name="/v1/events/impression",
             )
             if random.random() < 0.18:

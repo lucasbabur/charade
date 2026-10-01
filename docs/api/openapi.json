@@ -239,6 +239,13 @@
             "title": "Campaign Id",
             "type": "string"
           },
+          "candidate_id": {
+            "description": "The served candidate",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Candidate Id",
+            "type": "string"
+          },
           "device_id": {
             "maxLength": 64,
             "minLength": 1,
@@ -263,15 +270,24 @@
             "type": "string"
           },
           "impression_id": {
-            "description": "Unique per served ad; use the RankRequest request_id",
+            "description": "Unique per served ad",
             "maxLength": 64,
             "minLength": 1,
             "title": "Impression Id",
+            "type": "string"
+          },
+          "request_id": {
+            "description": "The RankRequest that chose this ad (joins to the decision log)",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
             "type": "string"
           }
         },
         "required": [
           "impression_id",
+          "request_id",
+          "candidate_id",
           "hour",
           "device_id",
           "device_ip",
@@ -524,6 +540,7 @@
             "$ref": "#/components/schemas/ColdStart"
           },
           "confidence": {
+            "description": "Heuristic: low when the top two evidence intervals overlap; not a statistical guarantee",
             "enum": [
               "high",
               "low"
@@ -614,12 +631,12 @@
             "type": "number"
           },
           "pctr_high": {
-            "description": "95th percentile of the pCTR posterior",
+            "description": "Upper bound of the same heuristic evidence interval",
             "title": "Pctr High",
             "type": "number"
           },
           "pctr_low": {
-            "description": "5th percentile of the pCTR posterior",
+            "description": "Lower bound of a heuristic evidence interval (training support for the campaign x genre); not a calibrated posterior",
             "title": "Pctr Low",
             "type": "number"
           },

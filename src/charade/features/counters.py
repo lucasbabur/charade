@@ -143,6 +143,14 @@ class UserHistory(BaseModel):
         for campaign, per_hour in self.campaign_buckets.items():
             self.campaign_buckets[campaign] = {h: n for h, n in per_hour.items() if h >= cutoff}
 
+    def exposures_so_far(self, campaigns: list[str]) -> npt.NDArray[np.float64]:
+        """Every recorded impression per campaign, including the current hour and any arrival order.
+
+        Use this for the frequency cap (a serving constraint), never as a model feature: the model's
+        `user_campaign_imps` must exclude the current hour (unknown at training time, see H5).
+        """
+        return np.array([self.campaign_totals.get(c, 0) for c in campaigns], dtype=np.float64)
+
     def snapshot(self, hour: int, campaigns: list[str]) -> dict[str, npt.NDArray[np.float64]]:
         """Raw counters for an impression at `hour`, one row per candidate campaign."""
         later_n = sum(n for h, (n, _) in self.buckets.items() if h >= hour)

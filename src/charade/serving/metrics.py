@@ -17,6 +17,7 @@ STAGE = Histogram(
 PCTR = Histogram("charade_pctr", "Served pCTR of the chosen candidate", buckets=tuple(i / 20 for i in range(1, 20)))
 CANDIDATES = Histogram("charade_candidates", "Candidates per request", buckets=(1, 2, 5, 10, 20, 50, 100, 200, 500))
 COLD = Counter("charade_cold_start_total", "Requests with an entity the system has no history for", ["entity"])
+CAP_UNENFORCED = Counter("charade_frequency_cap_unenforced_total", "Requests ranked without exposure state")
 DEGRADED = Counter("charade_degraded_total", "Requests served with feature-store defaults")
 GATED = Counter("charade_gated_total", "Gated candidates by reason", ["reason"])
 EXPLORED = Counter("charade_explored_total", "Decisions taken by the exploration bucket")

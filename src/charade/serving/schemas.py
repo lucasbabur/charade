@@ -124,8 +124,11 @@ class RankedAd(BaseModel):
     candidate_id: str
     rank: int | None
     pctr: float = Field(description="Calibrated click probability")
-    pctr_low: float = Field(description="5th percentile of the pCTR posterior")
-    pctr_high: float = Field(description="95th percentile of the pCTR posterior")
+    pctr_low: float = Field(
+        description="Lower bound of a heuristic evidence interval (training support for the campaign x genre); "
+        "not a calibrated posterior"
+    )
+    pctr_high: float = Field(description="Upper bound of the same heuristic evidence interval")
     value: float = Field(description="pCTR x bid x pacing; the ranking key")
     gated: bool
     gate_reasons: list[GateReason]
@@ -148,7 +151,9 @@ class RankResponse(BaseModel):
         description="Probability the policy served `chosen_id` (log it with the impression)"
     )
     explored: bool
-    confidence: Literal["high", "low"]
+    confidence: Literal["high", "low"] = Field(
+        description="Heuristic: low when the top two evidence intervals overlap; not a statistical guarantee"
+    )
     degraded: bool = Field(description="True when the feature store was unavailable and defaults were used")
     cold_start: ColdStart
     warnings: list[str]
@@ -161,7 +166,9 @@ class ImpressionEvent(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    impression_id: Token = Field(description="Unique per served ad; use the RankRequest request_id")
+    impression_id: Token = Field(description="Unique per served ad")
+    request_id: Token = Field(description="The RankRequest that chose this ad (joins to the decision log)")
+    candidate_id: Token = Field(description="The served candidate")
     hour: datetime
     device_id: Token
     device_ip: Token
