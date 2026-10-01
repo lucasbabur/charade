@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import optuna
 import polars as pl
+import torch
 
 from charade.config import DcnConfig, GbdtConfig, get_settings
 from charade.evaluation.metrics import normalized_entropy
@@ -71,6 +72,7 @@ def run(trials_dcn: int = 60, trials_gbdt: int = 40, data_dir: Path | None = Non
 
     def dcn_objective(trial: optuna.Trial) -> float:
         cfg = dcn_config(trial)
+        torch.manual_seed(settings.seed)  # before construction: weight init is part of the trial
         model = DCNv2(
             spec.cardinalities(),
             x_train.dense.shape[1],
