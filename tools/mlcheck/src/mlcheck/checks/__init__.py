@@ -1,5 +1,5 @@
 """Importing this package registers every check."""
 
-from mlcheck.checks import data, static
+from mlcheck.checks import data, provenance, static
 
-__all__ = ["data", "static"]
+__all__ = ["data", "provenance", "static"]
