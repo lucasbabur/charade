@@ -83,7 +83,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLP001 | policy | warning | ope-effective-sample-size | An importance-weighted estimate resting on a few heavy weights is noise; effective sample size says how many rows really support it. |
 | MLP002 | policy | error | ope-intervals | Policy comparisons need intervals; an estimate outside its own CI or a CI with no width is a reporting bug. |
 | MLP003 | policy | error | decisions-respect-gates | A gated candidate (brand safety, frequency cap, budget) must never be served, whatever its score. |
-| MLP004 | policy | error | logged-propensities | Future off-policy evaluation and unbiased retraining need the probability of every served ad, in (0, 1]. |
+| MLP004 | policy | error | logged-propensities | Future off-policy evaluation and unbiased retraining need the probability of every served ad, in (0, 1]; a lone eligible candidate must log 1. |
 | MLR001 | repro | error | manifest-valid | Without data hash, code version, config hash, seeds and windows a model cannot be rebuilt or audited. |
 | MLR002 | repro | error | data-hash-matches | Reported metrics are only meaningful for the exact bytes the model was trained on. |
 | MLR003 | repro | error | clean-git-tree | A model trained from uncommitted code cannot be traced to a reviewable commit. |

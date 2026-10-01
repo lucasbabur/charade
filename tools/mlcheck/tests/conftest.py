@@ -191,7 +191,7 @@ def _write_reports(art: Path) -> None:
                 {"candidate_id": "b", "pctr": 0.4, "gated": True, "gate_reasons": ["brand_safety"]},
             ],
             "chosen_id": "a",
-            "propensity": 0.97,
+            "propensity": 1.0,
             "explored": False,
         },
         {
