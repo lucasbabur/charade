@@ -4,7 +4,7 @@ requires-python = "==3.12.*"
 
 [manifest]
 members = [
-    "cameo",
+    "charade",
     "mlcheck",
 ]
 
@@ -27,7 +27,7 @@ wheels = [
 ]
 
 [[package]]
-name = "cameo"
+name = "charade"
 version = "0.1.0"
 source = { virtual = "." }
 

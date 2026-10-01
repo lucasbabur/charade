@@ -4,7 +4,7 @@ Instructions for AI coding agents (Claude Code, Codex, Cursor, …) working in t
 
 ## Project
 
-**Cameo** is a CTR prediction and candidate-ranking system for contextual ads inside AI companion chats (Simula take-home). Given an impression (character, conversation turn, publisher, device, hour) and N candidate ads, it predicts calibrated P(click) and returns a gated, explained ranking in under 50 ms p99. The stack is Python 3.12, uv workspace, polars, PyTorch (DCN-v2), LightGBM (challenger), ONNX Runtime (serving), FastAPI, Redis, Terraform (AWS), Docker.
+**Charade** is a CTR prediction and candidate-ranking system for contextual ads inside AI companion chats (Simula take-home). Given an impression (character, conversation turn, publisher, device, hour) and N candidate ads, it predicts calibrated P(click) and returns a gated, explained ranking in under 50 ms p99. The stack is Python 3.12, uv workspace, polars, PyTorch (DCN-v2), LightGBM (challenger), ONNX Runtime (serving), FastAPI, Redis, Terraform (AWS), Docker.
 
 The source of truth for design is [docs/PLAN.md](docs/PLAN.md); for gates it is [docs/mlcheck.md](docs/mlcheck.md). If code and PLAN disagree, stop and ask; do not silently pick one.
 
@@ -29,7 +29,7 @@ The raw data (`impressions.csv`, `characters.csv`, 170 MB) sits in the repo root
 The code is organised by ML concern, not by clean-architecture layers ([ADR in PLAN §2](docs/PLAN.md#2-repository-layout)).
 
 ```
-src/cameo/{data,features,text,models,evaluation,ranking,coldstart,drift,serving}/  cli.py, config.py
+src/charade/{data,features,text,models,evaluation,ranking,coldstart,drift,serving}/  cli.py, config.py
 tools/mlcheck/            ML release gates (own tests, own AGENTS.md)
 artifacts/current/        run output in the mlcheck artifact contract (gitignored)
 reports/                  generated figures/tables, committed; never hand-edited
@@ -39,7 +39,7 @@ infra/terraform/, docker/, .github/workflows/
 
 ## Settings
 
-**All settings live in `pyproject.toml`** — no YAML, `.ini`, `setup.cfg`, `.ruff.toml` or stray config files. Tool settings go under `[tool.<name>]`. Project settings go under `[tool.cameo]`: paths, seeds, split dates, `experiments.<name>` and `policy` (safety matrix, fatigue, pacing, exploration). `cameo.config` loads them with pydantic-settings (`PyprojectTomlConfigSettingsSource`); environment variables override them, and secrets come only from the environment. An experiment is a new `[tool.cameo.experiments.<name>]` table, not a code edit.
+**All settings live in `pyproject.toml`** — no YAML, `.ini`, `setup.cfg`, `.ruff.toml` or stray config files. Tool settings go under `[tool.<name>]`. Project settings go under `[tool.charade]`: paths, seeds, split dates, `experiments.<name>` and `policy` (safety matrix, fatigue, pacing, exploration). `charade.config` loads them with pydantic-settings (`PyprojectTomlConfigSettingsSource`); environment variables override them, and secrets come only from the environment. An experiment is a new `[tool.charade.experiments.<name>]` table, not a code edit.
 
 ## Invariants
 
@@ -48,7 +48,7 @@ Each one is enforced by an mlcheck gate. Breaking one fails CI.
 1. **Time is the only split.** Train 10-21→10-27, val 10-28, test 10-29→10-30. No `train_test_split`, KFold or shuffling (MLS003, MLL001–002).
 2. **Nothing is fitted on the future.** Vocabularies, encoders, priors, PCA, scalers and models are fitted on train; the calibrator is fitted on val. Record every fitted object in the manifest with `fit_split`/`fit_end` (MLL003). A legitimate fit on eval data needs `# mlcheck: ignore[MLS007]` and a reason.
 3. **Counters are strictly causal.** Use only hours before the impression hour, because order within an hour is unknown.
-4. **One feature transform.** Training and serving both call `cameo.features`. Never re-implement a feature in `serving/` (MLS002, MLV001).
+4. **One feature transform.** Training and serving both call `charade.features`. Never re-implement a feature in `serving/` (MLS002, MLV001).
 5. **Serving stays light.** `serving/` must not reach torch, lightgbm, sklearn, optuna or mlflow, even transitively. It loads ONNX (MLS001).
 6. **Explicit randomness.** Pass `np.random.Generator`/seeds; never use global `np.random.*` or `random.*` (MLS004). The primary model runs with ≥ 3 seeds (MLR004).
 7. **No pickle.** Artifacts are ONNX, JSON, parquet or safetensors. `torch.load` needs `weights_only=True` (MLS005).
@@ -70,7 +70,7 @@ Each one is enforced by an mlcheck gate. Breaking one fails CI.
 
 ## External APIs (paid)
 
-Embeddings (Gemini, Voyage, OpenAI) and Claude Haiku 4.5 attribute extraction run **offline only**, through `cameo.text`, cached by `sha256(text)+model+prompt_version`.
+Embeddings (Gemini, Voyage, OpenAI) and Claude Haiku 4.5 attribute extraction run **offline only**, through `charade.text`, cached by `sha256(text)+model+prompt_version`.
 
 - Never call them from tests or CI. Use recorded responses.
 - Never call them from `serving/`.

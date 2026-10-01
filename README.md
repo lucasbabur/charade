@@ -1,6 +1,6 @@
-# 🎬 Cameo
+# 🎭 Charade
 
-Cameo ranks contextual ads inside AI companion chats. For each ad opportunity (character, conversation moment, publisher, device, hour) and a set of candidate ads, it predicts the click probability, filters out ads that don't fit (brand safety, frequency caps, budget), and returns a ranked list in under 50 ms.
+Charade (**chara**cter + **ad**) ranks contextual ads inside AI companion chats. For each ad opportunity (character, conversation moment, publisher, device, hour) and a set of candidate ads, it predicts the click probability, filters out ads that don't fit (brand safety, frequency caps, budget), and returns a ranked list in under 50 ms.
 
 Design and results live in [docs/](docs/index.md).
 
@@ -18,7 +18,7 @@ uv run mlcheck . --stage data --stage static   # check the data and the code
 
 ## ⚙️ Settings
 
-Every setting lives in `pyproject.toml`: tool settings under `[tool.<name>]`, project settings under `[tool.cameo]`. Environment variables override them. API keys come only from the environment.
+Every setting lives in `pyproject.toml`: tool settings under `[tool.<name>]`, project settings under `[tool.charade]`. Environment variables override them. API keys come only from the environment.
 
 ## 🤝 Contribute
 

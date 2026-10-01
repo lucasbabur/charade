@@ -1,5 +1,5 @@
 [project]
-name = "cameo"
+name = "charade"
 version = "0.1.0"
 description = "Contextual ad CTR prediction and ranking for AI companion chats."
 requires-python = ">=3.12,<3.13"
@@ -18,10 +18,10 @@ members = ["tools/mlcheck"]
 mlcheck = { workspace = true }
 
 [tool.mlcheck]
-package = "cameo"
+package = "charade"
 source_root = "src"
-serving_package = "cameo.serving"
-features_package = "cameo.features"
+serving_package = "charade.serving"
+features_package = "charade.features"
 artifacts_dir = "artifacts/current"
 primary_model = "dcn_v2"
 baseline_model = "logreg"

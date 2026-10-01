@@ -107,7 +107,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 [data]  MLD001–005, 008–010 PASS (1,000,000 rows, CTR 18.04 %, 2014-10-21 00h → 10-30 05h, FK + creation order clean)
         MLD006 WARN  2014-10-30: 22,956 rows vs median 104,199 (partial day: weight it, don't trust its daily metrics)
         MLD007 WARN  device_id='a99f214a' 82.2 %, device_type='1' 92.1 %, C1='1005' 91.6 %, device_conn_type='0' 86.4 %, app_id='ecad2386' 64.4 %
-[static] MLS001–005, 007 FAIL: source package src/cameo not found (expected until the package exists)
+[static] MLS001–005, 007 FAIL: source package src/charade not found (expected until the package exists)
 ```
 
 The two warnings drove design decisions: the user-proxy definition (placeholder `device_id`) and per-day calibration reporting.
