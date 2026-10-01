@@ -12,6 +12,8 @@ from charade.scoring.calibration import Calibrator
 MODEL_FILE = "model.onnx"
 SPEC_FILE = "feature_spec.json"
 CALIBRATOR_FILE = "calibrator.json"
+EVIDENCE_FILE = "evidence.json"
+CHARACTERS_FILE = "characters.parquet"
 
 
 class Scorer:
