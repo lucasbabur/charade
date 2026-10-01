@@ -48,10 +48,29 @@ VARIANTS = (
 )
 
 
+SEED_OFFSET = 100
+"""The second, independent seed set is the configured seeds + 100."""
+
+
+def _verdict(lows: list[float], highs: list[float]) -> str:
+    if all(low > 0 for low in lows):
+        return "worse than reference"
+    if all(high < 0 for high in highs):
+        return "variant better"
+    return "within noise"
+
+
 def run(variants: tuple[Variant, ...] = VARIANTS, out: Path = OUT, data_dir: Path | None = None) -> pl.DataFrame:
-    """Train every variant and write reports/models/ablations.csv."""
+    """Train every variant with two independent seed sets; write reports/models/ablations.csv.
+
+    The hour-block bootstrap captures data noise, not training randomness, so each comparison is
+    repeated with a second seed set (both reference and variant retrained). A variant's effect is
+    only called real when both seed sets give intervals on the same side of zero; the reported
+    interval is the union of the two (conservative).
+    """
     settings = get_settings()
-    reference: np.ndarray | None = None
+    seed_sets = [settings.model.dcn.seeds, [s + SEED_OFFSET for s in settings.model.dcn.seeds]]
+    references: list[np.ndarray] = []
     rows: list[dict[str, object]] = []
     cache: dict[tuple[frozenset[Group], Provider | None], Prepared] = {}
     for variant in variants:
@@ -61,21 +80,32 @@ def run(variants: tuple[Variant, ...] = VARIANTS, out: Path = OUT, data_dir: Pat
             cache[key] = load_prepared(settings, data_dir or settings.data_dir, set(groups), variant.text)
         prep = cache[key]
         cfg = DcnConfig.model_validate({**settings.model.dcn.model_dump(), **variant.dcn_changes})
-        ensemble, _ = train_dcn_ensemble(prep, cfg, settings.model.dcn.seeds)
         y = prep.y["val"]
-        p = 1 / (1 + np.exp(-logits(ensemble, prep, "val")))
-        loss = logloss_rows(y, p)
-        if reference is None:
-            reference = loss
         blocks = prep.frame.filter(pl.col("split") == "val")["ts"].dt.hour().to_numpy()
-        delta, low, high = paired_bootstrap(loss - reference, blocks)
+        deltas, lows, highs, nes = [], [], [], []
+        for index, seeds in enumerate(seed_sets):
+            ensemble, _ = train_dcn_ensemble(prep, cfg, seeds)
+            p = 1 / (1 + np.exp(-logits(ensemble, prep, "val")))
+            loss = logloss_rows(y, p)
+            if len(references) <= index:
+                references.append(loss)
+            delta, low, high = paired_bootstrap(loss - references[index], blocks)
+            deltas.append(delta)
+            lows.append(low)
+            highs.append(high)
+            nes.append(normalized_entropy(y, p))
         rows.append(
             {
                 "variant": variant.name,
-                "val_ne": normalized_entropy(y, p),
-                "delta_logloss": delta,
-                "ci_low": low,
-                "ci_high": high,
+                "val_ne": float(np.mean(nes)),
+                "delta_logloss": float(np.mean(deltas)),
+                "ci_low": min(lows),
+                "ci_high": max(highs),
+                "delta_seed_set_a": deltas[0],
+                "delta_seed_set_b": deltas[1],
+                "verdict": "reference"
+                if not variant.drop and not variant.text and not variant.dcn_changes
+                else _verdict(lows, highs),
             }
         )
     table = pl.DataFrame(rows)
