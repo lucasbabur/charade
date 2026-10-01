@@ -18,8 +18,9 @@ what was served in a publisher x hour cell, and logging propensities equal impre
 """
 
 import json
+from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -28,8 +29,9 @@ import polars as pl
 from charade.config import Settings, get_settings
 from charade.evaluation.ope import Estimate, estimate, lift
 from charade.features.derive import derive
-from charade.features.spec import encode
+from charade.features.spec import Group, encode, fit_spec
 from charade.models.dataset import build_frame
+from charade.models.gbdt import predict_gbdt, train_gbdt
 from charade.ranking.evidence import Evidence
 from charade.ranking.policy import Candidate, Decision, decide, gate_reasons
 from charade.scoring.scorer import EVIDENCE_FILE, Scorer
@@ -155,6 +157,8 @@ class CandidateMatrices:
     candidates: dict[int, list[tuple[int, Candidate, str]]]
     mask: np.ndarray
     pctr: np.ndarray
+    reward: np.ndarray
+    """Independent outcome model's click probability (DR direct-method term)."""
     logit: np.ndarray
     gated: np.ndarray
     evidence: np.ndarray
@@ -165,18 +169,47 @@ class CandidateMatrices:
     blocks: np.ndarray
 
 
-def load_candidates(settings: Settings, data_dir: Path | None = None) -> CandidateMatrices:
-    """Build candidate sets, score every (impression, candidate) pair with the shipped bundle."""
+def reward_model(frame: pl.DataFrame, settings: Settings) -> Callable[[pl.DataFrame], np.ndarray]:
+    """Independent outcome model for the doubly robust estimator.
+
+    DR's direct-method term must not come from the policy being evaluated, or the estimate grades
+    the model by its own beliefs. This is a LightGBM on the same features, trained on days before
+    the last training day and early-stopped on that day, so it never sees validation or test.
+    """
+    train = frame.filter(pl.col("split") == "train")
+    stamps: list[datetime] = train["ts"].to_list()
+    cutoff = max(stamps).replace(hour=0)
+    fit, stop = train.filter(pl.col("ts") < cutoff), train.filter(pl.col("ts") >= cutoff)
+    spec = fit_spec(fit, {Group(g) for g in settings.model.groups})
+    model = train_gbdt(
+        spec,
+        encode(spec, fit),
+        fit["click"].to_numpy(),
+        encode(spec, stop),
+        stop["click"].to_numpy(),
+        settings.model.gbdt,
+        settings.seed,
+    )
+    return lambda rows: predict_gbdt(model, encode(spec, rows))
+
+
+def load_candidates(settings: Settings, data_dir: Path | None = None, split: str = "test") -> CandidateMatrices:
+    """Build candidate sets on `split` and score every (impression, candidate) pair.
+
+    The shipped bundle scores for the policy; an independent reward model scores for DR.
+    """
     art = settings.artifacts_dir
     scorer = Scorer(art)
     evidence = Evidence.model_validate_json((art / EVIDENCE_FILE).read_text())
     frame = build_frame(data_dir or settings.data_dir, None)
     history = _campaign_exposure(frame)
-    test = frame.filter(pl.col("split") == "test")
+    test = frame.filter(pl.col("split") == split)
     served, rows = candidate_sets(test)
     pairs = expand(rows, served, history)
     logits, pctrs = scorer.score(encode(scorer.spec, pairs))
-    pairs = pairs.with_columns(pl.Series("pctr", pctrs), pl.Series("logit", logits))
+    pairs = pairs.with_columns(
+        pl.Series("pctr", pctrs), pl.Series("logit", logits), pl.Series("reward", reward_model(frame, settings)(pairs))
+    )
     pairs = pairs.with_columns(
         pl.struct("C17", "genre")
         .map_elements(lambda r: evidence.lookup(r["C17"], r["genre"]), return_dtype=pl.Float64)
@@ -201,6 +234,7 @@ def load_candidates(settings: Settings, data_dir: Path | None = None) -> Candida
         candidates=candidates,
         mask=_matrix(pairs, "pctr", n, -1.0) >= 0,
         pctr=_matrix(pairs, "pctr", n, 0.0),
+        reward=_matrix(pairs, "reward", n, 0.0),
         logit=_matrix(pairs, "logit", n, 0.0),
         gated=_matrix(pairs, "gated", n, 1.0).astype(bool),
         evidence=_matrix(pairs, "evidence", n, 0.0),
@@ -212,22 +246,25 @@ def load_candidates(settings: Settings, data_dir: Path | None = None) -> Candida
     )
 
 
-def run(settings: Settings | None = None, data_dir: Path | None = None, report: Path = REPORT) -> list[Estimate]:
-    """Evaluate policies; write ope.json, decisions.jsonl and reports/policy/ope.md."""
+def run(
+    settings: Settings | None = None, data_dir: Path | None = None, report: Path = REPORT, split: str = "test"
+) -> list[Estimate]:
+    """Evaluate policies on `split`; write ope.json and decisions.jsonl (test only) and the report."""
     settings = settings or get_settings()
-    c = load_candidates(settings, data_dir)
+    c = load_candidates(settings, data_dir, split)
     n = len(c.y)
-    q_logged = c.pctr[np.arange(n), c.logged]
+    q_logged = c.reward[np.arange(n), c.logged]
     results: list[Estimate] = [_observed(c.y, c.blocks)]
     lifts: dict[str, dict[str, tuple[float, float, float]]] = {}
     for name, pi in policies(c.candidates, n, settings).items():
-        args = (pi[np.arange(n), c.logged], c.mu, c.y, q_logged, (pi * c.pctr).sum(axis=1), c.blocks)
+        args = (pi[np.arange(n), c.logged], c.mu, c.y, q_logged, (pi * c.reward).sum(axis=1), c.blocks)
         results += estimate(name, *args)
         lifts[name] = lift(*args)
-    art = settings.artifacts_dir
-    art.joinpath("ope.json").write_text(json.dumps({"policies": [r.model_dump() for r in results]}, indent=2))
-    _write_decisions(c.candidates, settings, art / "decisions.jsonl")
-    _write_report(results, lifts, c.test_rows, n, c.served, report)
+    if split == "test":
+        art = settings.artifacts_dir
+        art.joinpath("ope.json").write_text(json.dumps({"policies": [r.model_dump() for r in results]}, indent=2))
+        _write_decisions(c.candidates, settings, art / "decisions.jsonl")
+    _write_report(results, lifts, c.test_rows, n, c.served, report, split)
     return results
 
 
@@ -279,14 +316,18 @@ def _write_report(
     rows: int,
     served: pl.DataFrame,
     path: Path,
+    split: str = "test",
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     cells = served.select(*CELL).n_unique()
     mean_k = float(served.group_by(CELL).len()["len"].mean())  # pyright: ignore[reportArgumentType]
     lines = [
-        "# Off-policy evaluation (generated by `uv run poe ope`)",
+        f"# Off-policy evaluation on the {split} split (generated by `uv run poe ope`)",
         "",
-        f"Evaluated impressions: {rows:,} of {test_rows:,} test rows ({rows / test_rows:.1%}); "
+        "DR uses an independent LightGBM reward model (trained before the last training day), not the evaluated "
+        "policy's own pCTR.",
+        "",
+        f"Evaluated impressions: {rows:,} of {test_rows:,} {split} rows ({rows / test_rows:.1%}); "
         f"cells: {cells:,}; mean candidates per cell: {mean_k:.2f}",
         "",
         "| Policy | Estimator | CTR | 95 % CI | ESS | Max weight |",
@@ -311,5 +352,10 @@ def _write_report(
 
 
 if __name__ == "__main__":
-    for estimate_ in run():
+    import sys
+
+    # `python -m charade.analysis.policy_eval [val|test]`: select on val, confirm on test.
+    chosen = sys.argv[1] if len(sys.argv) > 1 else "test"
+    target = REPORT if chosen == "test" else REPORT.with_name(f"ope_{chosen}.md")
+    for estimate_ in run(report=target, split=chosen):
         print(estimate_.model_dump())
