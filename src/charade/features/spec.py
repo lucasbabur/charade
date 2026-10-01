@@ -77,6 +77,7 @@ DENSE_FIELDS: dict[str, Group] = {
 }
 
 TEXT_PREFIX = "text_"
+SMALL_FRAME = 2000
 
 
 class FeatureSpec(BaseModel):
@@ -133,12 +134,23 @@ def fit_spec(train: pl.DataFrame, groups: set[Group], text_dims: int = 0) -> Fea
 
 def encode(spec: FeatureSpec, frame: pl.DataFrame) -> Encoded:
     """Encode derived columns into integer ids (OOV = 0) and standardized dense values."""
-    categorical = frame.select(
-        pl.col(f.name).cast(pl.Utf8).replace_strict(spec.vocabularies[f.name], default=0, return_dtype=pl.Int64)
-        for f in spec.categorical
-    ).to_numpy()
+    if frame.height <= SMALL_FRAME:
+        # Serving path: N candidates. Dict lookups beat building polars hash maps per call (~10x).
+        categorical = np.array(
+            [
+                [spec.vocabularies[f.name].get(v, 0) for v in frame[f.name].cast(pl.Utf8).to_list()]
+                for f in spec.categorical
+            ],
+            dtype=np.int64,
+        ).T.reshape(frame.height, len(spec.categorical))
+    else:
+        categorical = frame.select(
+            pl.col(f.name).cast(pl.Utf8).replace_strict(spec.vocabularies[f.name], default=0, return_dtype=pl.Int64)
+            for f in spec.categorical
+        ).to_numpy()
     if spec.dense:
         raw = frame.select(pl.col(spec.dense).cast(pl.Float64).fill_null(0.0).fill_nan(0.0)).to_numpy()
+        raw[~np.isfinite(raw)] = 0.0  # defensive: a malformed input must not become an infinite activation
         dense = ((raw - np.asarray(spec.dense_mean)) / np.asarray(spec.dense_std)).astype(np.float32)
     else:
         dense = np.zeros((frame.height, 0), dtype=np.float32)

@@ -60,3 +60,12 @@ def test_online_matches_offline_for_any_event_sequence(raw: list[tuple[int, str,
         }
     )
     assert _replay(offline_counters(frame)) == 0
+
+
+def test_out_of_order_events_never_produce_negative_gaps() -> None:
+    history = UserHistory()
+    history.record(100, "c", 0)
+    history.record(120, "c", 1)
+    snapshot = history.snapshot(110, ["c"])
+    assert snapshot["hours_since_last"][0] == 10
+    assert np.isnan(history.snapshot(90, ["c"])["hours_since_last"][0])

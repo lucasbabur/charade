@@ -114,11 +114,20 @@ class UserHistory(BaseModel):
         total, last, in_last = self.campaigns.get(campaign, (0, -1, 0))
         self.campaigns[campaign] = (total + 1, hour, in_last + 1 if last == hour else 1)
 
+    def record_click(self, hour: int) -> None:
+        """Attribute a click that arrived after its impression to the impression's hour."""
+        n, k = self.buckets.get(hour, (0, 0))
+        if n:
+            self.buckets[hour] = (n, k + 1)
+        self.clicks += 1
+
     def snapshot(self, hour: int, campaigns: list[str]) -> dict[str, npt.NDArray[np.float64]]:
         """Raw counters for an impression at `hour`, one row per candidate campaign."""
         current_n, current_k = self.buckets.get(hour, (0, 0))
         earlier = [(n, k) for h, (n, k) in self.buckets.items() if hour - 24 <= h < hour]
-        last = self.last_hour if self.last_hour is not None and self.last_hour < hour else self.prev_hour
+        # Strictly earlier hours only; tolerant of out-of-order events (never a negative gap).
+        known = [h for h in (self.last_hour, self.prev_hour, *self.buckets) if h is not None and h < hour]
+        last = max(known) if known else None
         size = len(campaigns)
 
         def before(campaign: str) -> int:
