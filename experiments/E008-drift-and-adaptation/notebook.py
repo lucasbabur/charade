@@ -62,6 +62,6 @@ Markdown((ctx.reports / "drift" / "adaptation.md").read_text())
 
 # %% [markdown]
 # ## Conclusion
-# Ads rotate fast (13-37 % new creatives a day) and a frozen model loses ~0.003 NE per day, so retrain daily; online recalibration slightly worsens NE on the validation day; the exposure penalty selected on the validation day by a pre-registered rule (lambda = 8) cuts cohort HHI 38 % on test with CTR change +0.27 pp [-0.59, +1.08].
+# Ads rotate fast (13-37 % new creatives a day) and a frozen model loses ~0.003 NE per day, so retrain daily; online recalibration slightly worsens NE on the validation day; the exposure penalty selected on the validation day by a pre-registered non-inferiority rule (lambda = 2) cuts cohort HHI 24 % on test at +0.06 pp CTR [-0.60, +0.74], which does not confirm non-inferiority at the 0.2 pp margin.
 #
-# **Decision:** Daily retraining with gated promotion; no online recalibration; exposure penalty at lambda = 8 (chosen on validation) pending an online A/B test.
+# **Decision:** Daily retraining with gated promotion; no online recalibration; exposure penalty at lambda = 2 (chosen on validation) is a candidate for an online A/B test, not shipped: test does not confirm non-inferiority.

@@ -6,7 +6,7 @@ updated-at: 2026-10-01
 
 # 05 — Candidate ranking
 
-**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.23 pp CTR (DR, [+0.20, +2.20])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
+**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.46 pp CTR (DR, [+0.50, +2.38])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
 
 ## Pipeline per request (`charade.ranking.policy.decide`)
 
@@ -38,25 +38,27 @@ The logs show one ad per impression, so candidate sets are reconstructed:
 - **Candidates:** for each publisher × hour cell, the top 10 creatives (C14 + `banner_pos`) served there.
 - **Logging propensity μ:** each creative's share of the cell's impressions.
 - **Scoring:** every evaluated impression keeps its own user, character and context, and every candidate is re-scored for it.
-- **Coverage:** 102,874 of 127,406 test impressions (80.7 %).
+- **Population:** every test impression in a cell with at least two creatives: 111,368 of 127,406 (87.4 %). An impression whose logged ad is outside its cell's top 10 stays in: no evaluated policy can choose that ad, so its target probability is 0, and μ remains the ad's share of the whole cell. An earlier version dropped those rows while keeping the unconditional shares. That conditions on the logged action and biased IPS upward (eleven equal ads at 20 % CTR: IPS 22 %; reproduced in `tests/evaluation/test_ope.py`).
 
 | Policy | SNIPS lift vs logging | DR lift vs logging | ESS |
 |---|---|---|---|
-| Uniform random | +0.37 pp [−0.00, +0.71] | −0.07 pp [−0.43, +0.24] | 17,149 |
-| Greedy pCTR, no gates | +2.45 pp [+1.40, +3.59] | +1.41 pp [+0.38, +2.53] | 4,059 |
-| **Shipped policy (gates + 5 % exploration)** | +2.18 pp [+1.12, +3.25] | **+1.23 pp [+0.20, +2.20]** | 4,395 |
+| Uniform random | +0.09 pp [−0.25, +0.41] | −0.03 pp [−0.36, +0.26] | 17,149 |
+| Greedy pCTR, no gates | +2.17 pp [+1.08, +3.33] | +1.65 pp [+0.72, +2.73] | 4,059 |
+| **Shipped policy (gates + 5 % exploration)** | +1.90 pp [+0.84, +2.97] | **+1.46 pp [+0.50, +2.38]** | 4,395 |
 
-Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.23 %. The DR direct-method term uses an **independent reward model**: a LightGBM trained on days before the last training day. Using the evaluated policy's own pCTR there would grade the model by its own beliefs (an earlier version did). On the validation day the same evaluation gives +2.08 pp [+0.70, +3.42] for the shipped policy ([ope_val.md](../reports/policy/ope_val.md)).
+Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.51 %. The DR direct-method term uses an **independent reward model**: a LightGBM trained on days before the last training day. Using the evaluated policy's own pCTR there would grade the model by its own beliefs (an earlier version did). On the validation day the same evaluation gives +1.96 pp [+0.68, +3.17] for the shipped policy ([ope_val.md](../reports/policy/ope_val.md)).
 
 **What the intervals do and do not cover.** They cover sampling noise given the assumptions. They do not cover bias from the assumptions themselves:
-1. Impression share within a publisher-hour is treated as the logging propensity, i.e. no unobserved targeting on character, user or device.
+1. Impression share within a publisher-hour is treated as the logging propensity. The target policy uses character, device and user history, so this is P(ad | cell), not P(ad | everything the policy sees): it assumes no targeting on those, and no confounding from context missing from the data. The independent reward model is a robustness check on the outcome side; it does not repair missing propensities.
 2. The candidate set is assumed to be the served set.
-3. ESS is about 4 % of rows.
+3. ESS is about 4 % of rows, and there are only 30 test hours: the hour-block bootstrap treats the fitted models as fixed and adjacent hours as independent.
+4. The frequency cap sees exposures from strictly earlier hours here (the logs have no within-hour order), while the API also counts the current hour. Same policy function, slightly different state.
 
 Read the table as a demonstration of the evaluation machinery under these assumptions. It is not evidence of business impact and not grounds for a rollout: real candidate sets, logged propensities and outcomes (which the API now records) come first, then an online test.
 
 - **Random lands near the logging CTR,** as expected when logging is roughly frequency-proportional.
-- **Gates and exploration cost about 0.18 pp** against ungated greedy (DR 18.46 % vs 18.64 %): the price of brand safety, frequency caps and the learning budget.
+- **Gates and exploration cost about 0.19 pp** against ungated greedy (DR 18.97 % vs 19.16 %): the price of brand safety, frequency caps and the learning budget.
+- **Read DR, not SNIPS.** DR is the headline; IPS (17.96 %) and SNIPS (19.41 %) for the shipped policy differ by more than the lift, a sign of how few heavy weights carry the importance-weighted estimates.
 - **Earlier numbers:** before this fix, the shipped policy's DR interval touched zero (+1.13 pp [−0.09, +2.20]). The new exploration distribution concentrates on plausible candidates, and the evaluation now uses the serving tie-break, which moved both rows.
 
 ## Sample rankings ([reports/sample_rankings.json](../reports/sample_rankings.json), `uv run poe samples`)
