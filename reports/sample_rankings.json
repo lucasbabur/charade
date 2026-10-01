@@ -123,7 +123,7 @@
     "response": {
       "request_id": "sample-romance-mature-returning",
       "chosen_id": "4687@1",
-      "propensity": 1.0,
+      "propensity": 0.9673396452092737,
       "explored": false,
       "confidence": "high",
       "degraded": false,
@@ -132,7 +132,7 @@
         "user": false
       },
       "warnings": [],
-      "model_version": "20261001T060826Z-a29b8dbf",
+      "model_version": "20261001T171046Z-e82334e2",
       "ranked": [
         {
           "candidate_id": "4687@1",
@@ -142,7 +142,8 @@
           "pctr_high": 0.2309244343993249,
           "value": 0.2097560975609756,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.9673396452092737
         },
         {
           "candidate_id": "16208@1",
@@ -152,7 +153,8 @@
           "pctr_high": 0.1673533913097618,
           "value": 0.1488469601677149,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.009106876872333183
         },
         {
           "candidate_id": "20108@0",
@@ -162,7 +164,8 @@
           "pctr_high": 0.13566926817917058,
           "value": 0.11884393063583815,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.0059849895240957586
         },
         {
           "candidate_id": "15705@0",
@@ -172,7 +175,8 @@
           "pctr_high": 0.13406061042448156,
           "value": 0.11732851985559564,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.005843900527887057
         },
         {
           "candidate_id": "21611@0",
@@ -182,7 +186,8 @@
           "pctr_high": 0.11803098749355995,
           "value": 0.1022763706316127,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.00452994064005433
         },
         {
           "candidate_id": "21191@0",
@@ -192,7 +197,8 @@
           "pctr_high": 0.10940327928862571,
           "value": 0.09421457997492387,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.003891894952900782
         },
         {
           "candidate_id": "21189@0",
@@ -202,7 +208,8 @@
           "pctr_high": 0.10078311680533622,
           "value": 0.0861913357400722,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.0033027522734550598
         },
         {
           "candidate_id": "19772@1",
@@ -214,7 +221,8 @@
           "gated": true,
           "gate_reasons": [
             "brand_safety"
-          ]
+          ],
+          "propensity": 0.0
         }
       ]
     }
@@ -349,7 +357,7 @@
     "response": {
       "request_id": "sample-new-mentor-character",
       "chosen_id": "15705@0",
-      "propensity": 0.009375000000000001,
+      "propensity": 0.007970636752321824,
       "explored": true,
       "confidence": "low",
       "degraded": false,
@@ -358,7 +366,7 @@
         "user": true
       },
       "warnings": [],
-      "model_version": "20261001T060826Z-a29b8dbf",
+      "model_version": "20261001T171046Z-e82334e2",
       "ranked": [
         {
           "candidate_id": "4687@1",
@@ -368,7 +376,8 @@
           "pctr_high": 0.13566926817917058,
           "value": 0.11884393063583815,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.9579706367523217
         },
         {
           "candidate_id": "15705@0",
@@ -378,7 +387,8 @@
           "pctr_high": 0.13566926817917058,
           "value": 0.11884393063583815,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.007970636752321824
         },
         {
           "candidate_id": "16208@1",
@@ -388,7 +398,8 @@
           "pctr_high": 0.13406061042448156,
           "value": 0.11732851985559564,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.007782738488840875
         },
         {
           "candidate_id": "20108@0",
@@ -398,7 +409,8 @@
           "pctr_high": 0.13406061042448156,
           "value": 0.11732851985559564,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.007782738488840875
         },
         {
           "candidate_id": "19772@1",
@@ -408,7 +420,8 @@
           "pctr_high": 0.1260085047988521,
           "value": 0.10975609756097561,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.006875903442171538
         },
         {
           "candidate_id": "21189@0",
@@ -418,7 +431,8 @@
           "pctr_high": 0.10078311680533622,
           "value": 0.0861913357400722,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.004398510398160251
         },
         {
           "candidate_id": "21191@0",
@@ -428,7 +442,8 @@
           "pctr_high": 0.10078311680533622,
           "value": 0.0861913357400722,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.004398510398160251
         },
         {
           "candidate_id": "21611@0",
@@ -438,7 +453,8 @@
           "pctr_high": 0.08070205127637796,
           "value": 0.06764466177669112,
           "gated": false,
-          "gate_reasons": []
+          "gate_reasons": [],
+          "propensity": 0.0028203252791825623
         }
       ]
     }
