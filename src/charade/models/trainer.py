@@ -24,6 +24,8 @@ class TrainConfig:
     id_dropout: float = 0.0
     id_dropout_field: int | None = None
     seed: int = 0
+    fixed_steps: int | None = None
+    """Train exactly this many steps with no validation (refit on train + val with a step count chosen earlier)."""
 
 
 @dataclass
@@ -103,6 +105,10 @@ def train(
             optimizer.step()
             running += float(loss.item())
             step += 1
+            if config.fixed_steps is not None:
+                if step >= config.fixed_steps:
+                    return TrainResult(model, float("nan"), step, history, time.monotonic() - start)
+                continue
             if step % eval_every == 0:
                 val = _val_logloss(model, v_cat, v_dense, v_y)
                 history.append((step, running / eval_every, val))
@@ -114,5 +120,7 @@ def train(
                 if stale >= config.patience:
                     model.load_state_dict(best_state)
                     return TrainResult(model, best, best_step, history, time.monotonic() - start)
+    if config.fixed_steps is not None:
+        return TrainResult(model, float("nan"), step, history, time.monotonic() - start)
     model.load_state_dict(best_state)
     return TrainResult(model, best, best_step, history, time.monotonic() - start)
