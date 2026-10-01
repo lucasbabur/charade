@@ -43,7 +43,7 @@ def _ctr_by(frame: pl.DataFrame, by: str | pl.Expr) -> pl.DataFrame:
 def _interaction(frame: pl.DataFrame, factor: str, top: int = 30, min_n: int = 300) -> pl.DataFrame:
     """Residual of cell CTR from the additive model (factor + campaign), against its binomial SE."""
     base = float(frame["click"].mean())  # pyright: ignore[reportArgumentType]
-    campaigns = frame.group_by("C17").len().sort("len", descending=True).head(top)["C17"]
+    campaigns = frame.group_by("C17").len().sort(["len", "C17"], descending=[True, False]).head(top)["C17"]
     sub = frame.filter(pl.col("C17").is_in(campaigns.implode()))
     f_rate = sub.group_by(factor).agg(pl.col("click").mean().alias("f"))
     c_rate = sub.group_by("C17").agg(pl.col("click").mean().alias("c"))

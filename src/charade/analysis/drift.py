@@ -56,7 +56,9 @@ def psi_table(frame: pl.DataFrame, categorical: list[str], dense: list[str]) -> 
     days = frame.with_columns(pl.col("ts").dt.date().cast(pl.Utf8).alias("day"))
     out: dict[str, dict[str, float]] = {}
     for name in categorical:
-        top = train[name].value_counts(sort=True).head(TOP_VALUES)[name].to_list()
+        top = (
+            train[name].value_counts().sort(["count", name], descending=[True, False]).head(TOP_VALUES)[name].to_list()
+        )
         binned = days.with_columns(
             pl.when(pl.col(name).is_in(top)).then(pl.col(name)).otherwise(pl.lit("__other__")).alias("bin")
         )
@@ -98,7 +100,7 @@ def churn(frame: pl.DataFrame) -> pl.DataFrame:
             part.group_by("character_id")
             .len()
             .with_columns((pl.col("len") / part.height).alias("s"))
-            .sort("len", descending=True)
+            .sort(["len", "character_id"], descending=[True, False])  # id breaks ties: deterministic top-100
         )
         top = set(share.head(100)["character_id"].to_list())
         rows.append(
@@ -220,7 +222,7 @@ def run(
     genre_ctr = (
         frame.group_by(pl.col("ts").dt.date().cast(pl.Utf8).alias("day"), "genre")
         .agg(pl.col("click").mean())
-        .pivot(on="genre", index="day", values="click")
+        .pivot(on="genre", index="day", values="click", sort_columns=True)
         .sort("day")
     )
     tables = {
