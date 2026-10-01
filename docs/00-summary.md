@@ -14,24 +14,24 @@ updated-at: 2026-10-01
 
 It does this in **p99 28 ms at 400 rps** for 100 candidates.
 
-## Headline results (test days 10-29/30, scored once)
+## Headline results (test days 10-29/30; Avazu sample + synthetic character layer, 30-hour test window)
 
 | | Result | Evidence |
 |---|---|---|
 | CTR model | DCN-v2 3-seed ensemble, isotonic-calibrated: **NE 0.8848**, AUC 0.737, pred/obs 1.012, ECE 0.005 | [04](04-models-evaluation.md) |
 | vs LightGBM / logistic | −0.0040 [−0.0052, −0.0027] / −0.0120 [−0.0138, −0.0102] log loss (paired hour-block bootstrap) | MLM004 |
-| Ranking | Estimated (offline, under reconstructed candidate sets and frequency-share propensities) DR lift of the shipped policy over the logging policy: **+1.21 pp CTR [+0.21, +2.17]**; exact propensities logged for every candidate | [05](05-ranking-policy.md) |
-| Cold start | No character ID needed: characters unseen in training NE 0.906 vs 0.885 warm; new users 0.894 vs 0.856 returning | [06](06-cold-start.md) |
+| Ranking | Exact propensities logged for every candidate. Offline policy evaluation runs end to end; under reconstructed candidate sets and inferred logging propensities it estimates +1.21 pp CTR [+0.21, +2.17]. That demonstrates the evaluation machinery, not business value | [05](05-ranking-policy.md) |
+| Cold start | The model has no character ID, so a new character is scored from metadata like any other. Unseen characters: NE 0.906 vs 0.885 warm (n = 1,478, known genres only); new users 0.894 vs 0.856 returning | [06](06-cold-start.md) |
 | Drift | Ads rotate (13–37 % new creatives per day). A frozen model loses ~0.003 NE per day, so retrain daily. The exposure penalty cuts cohort concentration 30 % with no detectable CTR loss | [07](07-drift-adaptation.md) |
 | Serving | p50 7 / p95 15 / p99 28 ms at 400 rps, 0 errors (impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
-| Gates | mlcheck: 42 pass, 0 fail, 4 documented warnings | [mlcheck.md](mlcheck.md) |
+| Gates | mlcheck on the shipped bundle: 47 checks, 43 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
 
 ## What the data taught (and what it changed)
 
 1. **Genre and safety tier are the character.**
    - Genre alone spans 14.7 % (mentor) to 23.2 % (romance) CTR, and genre × campaign interactions are real (H1).
    - Beyond genre × tier, characters are indistinguishable: the true spread is 0.0001.
-   - So the shipped model has no character ID, and cold start for characters is solved by construction.
+   - So the shipped model has no character ID: a new character has no missing parameter. That does not establish performance on new genres, shifted metadata or real conversation content.
 2. **Description text adds nothing here.** The descriptions are templates; the embeddings recover genre perfectly and add no CTR signal (ρ ≈ 0 ± 0.1). Adding them hurts validation log loss. The pipeline is kept for real free-text personas.
 3. **Most "users" are placeholders.** 82 % of `device_id`s are one value, and 81 % of IPs appear once. The user proxy is IP + device model, and history counters exclude the current hour (the classic Avazu same-hour leak, H5).
 4. **The anonymised C-columns hide the ad hierarchy:** creative → campaign → advertiser. That defines what a candidate is and where brand safety and caps attach.
@@ -59,6 +59,7 @@ It does this in **p99 28 ms at 400 rps** for 100 candidates.
 - **`confidence` and the evidence intervals are heuristics** derived from training support, not calibrated posteriors.
 - **External reviews found three correctness bugs, all fixed with tests:** Thompson-sampling propensities biased upward; counters that let later-hour events leak into earlier snapshots; and a frequency cap that ignored the current hour, because it reused the causal model feature. The cap now counts every recorded exposure; the feature still excludes the current hour.
 - **MLL006 is a budget, not a proof.** It caps how many distinct configurations look at one holdout window; it cannot prove results were not used to choose among them.
+- **Feedback events are at-least-once.** The API re-emits an event when a retried write finds it already stored, and the row builder deduplicates; a transactional outbox (append to a Redis stream inside the same MULTI, delivered by a separate consumer) is the production version.
 - **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation and graduation procedures are what transfer.
 
 Next steps: [10-next-steps.md](10-next-steps.md).

@@ -147,3 +147,15 @@ def test_hypotheses_and_experiments_reference_each_other() -> None:
 def test_every_experiment_is_indexed() -> None:
     index = (ROOT / "docs/index.md").read_text()
     assert all(f"experiments/{p.parent.name}/README.md" in index for p in EXPERIMENTS)
+
+
+def test_summary_gate_line_matches_mlcheck_on_the_current_bundle() -> None:
+    """The summary's gate counts are not hand-typed truth: compare them with a real mlcheck run."""
+    if not (ROOT / "artifacts/current/manifest.json").is_file() or not (ROOT / "impressions.csv").is_file():
+        pytest.skip("no trained bundle and raw data here (CI); checked wherever a bundle exists")
+    out = subprocess.run(["mlcheck", "."], cwd=ROOT, capture_output=True, text=True, check=False).stdout  # noqa: S607
+    totals = re.search(r"(\d+) checks: (\d+) pass, (\d+) fail, (\d+) warn", out)
+    assert totals
+    claimed = re.search(r"(\d+) checks, (\d+) pass, (\d+) fail, (\d+) warn", (ROOT / "docs/00-summary.md").read_text())
+    assert claimed
+    assert claimed.groups() == totals.groups(), f"summary says {claimed.groups()}, mlcheck says {totals.groups()}"
