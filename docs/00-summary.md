@@ -8,11 +8,11 @@ updated-at: 2026-10-01
 
 **Charade ranks ads inside AI-companion chats.** For an ad opportunity (character, chat moment, publisher, device, hour) and N candidate ads, it:
 1. predicts a calibrated click probability for each candidate;
-2. removes ads that must not run (brand safety, frequency caps, budget);
+2. removes ads that must not run (brand safety, frequency caps);
 3. ranks the rest;
-4. serves one, explores on a bounded 5 % of traffic, and logs the propensity of what it served.
+4. serves one, explores on a bounded 5 % of traffic with a known distribution, and logs every candidate's exact selection probability.
 
-It does this in **p99 26 ms at 400 rps** for 100 candidates.
+It does this in **p99 28 ms at 400 rps** for 100 candidates.
 
 ## Headline results (test days 10-29/30, scored once)
 
@@ -20,10 +20,10 @@ It does this in **p99 26 ms at 400 rps** for 100 candidates.
 |---|---|---|
 | CTR model | DCN-v2 3-seed ensemble, isotonic-calibrated: **NE 0.8848**, AUC 0.737, pred/obs 1.012, ECE 0.005 | [04](04-models-evaluation.md) |
 | vs LightGBM / logistic | −0.0040 [−0.0052, −0.0027] / −0.0120 [−0.0138, −0.0102] log loss (paired hour-block bootstrap) | MLM004 |
-| Ranking | Greedy pCTR beats the logging policy by **+1.28 pp CTR (DR, [+0.07, +2.50])**. The shipped policy with gates and exploration is +1.13 pp, CI touching zero | [05](05-ranking-policy.md) |
+| Ranking | Estimated (offline, under reconstructed candidate sets and frequency-share propensities) DR lift of the shipped policy over the logging policy: **+1.21 pp CTR [+0.21, +2.17]**; exact propensities logged for every candidate | [05](05-ranking-policy.md) |
 | Cold start | No character ID needed: characters unseen in training NE 0.906 vs 0.885 warm; new users 0.894 vs 0.856 returning | [06](06-cold-start.md) |
 | Drift | Ads rotate (13–37 % new creatives per day). A frozen model loses ~0.003 NE per day, so retrain daily. The exposure penalty cuts cohort concentration 30 % with no detectable CTR loss | [07](07-drift-adaptation.md) |
-| Serving | p50 8 / p95 14 / p99 26 ms at 400 rps, 0 errors; train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
+| Serving | p50 7 / p95 15 / p99 28 ms at 400 rps, 0 errors (impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
 | Gates | mlcheck: 42 pass, 0 fail, 4 documented warnings | [mlcheck.md](mlcheck.md) |
 
 ## What the data taught (and what it changed)
@@ -53,5 +53,9 @@ It does this in **p99 26 ms at 400 rps** for 100 candidates.
 - **The test window is 30 hours** and the cold-character slice has 1,478 rows; those CIs are wide.
 - **Not run:** OpenAI embeddings (the key had no quota), Gemini and Voyage (no keys). Given ρ ≈ 0 for two very different embedders, a third would not change the decision on this data.
 - **Brand-safety preferences** are illustrative; the data has none.
+- **Budget pacing is not connected to the API.** The pacer and budget gate are tested library code, but there is no spend feed to drive them.
+- **Daily retraining is validated, not operated.** Rolling windows, immutable bundle promotion and redeploy are scripted and covered by Terraform validation, but they have never run on AWS.
+- **`confidence` and the evidence intervals are heuristics** derived from training support, not calibrated posteriors.
+- **Earlier versions had two correctness bugs** an external review found: Thompson-sampling propensities biased upward, and counters that let later-hour events leak into earlier snapshots. Both are fixed with recovery and arrival-order property tests ([05](05-ranking-policy.md), [08](08-serving-architecture.md)).
 
 Next steps: [10-next-steps.md](10-next-steps.md).
