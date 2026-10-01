@@ -72,6 +72,8 @@ class MlcheckConfig(BaseModel):
     source_root: Path = Path("src")
     serving_package: str | None = None
     features_package: str | None = None
+    notebooks_allowed_in: list[str] = Field(default_factory=list[str])
+    """Top-level directories where notebooks are allowed (e.g. experiment records executed in CI)."""
     training_only_modules: list[str] = Field(
         default_factory=lambda: ["torch", "lightgbm", "optuna", "mlflow", "sklearn", "xgboost"]
     )

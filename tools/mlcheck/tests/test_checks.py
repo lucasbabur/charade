@@ -233,3 +233,15 @@ def test_unconfigured_section_is_skipped(project: Path, run: Runner) -> None:
     config = (project / "pyproject.toml").read_text()
     (project / "pyproject.toml").write_text(config.split("[tool.mlcheck.data]")[0])
     assert run(project, "MLD001").status is Status.SKIP
+
+
+def test_notebooks_are_allowed_only_in_configured_directories(project: Path, run: Runner) -> None:
+    config = (project / "pyproject.toml").read_text()
+    (project / "pyproject.toml").write_text(
+        config.replace('package = "demo_pkg"', 'package = "demo_pkg"\nnotebooks_allowed_in = ["experiments"]')
+    )
+    (project / "experiments" / "E001").mkdir(parents=True)
+    (project / "experiments" / "E001" / "notebook.ipynb").write_text("{}")
+    assert run(project, "MLS006").status is Status.PASS
+    (project / "scratch.ipynb").write_text("{}")
+    assert run(project, "MLS006").status is Status.FAIL

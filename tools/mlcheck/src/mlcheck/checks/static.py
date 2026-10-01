@@ -266,14 +266,17 @@ def safe_model_loading(ctx: Context) -> Outcome:
     "MLS006",
     "no-notebooks",
     Stage.STATIC,
-    "Notebooks hide execution order and state; every result in the docs must come from a re-runnable command.",
+    "Notebooks hide execution order and state; outside explicitly allowed directories (whose notebooks must be "
+    "executed in CI), every result must come from a re-runnable command.",
 )
 def no_notebooks(ctx: Context) -> Outcome:
-    """No .ipynb files in the repository."""
+    """No .ipynb files outside `notebooks_allowed_in`."""
+    allowed = set(ctx.config.notebooks_allowed_in)
     found = [
         str(p.relative_to(ctx.root))
         for p in ctx.root.rglob("*.ipynb")
         if not _SKIP_DIRS.intersection(p.relative_to(ctx.root).parts)
+        and p.relative_to(ctx.root).parts[0] not in allowed
     ]
     return failed(f"{len(found)} notebooks in repo", found) if found else passed("no notebooks")
 
