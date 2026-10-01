@@ -1,0 +1,5 @@
+vpc_cidr        = "10.50.0.0/16"
+caller_cidrs    = ["10.0.0.0/8"]
+certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/00000000-0000-0000-0000-000000000000"
+api_image_tag   = "v0.1.0"
+train_image_tag = "v0.1.0"
