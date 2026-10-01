@@ -84,10 +84,10 @@ def _serve_gated(root: Path) -> None:
     path.write_text("\n".join(json.dumps(r) for r in rows))
 
 
-def _explored_with_certainty(root: Path) -> None:
+def _single_eligible_not_certain(root: Path) -> None:
     path = root / ART / "decisions.jsonl"
     rows = [json.loads(line) for line in path.read_text().splitlines()]
-    rows[2]["propensity"] = 1.0
+    rows[0]["propensity"] = 0.5
     path.write_text("\n".join(json.dumps(r) for r in rows))
 
 
@@ -195,7 +195,7 @@ BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLP001": _json("ope.json", lambda o: o["policies"][0].__setitem__("ess", 40)),
     "MLP002": _json("ope.json", lambda o: o["policies"][0].__setitem__("value", 0.5)),
     "MLP003": _serve_gated,
-    "MLP004": _explored_with_certainty,
+    "MLP004": _single_eligible_not_certain,
     "MLX001": _json("drift.json", _set("psi", {"site": {"2014-10-26": 0.41}})),
 }
 

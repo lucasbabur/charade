@@ -136,16 +136,17 @@ def decisions_respect_gates(ctx: Context) -> Outcome:
     "Future off-policy evaluation and unbiased retraining need the probability of every served ad, in (0, 1].",
 )
 def logged_propensities(ctx: Context) -> Outcome:
-    """Every decision that served an ad logs a propensity in (0, 1]; greedy picks log 1 only when not exploring."""
+    """Every served decision logs a propensity in (0, 1]; a single eligible candidate must have propensity 1."""
     problems: list[str] = []
     for decision in ctx.decisions:
         if decision.chosen_id is None:
             continue
         p = decision.propensity
+        eligible = sum(not c.gated for c in decision.candidates)
         if p is None or not 0 < p <= 1:
             problems.append(f"{decision.request_id}: propensity {p}")
-        elif decision.explored and p == 1:
-            problems.append(f"{decision.request_id}: explored decision with propensity 1")
+        elif eligible == 1 and p != 1:
+            problems.append(f"{decision.request_id}: one eligible candidate but propensity {p}")
     served = sum(d.chosen_id is not None for d in ctx.decisions)
     return (
         failed(f"{len(problems)} bad propensities", problems[:20])
