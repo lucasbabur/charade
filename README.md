@@ -2,6 +2,24 @@
 
 Charade (**chara**cter + **ad**) ranks contextual ads inside AI companion chats. For each ad opportunity (character, conversation moment, publisher, device, hour) and a set of candidate ads, it predicts the click probability, filters out ads that don't fit (brand safety, frequency caps, budget), and returns a ranked list in under 50 ms.
 
+```mermaid
+flowchart LR
+    subgraph offline["Offline (daily)"]
+        raw[(impressions.csv<br/>characters.csv)] --> feat1[charade.features<br/>derive + encode]
+        feat1 --> train[train DCN-v2<br/>calibrate]
+        train --> gates{{mlcheck<br/>46 gates}}
+        gates -- pass --> bundle[(model bundle<br/>ONNX + spec + calibrator)]
+    end
+    subgraph online["Online (per request, p99 < 50 ms)"]
+        req[POST /v1/rank<br/>context + N ads] --> feat2[charade.features<br/>same code]
+        store[(Redis<br/>user history)] --> feat2
+        bundle --> score[ONNX score<br/>+ calibrate]
+        feat2 --> score --> policy[gates → rank →<br/>greedy / 5% explore]
+        policy --> resp[ranked ads<br/>+ propensity]
+    end
+    resp --> log[(decision logs<br/>+ clicks)] --> raw
+```
+
 Results in one page: [docs/00-summary.md](docs/00-summary.md). Everything else: [docs/index.md](docs/index.md).
 
 ## 🚀 Run it

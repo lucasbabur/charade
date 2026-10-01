@@ -16,7 +16,7 @@ Only commands that work today are listed. When you add a command, add it here in
 |---|---|
 | Install everything | `uv sync --all-packages --extra train --extra gpu` (`--extra cpu` without CUDA) |
 | List tasks | `uv run poe` |
-| Everything CI runs on Python | `uv run poe check` (lint, types, tests, mlcheck tests, ML static gates) |
+| Everything CI runs on Python | `uv run poe check` (lint, types, import layers, tests, mlcheck tests, ML static gates) |
 | Terraform fmt + validate | `uv run poe tf` (CI also runs tflint and checkov; locally via their Docker images, see docs/09-operations.md) |
 | Regenerate OpenAPI contract | `uv run poe openapi` (commit `docs/api/openapi.json`) |
 | Data contract on raw CSVs | `uv run poe mlcheck-data` |
@@ -47,6 +47,10 @@ reports/                  generated figures/tables, committed; never hand-edited
 docs/                     everything explained; index at docs/index.md
 infra/terraform/, docker/, docker-compose.yml, .github/ (workflows; dependabot.yml is the only non-pyproject config because GitHub requires its location)
 ```
+
+## Dependency direction
+
+`analysis → serving → models → evaluation → {text | ranking | scoring} → features → data → config`. A package imports only packages to its right; same-layer packages never import each other, so cycles are impossible. Serving-path packages (`serving`, `scoring`, `ranking`, `features`) never reach `models`, `evaluation`, `analysis`, `text` or training frameworks. Enforced by import-linter (`[tool.importlinter]`, `uv run poe imports`) on every PR.
 
 ## Settings
 
