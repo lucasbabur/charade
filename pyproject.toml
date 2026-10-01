@@ -1,0 +1,47 @@
+[project]
+name = "simula-ctr"
+version = "0.1.0"
+description = "Contextual ad CTR prediction and ranking for AI companion chats."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["mlcheck"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["tools/mlcheck"]
+
+[tool.uv.sources]
+mlcheck = { workspace = true }
+
+[tool.mlcheck]
+package = "simula_ctr"
+source_root = "src"
+serving_package = "simula_ctr.serving"
+features_package = "simula_ctr.features"
+artifacts_dir = "artifacts/current"
+primary_model = "dcn_v2"
+baseline_model = "logreg"
+split_order = ["train", "val", "test"]
+holdout_split = "test"
+required_slices = ["character_support", "genre", "safety_tier", "surface", "day", "user_seen", "banner_pos"]
+
+[tool.mlcheck.data]
+path = "impressions.csv"
+id = "id"
+label = "click"
+time = "hour"
+time_format = "%y%m%d%H"
+period = "1d"
+required_columns = ["banner_pos", "conversation_turn", "session_msg_count"]
+categorical = ["site_id", "app_id", "device_id", "device_ip", "device_model", "device_type", "device_conn_type", "C1", "C14", "C17", "C21"]
+
+[[tool.mlcheck.data.foreign_keys]]
+column = "character_id"
+ref_path = "characters.csv"
+ref_column = "character_id"
+ref_created_at = "created_at"
+ref_time_format = "%Y-%m-%d"

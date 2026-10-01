@@ -1,0 +1,49 @@
+[project]
+name = "mlcheck"
+version = "0.1.0"
+description = "Release gates for ML systems: leakage, reproducibility, calibration, parity, latency, policy."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "grimp>=3.17",
+    "numpy>=2.1",
+    "polars>=1.30",
+    "pydantic>=2.11",
+    "typer>=0.19",
+]
+
+[project.scripts]
+mlcheck = "mlcheck.cli:app"
+
+[dependency-groups]
+dev = ["pytest>=8.4", "pytest-cov>=6.2", "ruff>=0.13", "pyright>=1.1.405"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "BLE", "UP", "SIM", "N", "S", "PL", "PT", "PERF", "RUF", "C90", "D"]
+ignore = ["PLR0913", "PLR2004", "D105", "D107", "D401"]  # D401: check docstrings state the passing condition
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "D", "PLR2004", "S301", "S403"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.pyright]
+include = ["src"]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
