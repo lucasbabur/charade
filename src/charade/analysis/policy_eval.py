@@ -88,18 +88,20 @@ def _matrix(pairs: pl.DataFrame, column: str, n_rows: int, fill: float) -> np.nd
 
 
 def policies(
-    pctr: np.ndarray, mask: np.ndarray, evidence: np.ndarray, gated: np.ndarray, settings: Settings
+    pctr: np.ndarray, logit: np.ndarray, mask: np.ndarray, evidence: np.ndarray, gated: np.ndarray, settings: Settings
 ) -> dict[str, np.ndarray]:
     """pi(slot | row) for every policy, shape [rows, TOP_K]."""
     cfg = settings.policy
     rows = np.arange(len(pctr))
     uniform = mask / mask.sum(axis=1, keepdims=True)
     greedy = np.zeros_like(pctr)
-    greedy[rows, np.where(mask, pctr, -1).argmax(axis=1)] = 1.0
+    # Rank key = pCTR, ties (isotonic plateaus) broken by the raw logit, as in `decide`.
+    key = pctr + 1e-9 * np.tanh(logit)
+    greedy[rows, np.where(mask, key, -1).argmax(axis=1)] = 1.0
     open_mask = mask & ~gated
     has_open = open_mask.any(axis=1)
     shipped_greedy = np.zeros_like(pctr)
-    shipped_greedy[rows, np.where(open_mask, pctr, -1).argmax(axis=1)] = 1.0
+    shipped_greedy[rows, np.where(open_mask, key, -1).argmax(axis=1)] = 1.0
     n = np.clip(evidence, cfg.min_evidence, cfg.max_evidence)
     p = np.clip(pctr, 1e-4, 1 - 1e-4)
     rng = np.random.default_rng(settings.seed)
@@ -121,7 +123,8 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, report: 
     test = frame.filter(pl.col("split") == "test")
     served, rows = candidate_sets(test)
     pairs = expand(rows, served, history)
-    pairs = pairs.with_columns(pl.Series("pctr", scorer.pctr(encode(scorer.spec, pairs))))
+    logits, pctrs = scorer.score(encode(scorer.spec, pairs))
+    pairs = pairs.with_columns(pl.Series("pctr", pctrs), pl.Series("logit", logits))
     pairs = pairs.with_columns(
         pl.struct("C17", "genre")
         .map_elements(lambda r: evidence.lookup(r["C17"], r["genre"]), return_dtype=pl.Float64)
@@ -141,7 +144,8 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, report: 
     q_logged = pctr[np.arange(n), logged]
     results: list[Estimate] = [_observed(y, blocks)]
     lifts: dict[str, dict[str, tuple[float, float, float]]] = {}
-    for name, pi in policies(pctr, mask, ev, gated, settings).items():
+    logit = _matrix(pairs, "logit", n, 0.0)
+    for name, pi in policies(pctr, logit, mask, ev, gated, settings).items():
         args = (pi[np.arange(n), logged], mu, y, q_logged, (pi * pctr).sum(axis=1), blocks)
         results += estimate(name, *args)
         lifts[name] = lift(*args)
@@ -180,6 +184,7 @@ def _write_decisions(pairs: pl.DataFrame, rows: pl.DataFrame, settings: Settings
                     pctr=r["pctr"],
                     evidence=r["evidence"],
                     prior_exposures=int(r["user_campaign_imps"]),
+                    logit=r["logit"],
                 )
                 for r in cands.iter_rows(named=True)
             ]
