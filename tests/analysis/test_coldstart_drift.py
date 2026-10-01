@@ -50,6 +50,7 @@ def test_psi_is_zero_for_identical_and_positive_for_shifted() -> None:
 
 def test_adaptation_penalty_reduces_concentration(bundle: Settings, tmp_path: Path) -> None:
     table = adaptation.run(bundle, FIXTURES, tmp_path / "a.md", lambdas=(0.0, 50.0))
+    assert "Chosen lambda" in (tmp_path / "a.md").read_text()
     greedy, penalised = table.row(0, named=True), table.row(1, named=True)
     assert penalised["cohort_hhi"] <= greedy["cohort_hhi"]
     assert greedy["dr_delta_vs_greedy"] == 0.0
@@ -60,3 +61,15 @@ def test_simulation_never_serves_gated_slots(bundle: Settings) -> None:
     chosen, _ = adaptation.simulate(c, 4.0)
     served = chosen >= 0
     assert not c.gated[np.arange(len(chosen))[served], chosen[served]].any()
+
+
+def test_lambda_selection_rule() -> None:
+    val = pl.DataFrame(
+        {
+            "lambda": [0.0, 2.0, 4.0, 8.0],
+            "dr_delta_vs_greedy": [0.0, -0.001, -0.0015, -0.004],
+            "ci_low": [0.0, -0.008, -0.009, -0.012],
+            "ci_high": [0.0, 0.006, 0.006, 0.003],
+        }
+    )
+    assert adaptation.select(val) == 4.0
