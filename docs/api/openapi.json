@@ -1,6 +1,179 @@
 {
   "components": {
     "schemas": {
+      "AdCandidate": {
+        "additionalProperties": false,
+        "description": "One ad from the retrieval layer: slot position plus creative/advertiser attributes.",
+        "properties": {
+          "C14": {
+            "description": "Creative id",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C14",
+            "type": "string"
+          },
+          "C15": {
+            "description": "Creative width",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C15",
+            "type": "string"
+          },
+          "C16": {
+            "description": "Creative height",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C16",
+            "type": "string"
+          },
+          "C17": {
+            "description": "Campaign id",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C17",
+            "type": "string"
+          },
+          "C18": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C18",
+            "type": "string"
+          },
+          "C19": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C19",
+            "type": "string"
+          },
+          "C21": {
+            "description": "Advertiser id",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C21",
+            "type": "string"
+          },
+          "banner_pos": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Banner Pos",
+            "type": "string"
+          },
+          "bid": {
+            "default": 1.0,
+            "exclusiveMinimum": 0.0,
+            "maximum": 1000000.0,
+            "title": "Bid",
+            "type": "number"
+          },
+          "candidate_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Candidate Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "banner_pos",
+          "C14",
+          "C15",
+          "C16",
+          "C17",
+          "C18",
+          "C19",
+          "C21"
+        ],
+        "title": "AdCandidate",
+        "type": "object"
+      },
+      "CharacterInfo": {
+        "additionalProperties": false,
+        "description": "Metadata for a character the bundle may not know yet (published after the last refresh).",
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "creator_type": {
+            "default": "community",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Creator Type",
+            "type": "string"
+          },
+          "genre": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Genre",
+            "type": "string"
+          },
+          "num_interactions": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Num Interactions",
+            "type": "integer"
+          },
+          "safety_tier": {
+            "enum": [
+              "sfw",
+              "suggestive",
+              "mature"
+            ],
+            "title": "Safety Tier",
+            "type": "string"
+          }
+        },
+        "required": [
+          "genre",
+          "safety_tier",
+          "created_at"
+        ],
+        "title": "CharacterInfo",
+        "type": "object"
+      },
+      "ColdStart": {
+        "description": "Which entities the system has no history for.",
+        "properties": {
+          "character": {
+            "title": "Character",
+            "type": "boolean"
+          },
+          "user": {
+            "title": "User",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "character",
+          "user"
+        ],
+        "title": "ColdStart",
+        "type": "object"
+      },
+      "GateReason": {
+        "description": "Why a candidate cannot be served.",
+        "enum": [
+          "brand_safety",
+          "frequency_cap",
+          "budget_exhausted"
+        ],
+        "title": "GateReason",
+        "type": "string"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
       "Health": {
         "description": "Liveness response.",
         "properties": {
@@ -20,6 +193,467 @@
         ],
         "title": "Health",
         "type": "object"
+      },
+      "ImpressionEvent": {
+        "additionalProperties": false,
+        "description": "Outcome of a served impression; updates the user's counters.",
+        "properties": {
+          "campaign_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Campaign Id",
+            "type": "string"
+          },
+          "clicked": {
+            "default": false,
+            "title": "Clicked",
+            "type": "boolean"
+          },
+          "device_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Id",
+            "type": "string"
+          },
+          "device_ip": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Ip",
+            "type": "string"
+          },
+          "device_model": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Model",
+            "type": "string"
+          },
+          "hour": {
+            "format": "date-time",
+            "title": "Hour",
+            "type": "string"
+          }
+        },
+        "required": [
+          "hour",
+          "device_id",
+          "device_ip",
+          "device_model",
+          "campaign_id"
+        ],
+        "title": "ImpressionEvent",
+        "type": "object"
+      },
+      "ModelInfo": {
+        "description": "What is loaded.",
+        "properties": {
+          "calibrator": {
+            "title": "Calibrator",
+            "type": "string"
+          },
+          "characters": {
+            "title": "Characters",
+            "type": "integer"
+          },
+          "feature_groups": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Feature Groups",
+            "type": "array"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_version",
+          "feature_groups",
+          "calibrator",
+          "characters"
+        ],
+        "title": "ModelInfo",
+        "type": "object"
+      },
+      "RankRequest": {
+        "additionalProperties": false,
+        "description": "An ad opportunity inside a chat, with the candidates to rank.",
+        "examples": [
+          {
+            "C1": "1005",
+            "C20": "-1",
+            "app_category": "07d7df22",
+            "app_domain": "7801e8d9",
+            "app_id": "ecad2386",
+            "candidates": [
+              {
+                "C14": "15706",
+                "C15": "320",
+                "C16": "50",
+                "C17": "1722",
+                "C18": "0",
+                "C19": "35",
+                "C21": "79",
+                "banner_pos": "0",
+                "candidate_id": "ad-1"
+              }
+            ],
+            "character_id": "53baf355c4",
+            "conversation_turn": 3,
+            "device_conn_type": "0",
+            "device_id": "a99f214a",
+            "device_ip": "c6c8e44e",
+            "device_model": "8a4875bd",
+            "device_type": "1",
+            "hour": "2014-10-29T14:00:00",
+            "request_id": "req-123",
+            "session_msg_count": 12,
+            "site_category": "50e219e0",
+            "site_domain": "c4e18dd6",
+            "site_id": "85f751fd"
+          }
+        ],
+        "properties": {
+          "C1": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C1",
+            "type": "string"
+          },
+          "C20": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "C20",
+            "type": "string"
+          },
+          "app_category": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "App Category",
+            "type": "string"
+          },
+          "app_domain": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "App Domain",
+            "type": "string"
+          },
+          "app_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "App Id",
+            "type": "string"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/AdCandidate"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Candidates",
+            "type": "array"
+          },
+          "character": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CharacterInfo"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Used only when `character_id` is missing from the loaded character table"
+          },
+          "character_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Character Id",
+            "type": "string"
+          },
+          "conversation_turn": {
+            "maximum": 100000.0,
+            "minimum": 1.0,
+            "title": "Conversation Turn",
+            "type": "integer"
+          },
+          "device_conn_type": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Conn Type",
+            "type": "string"
+          },
+          "device_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Id",
+            "type": "string"
+          },
+          "device_ip": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Ip",
+            "type": "string"
+          },
+          "device_model": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Model",
+            "type": "string"
+          },
+          "device_type": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Type",
+            "type": "string"
+          },
+          "hour": {
+            "description": "UTC hour of the impression (ISO-8601 or YYMMDDHH)",
+            "format": "date-time",
+            "title": "Hour",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "session_msg_count": {
+            "maximum": 100000.0,
+            "minimum": 1.0,
+            "title": "Session Msg Count",
+            "type": "integer"
+          },
+          "site_category": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Site Category",
+            "type": "string"
+          },
+          "site_domain": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Site Domain",
+            "type": "string"
+          },
+          "site_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Site Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "hour",
+          "character_id",
+          "conversation_turn",
+          "session_msg_count",
+          "site_id",
+          "site_domain",
+          "site_category",
+          "app_id",
+          "app_domain",
+          "app_category",
+          "device_id",
+          "device_ip",
+          "device_model",
+          "device_type",
+          "device_conn_type",
+          "C1",
+          "C20",
+          "candidates"
+        ],
+        "title": "RankRequest",
+        "type": "object"
+      },
+      "RankResponse": {
+        "description": "The decision and the full ranked list.",
+        "properties": {
+          "chosen_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Candidate to serve; null when every candidate is gated",
+            "title": "Chosen Id"
+          },
+          "cold_start": {
+            "$ref": "#/components/schemas/ColdStart"
+          },
+          "confidence": {
+            "enum": [
+              "high",
+              "low"
+            ],
+            "title": "Confidence",
+            "type": "string"
+          },
+          "degraded": {
+            "description": "True when the feature store was unavailable and defaults were used",
+            "title": "Degraded",
+            "type": "boolean"
+          },
+          "explored": {
+            "title": "Explored",
+            "type": "boolean"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "propensity": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Probability the policy served `chosen_id` (log it with the impression)",
+            "title": "Propensity"
+          },
+          "ranked": {
+            "items": {
+              "$ref": "#/components/schemas/RankedAd"
+            },
+            "title": "Ranked",
+            "type": "array"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "request_id",
+          "chosen_id",
+          "propensity",
+          "explored",
+          "confidence",
+          "degraded",
+          "cold_start",
+          "warnings",
+          "model_version",
+          "ranked"
+        ],
+        "title": "RankResponse",
+        "type": "object"
+      },
+      "RankedAd": {
+        "description": "One candidate in rank order; gated candidates come last with `rank = null`.",
+        "properties": {
+          "candidate_id": {
+            "title": "Candidate Id",
+            "type": "string"
+          },
+          "gate_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/GateReason"
+            },
+            "title": "Gate Reasons",
+            "type": "array"
+          },
+          "gated": {
+            "title": "Gated",
+            "type": "boolean"
+          },
+          "pctr": {
+            "description": "Calibrated click probability",
+            "title": "Pctr",
+            "type": "number"
+          },
+          "pctr_high": {
+            "description": "95th percentile of the pCTR posterior",
+            "title": "Pctr High",
+            "type": "number"
+          },
+          "pctr_low": {
+            "description": "5th percentile of the pCTR posterior",
+            "title": "Pctr Low",
+            "type": "number"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "value": {
+            "description": "pCTR x bid x pacing; the ranking key",
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "candidate_id",
+          "rank",
+          "pctr",
+          "pctr_low",
+          "pctr_high",
+          "value",
+          "gated",
+          "gate_reasons"
+        ],
+        "title": "RankedAd",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
       }
     }
   },
@@ -32,7 +666,7 @@
   "paths": {
     "/health": {
       "get": {
-        "description": "Return 200 while the process is up.",
+        "description": "Liveness: the process is up.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -49,6 +683,127 @@
         "summary": "Liveness probe",
         "tags": [
           "ops"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "description": "Readiness: a model bundle is loaded (a missing store degrades, it does not block).",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Readiness probe",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/v1/events/impression": {
+      "post": {
+        "description": "Update the user's counters after an impression (and click) is observed.",
+        "operationId": "record_impression_v1_events_impression_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImpressionEvent"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Record a served impression and its click",
+        "tags": [
+          "events"
+        ]
+      }
+    },
+    "/v1/model": {
+      "get": {
+        "description": "Loaded model version, feature groups and calibrator.",
+        "operationId": "model_info_v1_model_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Loaded model",
+        "tags": [
+          "ops"
+        ]
+      }
+    },
+    "/v1/rank": {
+      "post": {
+        "description": "Score every candidate, apply gates, rank, and choose one to serve.",
+        "operationId": "rank_v1_rank_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RankRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rank candidate ads for one chat moment",
+        "tags": [
+          "ranking"
         ]
       }
     }
