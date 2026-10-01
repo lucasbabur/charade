@@ -10,6 +10,7 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 | [../AGENTS.md](../AGENTS.md) | ✅ | Rules, invariants, commands and the definition of done for AI agents (and humans) |
 | [PLAN.md](PLAN.md) | ✅ | Full design: data findings, split, features, models, evaluation, ranking, cold start, drift, serving, infrastructure, CI, commit sequence |
 | [api/openapi.json](api/openapi.json) | ✅ | Generated API contract (OpenAPI 3.1); CI fails if stale |
+| [hypotheses.md](hypotheses.md) | ✅ | Pre-registered hypotheses, metrics and decision rules (results filled from reports) |
 | [mlcheck.md](mlcheck.md) | ✅ | The 46 ML release gates, the artifact contract, the statistics, first results on the data |
 | 00-summary.md | ⬜ | One page: problem, decisions, headline results with CIs, next steps |
 
@@ -17,7 +18,7 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 
 | Doc | Status | PLAN § | What it answers |
 |---|---|---|---|
-| 01-data.md | ⬜ | 0, 3 | What the data is (Avazu + synthetic characters), contract, placeholders, C-feature hierarchy |
+| [01-data.md](01-data.md) | ✅ | 0, 3 | What the data is (Avazu + synthetic characters), contract, placeholders, C-feature hierarchy |
 | 02-features.md | ⬜ | 4, 5 | Every feature: definition, train/serve source, leakage notes, ablation Δ |
 | 03-text-enrichment.md | ⬜ | 6 | Template finding, embedding bake-off, Claude attributes, safety cross-check |
 | 04-models-evaluation.md | ⬜ | 7, 8 | Split rationale, models, metrics with CIs, slices, calibration, ablations, OPE |
