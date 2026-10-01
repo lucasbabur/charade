@@ -18,7 +18,7 @@ client ──POST /v1/rank──▶ FastAPI worker (1 of N, single-threaded libs
                            │ 4. assemble N rows → charade.features.derive + encode (the training code)
                            │ 5. ONNX Runtime, one batched call → logits → isotonic calibration
                            │ 6. policy: gates → value → evidence intervals → greedy / 5 % exploration → exact propensities
-                           │ 7. JSON decision log: every candidate with pCTR, gates, propensity; chosen id; versions
+                           │ 7. JSON decision log: context, every candidate's attributes, pCTR, gates, propensity; chosen id; versions
                            ▼
                       RankResponse (ranked list, chosen_id, propensity, confidence, cold_start, degraded)
 
@@ -52,7 +52,7 @@ Two measured fixes got p99 under budget:
 
 | Condition | Behaviour | Signal |
 |---|---|---|
-| Redis slow or down | Serve with cold-user counters, `degraded: true`; impression events → 503 (retry upstream) | `charade_degraded_total` |
+| Redis slow or down | Serve with cold-user counters, `degraded: true`; **frequency cap not enforced** (warning in the response); events → 503, retried upstream (idempotent) | `charade_degraded_total`, `charade_frequency_cap_unenforced_total` |
 | Unknown character | Use `character` metadata from the request if present; else OOV metadata and the **mature** tier (strictest brand safety) | `charade_cold_start_total{entity="character"}` |
 | Unknown categorical values | OOV embedding (index 0) | Drift monitor (PSI) |
 | Every candidate gated | 200, `chosen_id: null`, propensity null | `charade_no_fill_total` |

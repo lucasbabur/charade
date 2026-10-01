@@ -68,7 +68,7 @@ Each one is enforced by an mlcheck gate. Breaking one fails CI.
 5. **Serving stays light.** `serving/` must not reach torch, lightgbm, sklearn, optuna or mlflow, even transitively. It loads ONNX (MLS001).
 6. **Explicit randomness.** Pass `np.random.Generator`/seeds; never use global `np.random.*` or `random.*` (MLS004). The primary model runs with ≥ 3 seeds (MLR004).
 7. **No pickle.** Artifacts are ONNX, JSON, parquet or safetensors. `torch.load` needs `weights_only=True` (MLS005).
-8. **The test set is touched once per model version** and logged in `evaluation_ledger.jsonl` (MLL006). Tune on val. If you want to look at test, you are doing it wrong.
+8. **The test set has a configuration budget.** Every holdout evaluation is logged with a configuration hash; at most `max_holdout_configs` distinct configurations may look at one window (MLL006). Tune on val. If you want to look at test, you are doing it wrong.
 9. **Calibration matters as much as ranking.** Log loss and normalized entropy are the primary metrics; AUC is secondary. A model that improves AUC but breaks calibration (MLM005–007) does not ship.
 10. **Claims need intervals.** A "model A beats B" statement needs a paired hour-block bootstrap CI (MLM004). Use one seed and one split only for debugging.
 11. **Notebooks only in `experiments/`.** Each experiment is a folder with a frontmatter README (id, hypotheses, status, conclusion) and a notebook paired with a `.py` (edit the `.py`, then `jupytext --sync`). Logic lives in `src/charade/analysis`; CI executes every notebook on the fixture. Notebooks anywhere else fail MLS006.
