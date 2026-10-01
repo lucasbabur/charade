@@ -1,11 +1,6 @@
 # 07 — Drift and adaptation
 
-**Bottom line:** three things drift in this data.
-- **The CTR level shifts by day.** It runs 16.5–19.6 %, and every genre moves together.
-- **Ads rotate fast.** 13–37 % of each day's impressions go to creatives never seen before. Campaign and advertiser PSI reaches 2–4.
-- **The character mix churns slowly.** Only 54–67 % of the top-100 characters survive from one day to the next. Character CTRs themselves do not drift.
-
-A frozen model loses about **+0.003 NE per day of age**, so daily retraining is the main adaptation. Online recalibration adds nothing measurable, because calibration on the most recent day already absorbs the level shift. A cohort-exposure penalty cuts each genre's top-campaign concentration by 30 % at λ = 4 with no detectable CTR loss (DR −0.10 pp, 95 % CI [−0.98, +0.74]). Numbers: [reports/drift/drift.md](../reports/drift/drift.md), [reports/drift/adaptation.md](../reports/drift/adaptation.md) (`uv run poe drift`, `uv run poe adapt`).
+**Bottom line:** the CTR level shifts daily and ads rotate fast (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. Online recalibration adds nothing; an exposure penalty cuts cohort concentration 30 % with no detectable CTR loss ([drift.md](../reports/drift/drift.md)).
 
 ## What shifts (daily, train → test)
 

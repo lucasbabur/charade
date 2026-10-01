@@ -43,7 +43,7 @@ It does this in **p99 26 ms at 400 rps** for 100 candidates.
 
 ## Limits, stated plainly
 
-- **Offline policy estimates are directional.** Propensities are inferred from impression shares, and effective samples are about 4 %. The first production change is logging real propensities and candidate sets, which the API already does.
+- **Offline policy estimates are directional.** Propensities are inferred from impression shares, and effective samples are about 4 %. The first production change is logging real propensities and candidate sets, which the API now logs with every decision.
 - **The test window is 30 hours** and the cold-character slice has 1,478 rows; those CIs are wide.
 - **Not run:** OpenAI embeddings (the key had no quota), Gemini and Voyage (no keys). Given ρ ≈ 0 for two very different embedders, a third would not change the decision on this data.
 - **Brand-safety preferences** are illustrative; the data has none.

@@ -1,37 +1,43 @@
 # Documentation index
 
-Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the same commit that changes a doc.
+Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatter (`updated-at`).
 
-## Start here
+## Glossary
 
-| Doc | Status | What it answers |
-|---|---|---|
-| [../README.md](../README.md) | ✅ | What this is; how to install, reproduce and serve |
-| [../AGENTS.md](../AGENTS.md) | ✅ | Rules, invariants, commands and the definition of done for AI agents (and humans) |
-| [PLAN.md](PLAN.md) | ✅ | The original plan (written before the data work; later docs and ADRs supersede it where they differ): full design: data findings, split, features, models, evaluation, ranking, cold start, drift, serving, infrastructure, CI, commit sequence |
-| [api/openapi.json](api/openapi.json) | ✅ | Generated API contract (OpenAPI 3.1); CI fails if stale |
-| [hypotheses.md](hypotheses.md) | ✅ | Pre-registered hypotheses, metrics and decision rules (results filled from reports) |
-| [mlcheck.md](mlcheck.md) | ✅ | The 46 ML release gates, the artifact contract, the statistics |
-| [00-summary.md](00-summary.md) | ✅ | One page: problem, decisions, headline results with CIs, next steps |
+| Term | Meaning |
+|---|---|
+| pCTR | Predicted click probability, calibrated so that pCTR × bid is a fair value |
+| NE | Normalized entropy: log loss ÷ entropy of the set's base rate. 1.0 = predicting the base rate; lower is better |
+| ECE | Expected calibration error over equal-mass bins |
+| Hour-block bootstrap | Confidence interval that resamples whole hours, because rows in an hour are correlated |
+| Propensity | Probability that the serving policy showed the ad it showed; needed to evaluate other policies on logged data |
+| OPE | Off-policy evaluation: estimating a new policy's CTR from logs of another policy |
+| IPS / SNIPS / DR | OPE estimators: inverse-propensity weighting, its self-normalized form, and doubly robust (model estimate + weighted correction) |
+| ESS | Effective sample size of an importance-weighted estimate |
+| PSI | Population stability index; > 0.25 means a feature's distribution moved materially |
 
-## By topic
+## Docs
 
-| Doc | Status | PLAN § | What it answers |
-|---|---|---|---|
-| [01-data.md](01-data.md) | ✅ | 0, 3 | What the data is (Avazu + synthetic characters), contract, placeholders, C-feature hierarchy |
-| [02-features.md](02-features.md) | ✅ | 4, 5 | Every feature: definition, train/serve source, leakage notes, ablation Δ |
-| [03-text-enrichment.md](03-text-enrichment.md) | ✅ | 6 | Template finding, embedding bake-off, providers not run and why |
-| [04-models-evaluation.md](04-models-evaluation.md) | ✅ | 7, 8 | Split rationale, models, metrics with CIs, slices, calibration, ablations, OPE |
-| [05-ranking-policy.md](05-ranking-policy.md) | ✅ | 9 | Gates, EV, fatigue, pacing, exploration and propensities, ordering under uncertainty |
-| [06-cold-start.md](06-cold-start.md) | ✅ | 10 | Signals before the first click, priors, graduation rule |
-| [07-drift-adaptation.md](07-drift-adaptation.md) | ✅ | 11 | Temporal shifts, staleness cost, adaptation simulator results |
-| [08-serving-architecture.md](08-serving-architecture.md) | ✅ | 12, 13 | Request path, latency budget against measured numbers, cache/precompute/approximate, observability |
-| [09-operations.md](09-operations.md) | ✅ | 13, 14, 17 | Monitors, alarms, runbooks, retraining and promotion, CI/CD |
-| [10-next-steps.md](10-next-steps.md) | ✅ | 20 | Data to gather, models to try, scaling |
-| [adr/](adr/) | ✅ | all | One decision per file: context, decision, consequences |
-| [recording-outline.md](recording-outline.md) | ✅ | 20 | Script for the video walkthrough |
+| Doc | Answers |
+|---|---|
+| [00-summary.md](00-summary.md) | Problem, headline results, what the data taught, limits |
+| [hypotheses.md](hypotheses.md) | Pre-registered hypotheses, metrics, decision rules and outcomes |
+| [01-data.md](01-data.md) | Data contract, findings, split, fixture |
+| [02-features.md](02-features.md) | Shipped and rejected features, encoding rules |
+| [03-text-enrichment.md](03-text-enrichment.md) | Description embedding bake-off |
+| [04-models-evaluation.md](04-models-evaluation.md) | Protocol, models, ablations, slices, leakage probes |
+| [05-ranking-policy.md](05-ranking-policy.md) | Gates, value, exploration, propensities, offline policy evaluation, sample rankings |
+| [06-cold-start.md](06-cold-start.md) | New characters and users, pre-click signal, graduation |
+| [07-drift-adaptation.md](07-drift-adaptation.md) | Temporal shifts, staleness, recalibration, exposure re-balancing |
+| [08-serving-architecture.md](08-serving-architecture.md) | Request path, latency budget, failure modes |
+| [09-operations.md](09-operations.md) | AWS topology, delivery, alarms, runbooks |
+| [10-next-steps.md](10-next-steps.md) | Data, models, scaling |
+| [mlcheck.md](mlcheck.md) | The 46 ML release gates and their artifact contract |
+| [adr/](adr/) | One decision per file |
+| [api/openapi.json](api/openapi.json) | Generated API contract (CI fails if stale) |
+| [recording-outline.md](recording-outline.md) | Video walkthrough script |
 
-## Generated reports (cited by the docs)
+## Generated reports
 
 | Report | Command |
 |---|---|
@@ -48,14 +54,10 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 
 | Task | Read, in order |
 |---|---|
-| Change a feature | AGENTS.md invariants 2–4 → 02-features → PLAN §4–5 → `src/charade/features/` |
-| Train or compare models | PLAN §1, §7–8 → 04-models-evaluation → mlcheck.md (model stage) → `[tool.charade.model]` in pyproject.toml, `uv run poe ablate` |
-| Touch the ranking policy | 05-ranking-policy → PLAN §9 → mlcheck MLP* |
-| Touch the API or latency | 08-serving-architecture → PLAN §12–13 → AGENTS.md invariant 5 |
+| Review the project in 10 minutes | 00-summary → hypotheses → 04 → 05 → adr/ |
+| Change a feature | AGENTS.md invariants 2–4 → 02 → `src/charade/features/` |
+| Train or compare models | 04 → mlcheck.md (model stage) → `[tool.charade.model]` |
+| Touch the ranking policy | 05 → mlcheck.md (policy stage) |
+| Touch the API or latency | 08 → AGENTS.md invariant 5 |
 | Add an ML gate | tools/mlcheck/AGENTS.md → mlcheck.md |
-| Infrastructure | PLAN §14, §17 → 09-operations → `infra/terraform/` |
-| Review the project in 10 minutes | 00-summary → hypotheses → 04-models-evaluation → 05-ranking-policy → adr/ |
-
-## Generated, not written
-
-`reports/` (figures, tables, `sample_rankings.json`) is produced by CLI commands and committed. Docs cite it and never retype numbers.
+| Infrastructure | 09 → `infra/terraform/` |

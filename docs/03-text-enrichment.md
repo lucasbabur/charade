@@ -1,6 +1,6 @@
 # 03 — Character text
 
-**Bottom line:** character descriptions are generated from templates. Every embedding recovers genre perfectly (5-NN accuracy 1.00) and knows nothing about safety tier (0.50, below the 0.59 majority rate). On the question that matters, CTR beyond genre × tier, every provider's correlation with validation characters is zero within its CI. H3 is confirmed intrinsically. The extrinsic test (the DCN with and without text on validation NE) is in [04-models-evaluation.md](04-models-evaluation.md). Text stays in the pipeline because real creator-written descriptions will not be templated.
+**Bottom line:** descriptions are templates: embeddings recover genre perfectly but predict no CTR beyond genre × tier (ρ ≈ 0 ± 0.1), and adding them hurts validation log loss ([04](04-models-evaluation.md)). The pipeline stays for real free-text personas.
 
 ## Bake-off ([reports/text_bakeoff.csv](../reports/text_bakeoff.csv), `uv run poe text`)
 
@@ -17,7 +17,6 @@ The residual is each character's training CTR (≥ 100 impressions) minus its ge
 |---|---|
 | OpenAI `text-embedding-3-large` | Implemented (`Provider.OPENAI`); the available key returned `insufficient_quota` on 2026-10-01. Run `OPENAI_API_KEY=… uv run poe text` to add it |
 | Gemini `gemini-embedding-001`, Voyage `voyage-4-large` | No keys available. They would plug in as one function each in `charade.text.embed.EMBEDDERS` |
-| Claude Haiku structured attributes | No key available. A better model would not change this result: the residual signal is zero for two very different representations, which is a property of the data, not of the embedder |
 
 ## Pipeline rules
 

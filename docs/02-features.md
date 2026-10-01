@@ -1,6 +1,6 @@
 # 02 — Features
 
-**Bottom line:** the shipped model uses 25 categorical fields (embedded, out-of-vocabulary index 0, vocabularies fitted on training rows only) and 10 dense inputs (standardized on training). There is one definition, in `charade.features`, called by training, the API, parity and every analysis. Feature groups were kept or dropped by validation ablations ([04](04-models-evaluation.md)). The single-feature AUCs below come from `leakage.json`; none exceeds 0.67 (MLL005).
+**Bottom line:** 25 embedded categoricals and 10 standardized dense inputs, all fitted on training rows and defined once in `charade.features` for training and serving; groups were kept or dropped by validation ablation ([04](04-models-evaluation.md)).
 
 ## Shipped feature set
 

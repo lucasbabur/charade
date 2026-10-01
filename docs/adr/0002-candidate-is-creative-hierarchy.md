@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 The brief says candidates are parameterized by `banner_pos` and "a subset of C-features". The data shows C14 determines C15, C16, C17, C21 exactly (functional dependency 1.000), while C1 and C20 vary within a creative.

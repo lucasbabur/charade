@@ -1,6 +1,6 @@
 # 04 — Models and evaluation
 
-**Bottom line:** the shipped model is a 3-seed DCN-v2 ensemble with an isotonic calibrator. On the untouched test days it reaches **NE 0.8848** (log loss 0.4053, AUC 0.737, predicted/observed 1.012, ECE 0.005). It beats LightGBM by **−0.0040 log loss [−0.0052, −0.0027]** and the logistic baseline by **−0.0120 [−0.0138, −0.0102]** (paired hour-block bootstrap, 95 %). Ablations on validation decided the feature set: character metadata carries most of the character signal, while character ID, conversation features and description text add nothing. Every number below comes from [reports/models/metrics.json](../reports/models/metrics.json), [ablations.csv](../reports/models/ablations.csv) and [reports/tuning/](../reports/tuning/).
+**Bottom line:** a 3-seed DCN-v2 ensemble, isotonic-calibrated, reaches **test NE 0.8848** (AUC 0.737, pred/obs 1.012), beating LightGBM by −0.0040 [−0.0052, −0.0027] and logistic by −0.0120 [−0.0138, −0.0102] log loss. Validation ablations dropped character ID and conversation features and rejected text ([metrics.json](../reports/models/metrics.json)).
 
 ## Protocol
 

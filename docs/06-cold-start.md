@@ -1,6 +1,6 @@
 # 06 — Cold start
 
-**Bottom line:** in this data a character is fully described by its genre and safety tier. The true between-character CTR spread left after genre × tier is 0.0001 (it was about 1 pp after genre alone, and the tier explains the rest). So the shipped model has **no character ID at all**: a character published one second ago is scored exactly like one with 20,000 impressions. On the test days, characters unseen in training get **NE 0.906 against 0.885 for warm characters** (n = 1,478, a noisy slice). New users get **0.894 against 0.856** for returning ones. The context (publisher, app) and the character's genre carry the pre-click signal. Numbers: [reports/coldstart/coldstart.md](../reports/coldstart/coldstart.md) (`uv run poe coldstart`).
+**Bottom line:** a character is its genre and safety tier (no measurable spread beyond them), so the shipped model has no character ID and scores new characters like old ones: test NE 0.906 cold vs 0.885 warm (n = 1,478, no CI computed) ([coldstart.md](../reports/coldstart/coldstart.md)).
 
 ## A brand-new character
 

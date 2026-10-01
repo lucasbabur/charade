@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 Ablations on validation (3-seed ensembles, paired CIs): − character ID −0.0000 [−0.0002, +0.0002]; + text (Qwen3 or TF-IDF) +0.0008 (worse); − character metadata +0.0032. The cold-start analysis finds no character-level spread beyond genre × tier.

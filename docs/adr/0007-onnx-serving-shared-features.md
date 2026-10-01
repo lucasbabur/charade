@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 Train/serve skew and heavy serving images are the two classic failure modes.

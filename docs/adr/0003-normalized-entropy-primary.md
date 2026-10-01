@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 The auction ranks by pCTR × bid. A model with better AUC but worse calibration misprices every bid.

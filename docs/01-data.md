@@ -1,6 +1,6 @@
 # 01 — Data
 
-**Bottom line:** the impressions are a 1M-row Avazu sample (Oct 21–30 2014) with a synthetic character and conversation layer added. The character layer carries real signal (genre, safety tier, and their interaction with campaigns); the conversation layer is flat noise. Most "users" are unidentifiable, and the anonymized C-columns encode an ad hierarchy that defines what a ranking candidate is. Numbers: [reports/eda/eda.md](../reports/eda/eda.md) (train split unless stated).
+**Bottom line:** a 1M-row Avazu sample (2014-10-21..30) plus a synthetic character layer that carries real signal (genre, tier) and a conversation layer that is noise. Most users are unidentifiable, and the C-columns hide the ad hierarchy that defines a candidate ([eda.md](../reports/eda/eda.md)).
 
 ## Loading contract (`charade.data.load`)
 
