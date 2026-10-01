@@ -24,7 +24,7 @@ uv run poe                                     # list every task
 
 The API contract is committed at [docs/api/openapi.json](docs/api/openapi.json) and regenerated with `uv run poe openapi`. CI fails if it is stale.
 
-> 🚧 Drift analysis and infrastructure are being finished; see the status column in [docs/index.md](docs/index.md).
+Infrastructure (AWS, Terraform, validated not applied) and delivery are described in [docs/09-operations.md](docs/09-operations.md).
 
 ## ⚙️ Settings
 

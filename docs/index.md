@@ -26,7 +26,7 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 | [06-cold-start.md](06-cold-start.md) | ✅ | 10 | Signals before the first click, priors, graduation rule |
 | [07-drift-adaptation.md](07-drift-adaptation.md) | ✅ | 11 | Temporal shifts, staleness cost, adaptation simulator results |
 | [08-serving-architecture.md](08-serving-architecture.md) | ✅ | 12, 13 | Request path, latency budget against measured numbers, cache/precompute/approximate, observability |
-| 09-operations.md | ⬜ | 13, 14, 17 | Monitors, alarms, runbooks, retraining and promotion, CI/CD |
+| [09-operations.md](09-operations.md) | ✅ | 13, 14, 17 | Monitors, alarms, runbooks, retraining and promotion, CI/CD |
 | 10-next-steps.md | ⬜ | 20 | Data to gather, models to try, scaling |
 | adr/ | ⬜ | all | One decision per file: context, decision, consequences |
 | recording-outline.md | ⬜ | 20 | Script for the video walkthrough |
