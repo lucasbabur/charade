@@ -4,7 +4,7 @@ from datetime import datetime
 from functools import cache
 from pathlib import Path
 
-from pydantic import AliasChoices, Field, SecretStr
+from pydantic import AliasChoices, BaseModel, Field, SecretStr
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -15,6 +15,56 @@ from pydantic_settings import (
 
 def _secret(name: str) -> SecretStr | None:
     return Field(default=None, validation_alias=AliasChoices(name))
+
+
+class DcnConfig(BaseModel):
+    """DCN-v2 architecture and optimisation (values chosen by `uv run poe tune`, see reports/tuning/)."""
+
+    embedding_dim: int = 16
+    cross_layers: int = 3
+    cross_rank: int = 64
+    hidden: list[int] = Field(default_factory=lambda: [256, 128])
+    dropout: float = 0.1
+    lr: float = 1e-3
+    weight_decay: float = 0.0
+    batch_size: int = 4096
+    max_epochs: int = 6
+    evals_per_epoch: int = 4
+    patience: int = 4
+    character_id_dropout: float = 0.1
+    seeds: list[int] = Field(default_factory=lambda: [0, 1, 2])
+
+
+class GbdtConfig(BaseModel):
+    """LightGBM yardstick settings."""
+
+    learning_rate: float = 0.03
+    num_leaves: int = 127
+    min_data_in_leaf: int = 500
+    cat_smooth: float = 50.0
+    cat_l2: float = 10.0
+    feature_fraction: float = 0.8
+    lambda_l2: float = 0.0
+    max_rounds: int = 3000
+
+
+class ModelConfig(BaseModel):
+    """What the shipped model uses."""
+
+    groups: list[str] = Field(
+        default_factory=lambda: [
+            "context",
+            "device",
+            "ad",
+            "character_meta",
+            "character_id",
+            "conversation",
+            "user_history",
+        ]
+    )
+    text_provider: str | None = None
+    dcn: DcnConfig = Field(default_factory=DcnConfig)
+    gbdt: GbdtConfig = Field(default_factory=GbdtConfig)
 
 
 class Settings(BaseSettings):
@@ -33,6 +83,7 @@ class Settings(BaseSettings):
     seed: int = 20141021
     train_end: datetime
     val_end: datetime
+    model: ModelConfig = Field(default_factory=ModelConfig)
 
     gemini_api_key: SecretStr | None = _secret("GEMINI_API_KEY")
     voyage_api_key: SecretStr | None = _secret("VOYAGE_API_KEY")
