@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
         with:
           enable-cache: true
       - name: Install
@@ -48,7 +48,7 @@ jobs:
       - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.13.5"
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0
       - name: Validate
         run: uv run --no-project --with poethepoet poe tf
 
