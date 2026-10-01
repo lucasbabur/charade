@@ -15,12 +15,16 @@ Only commands that work today are listed. When you add a command, add it here in
 | Purpose | Command |
 |---|---|
 | Install everything | `uv sync --all-packages` |
-| ML gates, whole project | `uv run mlcheck .` |
-| ML gates before a run exists | `uv run mlcheck . --stage data --stage static` |
-| One gate with evidence | `uv run mlcheck . --only MLM004 -v` |
-| List gates | `uv run mlcheck --list` |
-| mlcheck tests | `cd tools/mlcheck && uv run pytest` |
-| Lint, format, types (mlcheck) | `cd tools/mlcheck && uv run ruff check . && uv run ruff format --check . && uv run pyright` |
+| List tasks | `uv run poe` |
+| Everything CI runs on Python | `uv run poe check` (lint, types, tests, mlcheck tests, ML static gates) |
+| Terraform fmt + validate | `uv run poe tf` |
+| Regenerate OpenAPI contract | `uv run poe openapi` (commit `docs/api/openapi.json`) |
+| Data contract on raw CSVs | `uv run poe mlcheck-data` |
+| Run the API | `uv run poe serve` |
+| One ML gate with evidence | `uv run mlcheck . --only MLM004 -v` |
+| Lint workflows | `actionlint` |
+
+Tasks live in `[tool.poe.tasks]`. CI calls the same tasks, so a green `poe check` locally means a green Python job.
 
 The raw data (`impressions.csv`, `characters.csv`, 170 MB) sits in the repo root and is gitignored. Never commit it. Tests use `tests/fixtures/` samples.
 
@@ -89,8 +93,9 @@ Embeddings (Gemini, Voyage, OpenAI) and Claude Haiku 4.5 attribute extraction ru
 
 ## Definition of done
 
-- [ ] Lint, format, pyright strict and tests pass. Coverage on touched packages ≥ 85 % branch.
+- [ ] `uv run poe check` passes (and `uv run poe tf` if you touched `infra/`). Coverage on touched packages ≥ 85 % branch.
 - [ ] `uv run mlcheck . --stage static` passes. If you touched training or evaluation, the full run gates pass with `--strict`, or every WARN is explained in the docs.
+- [ ] If the API changed, `docs/api/openapi.json` is regenerated and committed.
 - [ ] The docs and `docs/index.md` status column are updated.
 - [ ] No secrets, raw data, notebooks or artifacts are staged.
 

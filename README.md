@@ -6,27 +6,33 @@ Design and results live in [docs/](docs/index.md).
 
 ## 🚀 Run it
 
-Requirements: [uv](https://docs.astral.sh/uv/) and Python 3.12 (uv installs it if missing).
+Requirements: [uv](https://docs.astral.sh/uv/) (installs Python 3.12 if missing). Optional: Docker for `docker compose up` (API + Redis), Terraform ≥ 1.13 for the infrastructure checks.
 
 ```bash
 uv sync --all-packages                         # install the workspace
+cp .env.sample .env                            # optional: overrides and API keys
 cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
-uv run mlcheck . --stage data --stage static   # check the data and the code
+uv run poe mlcheck-data                        # check the data contract
+uv run poe serve                               # API on http://127.0.0.1:8000 (docs at /docs)
+uv run poe                                     # list every task
 ```
 
-> 🚧 Training, evaluation and the API are being built. Their commands will appear here as they land.
+The API contract is committed at [docs/api/openapi.json](docs/api/openapi.json) and regenerated with `uv run poe openapi`. CI fails if it is stale.
+
+> 🚧 Training, evaluation and ranking are being built. Their tasks will appear in `uv run poe` as they land.
 
 ## ⚙️ Settings
 
-Every setting lives in `pyproject.toml`: tool settings under `[tool.<name>]`, project settings under `[tool.charade]`. Environment variables override them. API keys come only from the environment.
+Every setting lives in `pyproject.toml`: tool settings under `[tool.<name>]`, project settings under `[tool.charade]`, tasks under `[tool.poe.tasks]`. `CHARADE_*` environment variables (or `.env`) override them. API keys come only from the environment; see [.env.sample](.env.sample).
 
 ## 🤝 Contribute
 
 1. Read [AGENTS.md](AGENTS.md). It holds the rules, invariants and definition of done for humans and AI agents alike.
 2. Find the doc for your area in [docs/index.md](docs/index.md).
-3. Before committing, run lint, types, tests and the ML gates:
+3. Before committing, run what CI runs:
    ```bash
-   cd tools/mlcheck && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest
-   uv run mlcheck . --stage static
+   uv run poe check   # lint, types, tests (charade + mlcheck), ML static gates
+   uv run poe tf      # terraform fmt + validate
    ```
+   If you changed the API, run `uv run poe openapi` and commit the contract.
 4. Use atomic [conventional commits](https://www.conventionalcommits.org/) (`feat(ranking): …`). Every commit must pass its own tests.

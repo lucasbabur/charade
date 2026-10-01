@@ -9,6 +9,7 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 | [../README.md](../README.md) | 🟡 | What this is; how to install, reproduce and serve |
 | [../AGENTS.md](../AGENTS.md) | ✅ | Rules, invariants, commands and the definition of done for AI agents (and humans) |
 | [PLAN.md](PLAN.md) | ✅ | Full design: data findings, split, features, models, evaluation, ranking, cold start, drift, serving, infrastructure, CI, commit sequence |
+| [api/openapi.json](api/openapi.json) | ✅ | Generated API contract (OpenAPI 3.1); CI fails if stale |
 | [mlcheck.md](mlcheck.md) | ✅ | The 46 ML release gates, the artifact contract, the statistics, first results on the data |
 | 00-summary.md | ⬜ | One page: problem, decisions, headline results with CIs, next steps |
 
