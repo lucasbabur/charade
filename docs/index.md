@@ -43,6 +43,21 @@ Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatte
 | [api/openapi.json](api/openapi.json) | Generated API contract (CI fails if stale) |
 | [recording-outline.md](recording-outline.md) | Video walkthrough script |
 
+## Experiments
+
+One folder per experiment in [experiments/](../experiments/): `README.md` (frontmatter: id, title, hypotheses, status, conclusion, dates) and a notebook paired with a `.py` script. CI executes every notebook on the fixture (`uv run poe test-notebooks`); `uv run poe experiments` reruns them on the full data.
+
+| Id | Experiment |
+|---|---|
+| [E001](../experiments/E001-eda-signal-survey/README.md) | Signal survey on the training split |
+| [E002](../experiments/E002-text-embedding-bakeoff/README.md) | Character description embeddings |
+| [E003](../experiments/E003-hyperparameter-search/README.md) | Hyperparameter search for DCN-v2 and LightGBM |
+| [E004](../experiments/E004-model-comparison/README.md) | CTR model comparison on the test days |
+| [E005](../experiments/E005-feature-group-ablations/README.md) | Feature-group ablations |
+| [E006](../experiments/E006-offline-policy-evaluation/README.md) | Offline evaluation of ranking policies |
+| [E007](../experiments/E007-cold-start-and-graduation/README.md) | Cold start and graduation |
+| [E008](../experiments/E008-drift-and-adaptation/README.md) | Drift, staleness and exposure re-balancing |
+
 ## Generated reports
 
 | Report | Command |

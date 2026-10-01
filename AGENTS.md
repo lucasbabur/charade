@@ -24,6 +24,7 @@ Only commands that work today are listed. When you add a command, add it here in
 | Ablations / tuning / EDA / text bake-off | `uv run poe ablate` / `tune` / `eda` / `text` |
 | Off-policy evaluation of ranking policies (after `train`) | `uv run poe ope` |
 | Train/serve parity, sample rankings | `uv run poe parity`, `uv run poe samples` |
+| Experiments: smoke-run all / rerun on full data | `uv run poe test-notebooks` / `uv run poe experiments` |
 | Cold start, drift + staleness, adaptation replay | `uv run poe coldstart`, `drift`, `adapt` |
 | Load test (needs `docker compose up -d --build`) | `uv run poe loadtest` |
 | Run the API | `uv run poe serve` |
@@ -70,7 +71,7 @@ Each one is enforced by an mlcheck gate. Breaking one fails CI.
 8. **The test set is touched once per model version** and logged in `evaluation_ledger.jsonl` (MLL006). Tune on val. If you want to look at test, you are doing it wrong.
 9. **Calibration matters as much as ranking.** Log loss and normalized entropy are the primary metrics; AUC is secondary. A model that improves AUC but breaks calibration (MLM005–007) does not ship.
 10. **Claims need intervals.** A "model A beats B" statement needs a paired hour-block bootstrap CI (MLM004). Use one seed and one split only for debugging.
-11. **No notebooks.** Analysis is a CLI command that writes to `reports/` (MLS006).
+11. **Notebooks only in `experiments/`.** Each experiment is a folder with a frontmatter README (id, hypotheses, status, conclusion) and a notebook paired with a `.py` (edit the `.py`, then `jupytext --sync`). Logic lives in `src/charade/analysis`; CI executes every notebook on the fixture. Notebooks anywhere else fail MLS006.
 12. **Gated ads are never served**, and every served ad logs its propensity (MLP003–004).
 
 ## Data facts you will otherwise get wrong
