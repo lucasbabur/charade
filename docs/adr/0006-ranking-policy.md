@@ -19,4 +19,4 @@ Superseded detail: the first version used Thompson sampling and estimated the se
 
 ## Consequences
 
-Offline DR lift over logging, under reconstructed candidate sets and frequency-share propensities: shipped +1.23 pp [+0.20, +2.20], ungated greedy +1.41 pp, with DR using an independent reward model. A recovery test and mlcheck MLP005 hold the propensities to the policy's exact distribution.
+Offline DR lift over logging, under reconstructed candidate sets and frequency-share propensities: shipped +1.46 pp [+0.50, +2.38], ungated greedy +1.65 pp, with DR using an independent reward model. A recovery test and mlcheck MLP005 hold the propensities to the policy's exact distribution.

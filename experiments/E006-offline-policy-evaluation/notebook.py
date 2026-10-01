@@ -49,6 +49,6 @@ Markdown((ctx.reports / "policy" / "ope.md").read_text())
 
 # %% [markdown]
 # ## Conclusion
-# Under reconstructed candidate sets and frequency-share propensities, with DR using an independent LightGBM reward model, the shipped policy's estimated lift over logging is +1.23 pp CTR [+0.20, +2.20] (ungated greedy +1.41 pp; validation day +2.08 pp); ESS ~4 % of rows; a demonstration of the evaluation, not a measured production lift.
+# Under reconstructed candidate sets and frequency-share propensities, with DR using an independent LightGBM reward model, the shipped policy's estimated lift over logging is +1.46 pp CTR [+0.50, +2.38] (ungated greedy +1.65 pp; validation day +1.96 pp), on every impression of a multi-creative cell; ESS ~4 % of rows; a demonstration of the evaluation, not a measured production lift.
 #
 # **Decision:** Ship greedy + gates + 5 % exploration from a closed-form distribution, and log every candidate's exact propensity so the next evaluation does not need reconstruction.
