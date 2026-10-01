@@ -24,6 +24,7 @@ train = [
     "matplotlib>=3.11",
     "onnx>=1.23",
     "onnxscript>=0.7",
+    "optuna>=4.5",
     "openai>=2.0",
     "scikit-learn>=1.9",
     "scipy>=1.18",
@@ -83,6 +84,34 @@ seed = 20141021
 train_end = "2014-10-27T23:00:00"
 val_end = "2014-10-28T23:00:00"
 
+# Shipped model. Values come from reports/tuning/{dcn,gbdt}.csv (best trial on the inner split,
+# train 10-21..26 / select 10-27); see docs/04-models-evaluation.md. `groups` and `text_provider`
+# follow reports/models/ablations.csv.
+[tool.charade.model]
+# character_id and conversation are dropped: their ablation CIs include zero (decision rule in docs/hypotheses.md).
+groups = ["context", "device", "ad", "character_meta", "user_history"]
+
+[tool.charade.model.dcn]
+embedding_dim = 24
+cross_layers = 2
+cross_rank = 64
+hidden = [256, 128]
+dropout = 0.3
+lr = 0.0029
+weight_decay = 1.3e-5
+batch_size = 2048
+character_id_dropout = 0.08
+seeds = [0, 1, 2]
+
+[tool.charade.model.gbdt]
+learning_rate = 0.0127
+num_leaves = 415
+min_data_in_leaf = 63
+cat_smooth = 47.5
+cat_l2 = 1.45
+feature_fraction = 0.41
+lambda_l2 = 0.0195
+
 [tool.poe.tasks]
 lint = { sequence = [{ shell = "ruff check . && ruff format --check ." }, { shell = "ruff check . && ruff format --check .", cwd = "tools/mlcheck" }], help = "Ruff lint and format check" }
 types = { sequence = [{ cmd = "pyright" }, { cmd = "pyright", cwd = "tools/mlcheck" }], help = "Pyright strict" }
@@ -93,6 +122,9 @@ mlcheck = { cmd = "mlcheck . --stage static --skip MLS002", help = "ML static ga
 mlcheck-data = { cmd = "mlcheck . --stage data", help = "Data contract on the raw CSVs (local only; data is not in git)" }
 eda = { cmd = "python -m charade.analysis.eda", help = "Write reports/eda/eda.md" }
 text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descriptions and write reports/text_bakeoff.csv (OPENAI_API_KEY optional)" }
+tune = { cmd = "python -m charade.models.tune", help = "Optuna search on the inner split; writes reports/tuning/" }
+train = { cmd = "python -m charade.models.pipeline", help = "Train, calibrate, evaluate once on test, export; writes artifacts and reports/models/metrics.json" }
+ablate = { cmd = "python -m charade.models.ablate", help = "Feature-group ablations on validation; writes reports/models/ablations.csv" }
 fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
@@ -106,7 +138,7 @@ extend-exclude = ["tools"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "BLE", "UP", "SIM", "N", "S", "PL", "PT", "PERF", "RUF", "C90", "D"]
-ignore = ["PLR0913", "PLR2004", "D105", "D107", "D401"]
+ignore = ["PLR0913", "PLR0917", "PLR2004", "D105", "D107", "D401"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
