@@ -3,7 +3,7 @@ from pathlib import Path
 import polars as pl
 import pytest
 
-from charade.data import fixture
+from charade.analysis import fixture
 from charade.data.load import load_joined
 from charade.features.derive import user_proxy
 from tests.conftest import FIXTURES

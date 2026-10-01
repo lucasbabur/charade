@@ -6,9 +6,8 @@ from pathlib import Path
 
 import polars as pl
 
-from charade.config import Settings
+from charade.config import PolicyConfig, Settings
 from charade.ranking.evidence import Evidence
-from charade.ranking.policy import PolicyConfig
 from charade.scoring.scorer import CHARACTERS_FILE, EVIDENCE_FILE, Scorer
 from charade.serving.store import FeatureStore, MemoryStore, RedisStore
 

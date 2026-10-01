@@ -12,11 +12,23 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
-from charade.ranking.policy import PolicyConfig
-
 
 def _secret(name: str) -> SecretStr | None:
     return Field(default=None, validation_alias=AliasChoices(name))
+
+
+class PolicyConfig(BaseModel):
+    """`[tool.charade.policy]`."""
+
+    exploration_rate: float = Field(default=0.05, ge=0, le=1)
+    min_evidence: float = 20.0
+    max_evidence: float = 1000.0
+    frequency_cap: int = 8
+    """Max earlier impressions of one campaign to one user before the campaign is gated for that user."""
+    propensity_draws: int = 64
+    advertiser_max_tier: dict[str, str] = Field(default_factory=dict[str, str])
+    """Advertiser (C21) -> highest character safety tier it accepts. Unlisted advertisers accept all tiers."""
+    low_confidence_overlap: bool = True
 
 
 class DcnConfig(BaseModel):

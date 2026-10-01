@@ -9,10 +9,10 @@ from pathlib import Path
 import polars as pl
 
 from charade.config import get_settings
-from charade.data.load import PLACEHOLDER_DEVICE_ID, load_joined
+from charade.data.load import load_joined
 from charade.data.split import assign_split
 from charade.features.counters import offline_counters
-from charade.features.derive import derive, user_proxy
+from charade.features.derive import PLACEHOLDER_DEVICE_ID, derive, user_proxy
 
 OUT = Path("reports/eda")
 

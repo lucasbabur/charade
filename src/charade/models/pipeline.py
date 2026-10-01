@@ -24,10 +24,10 @@ import torch
 
 from charade.config import Settings, get_settings
 from charade.data.load import load_characters
-from charade.evaluation import leakage
 from charade.evaluation.metrics import logloss_rows, paired_bootstrap, summary
 from charade.evaluation.slices import SLICES, add_slices
 from charade.features.spec import Encoded
+from charade.models import leakage
 from charade.models.calibrate import fit_calibrator
 from charade.models.core import SPLITS, Prepared, load_prepared, logits, train_dcn_ensemble, train_logistic
 from charade.models.export import export_onnx, torch_logits

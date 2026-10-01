@@ -7,9 +7,6 @@ from pathlib import Path
 
 import polars as pl
 
-PLACEHOLDER_DEVICE_ID = "a99f214a"
-"""`device_id` value on 82 % of rows; it is a 'device unknown' marker, not a user."""
-
 IMPRESSION_COLUMNS: dict[str, type[pl.DataType]] = {
     "id": pl.Utf8,
     "hour": pl.Utf8,
