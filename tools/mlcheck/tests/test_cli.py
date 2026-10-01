@@ -42,3 +42,25 @@ def test_list_shows_every_check() -> None:
 def test_docs_catalogue_lists_every_check() -> None:
     catalogue = (Path(__file__).parents[3] / "docs" / "mlcheck.md").read_text()
     assert all(f"| {code} |" in catalogue for code in CHECKS)
+
+
+def test_artifacts_and_data_dirs_can_be_overridden(golden: Path, tmp_path: Path) -> None:
+    import shutil  # noqa: PLC0415
+
+    shutil.copytree(golden / "artifacts/current", tmp_path / "art")
+    for name in ("events.csv", "characters.csv"):
+        shutil.copy(golden / name, tmp_path / name)
+    args = [
+        str(golden),
+        "--stage",
+        "data",
+        "--stage",
+        "model",
+        "--artifacts-dir",
+        str(tmp_path / "art"),
+        "--data-dir",
+        str(tmp_path),
+    ]
+    assert runner.invoke(app, args).exit_code == 0
+    (tmp_path / "art" / "predictions.parquet").unlink()
+    assert runner.invoke(app, args).exit_code == 1

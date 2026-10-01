@@ -7,7 +7,7 @@ from typing import Annotated
 import typer
 
 import mlcheck.checks  # noqa: F401  # pyright: ignore[reportUnusedImport] - registers checks
-from mlcheck.config import load_config
+from mlcheck.config import load_config, with_overrides
 from mlcheck.context import Context
 from mlcheck.registry import CHECKS, run_check, select
 from mlcheck.result import CheckResult, Stage, Status
@@ -45,6 +45,8 @@ def main(  # noqa: PLR0917 - typer maps parameters to CLI options
     strict: Annotated[bool, typer.Option(help="Treat warnings as failures.")] = False,
     verbose: Annotated[bool, typer.Option("-v", help="Show details for passing checks.")] = False,
     list_checks: Annotated[bool, typer.Option("--list", help="List checks and exit.")] = False,
+    artifacts_dir: Annotated[Path | None, typer.Option(help="Override [tool.mlcheck] artifacts_dir.")] = None,
+    data_dir: Annotated[Path | None, typer.Option(help="Directory holding the data files named in the config.")] = None,
 ) -> None:
     """Run ML release gates against a project and its latest run artifacts."""
     if list_checks:
@@ -52,7 +54,7 @@ def main(  # noqa: PLR0917 - typer maps parameters to CLI options
             typer.echo(f"{code}  {chk.stage.value:<8} {chk.severity.value:<7} {chk.name}: {chk.rationale}")
         raise typer.Exit
     root = root.resolve()
-    ctx = Context(root, load_config(root))
+    ctx = Context(root, with_overrides(load_config(root), artifacts_dir, data_dir))
     results = [run_check(chk, ctx) for chk in select(stage or [], only or [], skip or [])]
     if output == "json":
         typer.echo(json.dumps([r.model_dump(mode="json") for r in results], indent=2))
