@@ -1,5 +1,10 @@
 """Budget pacing: a per-campaign PI controller that throttles bids to spend evenly over the day.
 
+Status: library component, **not connected to the API**. The data has no budgets or spend, so the
+API leaves `Candidate.pacing = 1` and `budget_exhausted = False`. Wiring it needs a spend feed (from
+click/billing events) and pacer state per campaign in Redis next to the user histories; the policy
+already consumes both fields.
+
 `multiplier` in [0, 1] scales the candidate's value. The controller compares the share of the
 daily budget spent with the share of the day elapsed (a linear target; a traffic-shaped curve is
 a drop-in replacement) and integrates the error. State is tiny and lives in Redis next to counters.
