@@ -1,0 +1,11 @@
+{
+  "scored_on": "2014-10-28 (validation day; test untouched)",
+  "early_stopped_ne": 0.8751530400750451,
+  "refit_ne": 0.875170429859237,
+  "refit_minus_early_logloss": 7.798399230891566e-06,
+  "ci_low": -0.0007616556053293062,
+  "ci_high": 0.0008917419134009972,
+  "early_calibration_ratio": 1.022526354236269,
+  "refit_calibration_ratio": 1.0778345659888349,
+  "steps": 572.0
+}
