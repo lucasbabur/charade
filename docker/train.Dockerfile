@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.10
 # Training image: CPU torch + the offline stack + AWS CLI. Runs scripts/retrain.sh daily.
 
-FROM ghcr.io/astral-sh/uv:0.12.9-python3.12-trixie-slim
+FROM ghcr.io/astral-sh/uv:0.12.21-python3.12-trixie-slim
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
