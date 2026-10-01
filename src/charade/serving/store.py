@@ -1,7 +1,7 @@
 """Online user-history store. Redis in production, in-memory for tests and local runs.
 
 Two kinds of key:
-    charade:user:<user>        UserHistory JSON (counters; per-campaign detail capped)
+    charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
     charade:imp:<impression>   {user, hour, campaign, clicked}, kept 48 h
 
 Writes are idempotent and atomic:
@@ -9,6 +9,13 @@ Writes are idempotent and atomic:
 - a click is attributed to its impression's user and hour, at most once, even if it arrives late;
 - Redis updates run in WATCH/MULTI transactions and retry on conflict, so concurrent events for the
   same user cannot overwrite each other.
+
+The frequency cap counts every exposure in the user's history, which lives until 14 days pass with no
+event for that user (the key's TTL). Per-campaign totals are never trimmed: the cap would silently reset
+for any campaign dropped. The value stays bounded by the campaigns one user is shown within that TTL.
+
+If a user key has expired but its impression key has not, a late click marks the impression clicked and
+is logged, but does not recreate a history holding a click without its impression.
 
 Reads use one GET with a hard timeout; on timeout or error the caller serves cold-user defaults
 (`degraded = true`), never an error.
@@ -29,7 +36,6 @@ USER_PREFIX = "charade:user:"
 IMPRESSION_PREFIX = "charade:imp:"
 USER_TTL_SECONDS = 14 * 24 * 3600
 IMPRESSION_TTL_SECONDS = 48 * 3600
-MAX_CAMPAIGNS = 200
 MAX_RETRIES = 50
 
 
@@ -74,20 +80,10 @@ class FeatureStore(Protocol):
         ...
 
 
-def _trim(history: UserHistory) -> UserHistory:
-    """Keep per-campaign detail for the most recently active campaigns only (bounded value size)."""
-    if len(history.campaign_totals) > MAX_CAMPAIGNS:
-        recency = {c: max(h.keys(), default=-1) for c, h in history.campaign_buckets.items()}
-        keep = set(sorted(history.campaign_totals, key=lambda c: recency.get(c, -1), reverse=True)[:MAX_CAMPAIGNS])
-        history.campaign_totals = {c: n for c, n in history.campaign_totals.items() if c in keep}
-        history.campaign_buckets = {c: b for c, b in history.campaign_buckets.items() if c in keep}
-    return history
-
-
 def _apply_impression(history: UserHistory | None, impression: Impression) -> UserHistory:
     history = history or UserHistory()
     history.record(impression.hour, impression.campaign, 0)
-    return _trim(history)
+    return history
 
 
 class MemoryStore:
@@ -118,7 +114,8 @@ class MemoryStore:
         if impression.clicked:
             return Outcome.DUPLICATE
         impression.clicked = True
-        self.users[impression.user].record_click(impression.hour)
+        if impression.user in self.users:
+            self.users[impression.user].record_click(impression.hour)
         return Outcome.RECORDED
 
     async def ping(self) -> bool:
@@ -174,12 +171,13 @@ class RedisStore:
             if impression.clicked:
                 return Outcome.DUPLICATE
             raw = await pipe.get(user_key)
-            history = UserHistory() if raw is None else UserHistory.model_validate_json(raw)
-            history.record_click(impression.hour)
             impression.clicked = True
             pipe.multi()
             pipe.set(imp_key, impression.model_dump_json(), keepttl=True)
-            pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
+            if raw is not None:
+                history = UserHistory.model_validate_json(raw)
+                history.record_click(impression.hour)
+                pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
 

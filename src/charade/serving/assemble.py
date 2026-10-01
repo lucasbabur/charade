@@ -4,7 +4,7 @@ This is the serving half of train/serve parity: the same raw columns the offline
 passed through the same `derive` and `encode`. `charade.analysis.parity` checks they match.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import numpy as np
 import polars as pl
@@ -39,8 +39,8 @@ def user_key(device_id: str, device_ip: str, device_model: str) -> str:
 
 
 def epoch_hour(ts: datetime) -> int:
-    """Integer hours since the epoch (UTC-naive)."""
-    return int(ts.timestamp() // 3600)
+    """Integer hours since the epoch. A naive datetime is UTC (the data's convention), never local time."""
+    return int((ts if ts.tzinfo else ts.replace(tzinfo=UTC)).timestamp() // 3600)
 
 
 def unknown_character(hour: datetime) -> dict[str, object]:

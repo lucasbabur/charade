@@ -1,9 +1,11 @@
 import asyncio
 from collections.abc import Awaitable
+from datetime import UTC, datetime
 
 import pytest
 from fakeredis import FakeAsyncRedis
 
+from charade.serving.assemble import epoch_hour
 from charade.serving.store import Impression, MemoryStore, Outcome, RedisStore
 
 
@@ -66,3 +68,33 @@ async def test_concurrent_redis_writes_lose_nothing() -> None:
     assert history is not None
     assert (history.imps, history.clicks) == (200, 100)
     assert sum(history.campaign_totals.values()) == 200
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("make", [0, 1], ids=["memory", "redis"])
+async def test_cap_totals_survive_many_newer_campaigns(make: int) -> None:
+    """Eight exposures of one campaign stay counted after 250 newer campaigns (trimming once reset them to 0)."""
+    store = _stores()[make]
+    for i in range(8):
+        await store.record_impression(f"old-{i}", Impression(user="u", hour=100, campaign="capped"))
+    for i in range(250):
+        await store.record_impression(f"new-{i}", Impression(user="u", hour=101, campaign=f"c{i}"))
+    history = await store.get("u")
+    assert history is not None
+    assert history.exposures_so_far(["capped"]).tolist() == [8.0]
+
+
+@pytest.mark.anyio
+async def test_a_click_after_the_user_key_expired_does_not_invent_a_history() -> None:
+    client = FakeAsyncRedis()
+    store = RedisStore("redis://unused", 1.0, client=client)
+    await store.record_impression("i1", Impression(user="u", hour=100, campaign="c"))
+    await client.delete("charade:user:u")
+    assert await store.record_click("i1") is Outcome.RECORDED
+    assert await store.get("u") is None
+    assert await store.record_click("i1") is Outcome.DUPLICATE
+
+
+def test_epoch_hour_treats_naive_datetimes_as_utc() -> None:
+    naive, aware = datetime(2014, 10, 29, 10), datetime(2014, 10, 29, 10, tzinfo=UTC)
+    assert epoch_hour(naive) == epoch_hour(aware) == int(aware.timestamp()) // 3600
