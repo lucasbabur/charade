@@ -206,8 +206,12 @@ resource "aws_ecs_task_definition" "api" {
       image                  = var.bundle_fetch_image
       essential              = false
       readonlyRootFilesystem = true
-      command                = ["s3", "cp", "--recursive", "--only-show-errors", var.bundle_uri, "/bundle/current"]
-      mountPoints            = [{ sourceVolume = "bundle", containerPath = "/bundle", readOnly = false }]
+      # Resolve the immutable bundle named by the one-line pointer, then copy that prefix only.
+      entryPoint = ["sh", "-c"]
+      command = [
+        "run=$(aws s3 cp ${var.bundles_uri}CURRENT - | tr -d '[:space:]') && aws s3 cp --recursive --only-show-errors ${var.bundles_uri}$run/ /bundle/current/",
+      ]
+      mountPoints = [{ sourceVolume = "bundle", containerPath = "/bundle", readOnly = false }]
       logConfiguration = {
         logDriver = "awslogs"
         options = {

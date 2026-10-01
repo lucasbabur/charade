@@ -33,8 +33,8 @@ variable "image" {
   type        = string
 }
 
-variable "bundle_uri" {
-  description = "s3:// URI of the promoted model bundle the task pulls at start."
+variable "bundles_uri" {
+  description = "s3:// prefix holding immutable bundles/<run_id>/ and the CURRENT pointer (trailing slash)."
   type        = string
 }
 

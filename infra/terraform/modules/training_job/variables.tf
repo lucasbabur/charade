@@ -8,6 +8,11 @@ variable "cluster_arn" {
   type        = string
 }
 
+variable "api_service_arn" {
+  description = "API service the job redeploys after promoting a bundle."
+  type        = string
+}
+
 variable "vpc_id" {
   description = "VPC id."
   type        = string
