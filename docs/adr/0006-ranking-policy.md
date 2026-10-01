@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 The logs have no propensities, so policy quality can only be estimated offline with wide intervals. Production needs learnable, auditable data.

@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 CTR data is ordered in time, users and creatives repeat, and production predicts tomorrow from yesterday. A random split leaks future hours, the same user and the same creative into training.

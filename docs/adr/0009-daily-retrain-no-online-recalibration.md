@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 Staleness backtest: about +0.003 NE per day of model age. Online per-genre recalibration on validation + test changed NE by ≤ 0.0003.

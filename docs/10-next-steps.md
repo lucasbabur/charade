@@ -6,7 +6,7 @@ Ordered by expected value per week of work.
 
 | Data | Why | Unlocks |
 |---|---|---|
-| **Logged propensities and full candidate sets** (the API already emits both) | Today's OPE infers μ from impression shares, and its ESS is ~4 % | Trustworthy policy comparison; unbiased counterfactual training |
+| **Logged propensities and full candidate sets** (the API logs both; start collecting) | Today's OPE infers μ from impression shares, and its ESS is ~4 % | Trustworthy policy comparison; unbiased counterfactual training |
 | **Conversation content at ad time** (topic, sentiment, intent embeddings of the last turns, privacy-filtered) | Turn and session length are flat; what the user is talking about is the obvious missing context | Context × ad semantic matching, the core promise of "contextual" ads |
 | **Creative content** (ad text and image embeddings, landing category) | C14–C21 are opaque ids; 45 % of test creatives are new | Cold start for ads, which matters more here than cold start for characters |
 | **Post-click outcomes** (dwell, conversion, hide or report) | Clicks reward curiosity and accidental taps; companion apps care about churn | Multi-objective ranking (CTR × CVR, minus annoyance) |

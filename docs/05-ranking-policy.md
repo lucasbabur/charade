@@ -1,6 +1,6 @@
 # 05 — Candidate ranking
 
-**Bottom line:** for one ad opportunity with N candidates, the policy does four things. It removes candidates that must never be served (brand safety, frequency cap, exhausted budget). It ranks the rest by calibrated pCTR × bid × pacing. It serves the top one on 95 % of traffic and a Thompson sample on a hashed 5 % bucket. It logs the propensity of whatever it served. Off-policy evaluation on the test days, over reconstructed candidate sets, estimates **+1.3 pp CTR over the logging policy for greedy pCTR (DR, 95 % CI [+0.07, +2.50] pp)**, against an observed 17.2 %. For the shipped policy (gates + exploration) the estimate is +1.1 pp, with a DR CI of [−0.09, +2.20] pp that touches zero; SNIPS gives +2.1 pp [+0.90, +3.25]. Code: `charade.ranking.policy` (serving path, numpy only), `charade.analysis.policy_eval` (`uv run poe ope`). Numbers: [reports/policy/ope.md](../reports/policy/ope.md).
+**Bottom line:** gate, rank by pCTR × bid × pacing, serve greedily on 95 % of traffic and by Thompson sampling on 5 %, and log the propensity. Offline, greedy ranking beats the logging policy by **+1.28 pp CTR (DR, [+0.07, +2.50])**; with gates and exploration it is +1.13 pp, CI touching zero ([ope.md](../reports/policy/ope.md)).
 
 ## Pipeline per request
 
@@ -46,7 +46,7 @@ Assumptions to keep in mind:
 2. The candidate set is the served set, so a real retrieval layer offers different candidates.
 3. ESS is about 4 % of rows: the estimates are directional and the intervals are honest about it.
 
-The first production change should be logging true propensities and full candidate sets, which the serving path already does.
+The first production change should be logging true propensities and full candidate sets, which the serving path now logs with every decision.
 
 ## Verified in code
 

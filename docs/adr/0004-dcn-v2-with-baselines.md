@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 H1: genre × campaign interactions are real (residual sd 2.7 pp vs 1.1 pp noise). The ranking question is about crosses.

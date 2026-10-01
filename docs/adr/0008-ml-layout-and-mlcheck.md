@@ -2,6 +2,7 @@
 
 Status: accepted (2026-10-01)
 
+
 ## Context
 
 Clean-architecture layers protect against swapping databases and UIs. The risks here are leakage, skew, irreproducibility and a heavy serving path.

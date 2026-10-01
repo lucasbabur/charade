@@ -1,15 +1,6 @@
 # 09 — Operations: infrastructure, delivery, monitoring, runbooks
 
-**Bottom line:** one Terraform module (`infra/terraform/modules/platform`) builds a whole environment on AWS:
-- network, encryption and storage;
-- the API on ECS Fargate behind an internal ALB;
-- ElastiCache Redis for user history;
-- Firehose decision logs into S3;
-- a daily retraining task on EventBridge Scheduler;
-- CloudWatch alarms and an SNS topic;
-- GitHub OIDC for CI.
-
-`envs/staging` and `envs/prod` differ only in sizing. Everything is validated, never applied (no AWS account was used): `terraform validate` passes for both environments, **tflint 0 findings, checkov 365 passed / 0 failed / 20 skipped**, each skip justified inline. CI runs all of it on every PR.
+**Bottom line:** one Terraform module builds an AWS environment (VPC, ECS API behind an internal ALB, Redis, Firehose decision logs, daily gated retraining, alarms, GitHub OIDC); validated with tflint and checkov, never applied.
 
 ## Topology
 

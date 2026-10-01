@@ -1,6 +1,6 @@
 # 08 — Serving architecture (< 50 ms p99)
 
-**Bottom line:** `POST /v1/rank` scores and ranks 100 candidates with a measured **p50 8 ms / p95 14 ms / p99 26 ms at 400 requests/s, 0 errors** ([reports/serving/latency.json](../reports/serving/latency.json)). Setup: Locust against `docker compose` (8 uvicorn workers + Redis) on one 24-core desktop, 120 s. The same container sustains about 750 rps with p99 75 ms, and saturates near 960 rps. Production sizing therefore autoscales well before 600 rps per 8-vCPU task. Every model input on the serving path matches the offline pipeline exactly: 2,000 replayed test requests, max |Δ dense| = 0, 0 categorical mismatches (mlcheck MLV001). The ONNX model matches PyTorch to 1.9e-6 (MLV002).
+**Bottom line:** 100 candidates ranked at **p50 8 / p99 26 ms, 400 rps, 0 errors** (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)).
 
 ## Request path
 
