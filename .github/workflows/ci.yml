@@ -31,6 +31,8 @@ jobs:
         run: uv run poe lint
       - name: Types
         run: uv run poe types
+      - name: Import layers (no cycles)
+        run: uv run poe imports
       - name: Tests (charade)
         run: uv run poe test
       - name: Tests (mlcheck)
@@ -117,8 +119,12 @@ jobs:
         run: |
           docker run -d --name api -p 8000:8000 charade-api:ci
           for _ in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8000/health; then exit 0; fi
+            if curl -fsS http://127.0.0.1:8000/health; then break; fi
             sleep 1
           done
-          docker logs api
-          exit 1
+          curl -fsS http://127.0.0.1:8000/health || { docker logs api; exit 1; }
+      - name: Served OpenAPI matches the committed contract
+        run: |
+          curl -fsS http://127.0.0.1:8000/openapi.json \
+            | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin), indent=2, sort_keys=True))" > served.json
+          diff -u docs/api/openapi.json served.json
