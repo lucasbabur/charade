@@ -17,7 +17,9 @@ RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app 
 WORKDIR /app
 COPY --from=build --chown=app:app /app/.venv /app/.venv
 COPY --chown=app:app pyproject.toml ./
-ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1
+# One CPU thread per worker for every library: request-level parallelism comes from uvicorn workers,
+# and per-library thread pools (polars defaults to one thread per core) only add contention.
+ENV PATH="/app/.venv/bin:$PATH" PYTHONUNBUFFERED=1 POLARS_MAX_THREADS=1 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
 USER 10001
 EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=2s --start-period=5s --retries=3 \
