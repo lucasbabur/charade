@@ -16,7 +16,7 @@ updated-at: 2026-10-01
 | 10-25 | 19.3 % | 0.8 % | 0.48 | 3 % |
 | 10-27 | 19.6 % | 0.3 % | 0.56 | 13 % |
 | 10-28 (val) | 16.5 % | 0.7 % | 0.55 | 34 % |
-| 10-29 (test) | 17.3 % | 0.4 % | 0.67 | 24 % |
+| 10-29 (test) | 17.3 % | 0.4 % | 0.68 | 24 % |
 | 10-30 (test, partial) | 16.6 % | 0.0 % | 0.67 | 37 % |
 
 - **The level shift is common to all genres.** On 10-28 every genre drops 2–4 pp. Romance and horror are the top two genres every day (in that order, except on the partial 10-30), and mentor is the lowest every day. The shift is in user or traffic mix, not in character preferences.
