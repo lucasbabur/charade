@@ -34,6 +34,9 @@ def creative_pool(frame: pl.DataFrame) -> pl.DataFrame:
     """Distinct creatives (C14 + banner_pos) with their modal ad fields and volume."""
     return (
         frame.group_by("C14", "banner_pos")
-        .agg(pl.len().alias("volume"), *[pl.col(f).mode().first() for f in AD_FIELDS if f not in {"C14", "banner_pos"}])
+        .agg(
+            pl.len().alias("volume"),
+            *[pl.col(f).mode().sort().first() for f in AD_FIELDS if f not in {"C14", "banner_pos"}],
+        )
         .sort("volume", "C14", "banner_pos", descending=[True, False, False])
     )
