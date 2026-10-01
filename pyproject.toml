@@ -41,6 +41,7 @@ dev = [
     "fakeredis>=2.38",
     "httpx>=0.28",
     "hypothesis>=6.140",
+    "import-linter>=2.15",
     "locust>=2.46",
     "mlcheck",
     "poethepoet>=0.48",
@@ -145,11 +146,12 @@ samples = { cmd = "python -m charade.analysis.samples", help = "Rank two example
 coldstart = { cmd = "python -m charade.analysis.coldstart", help = "Cold-start signal, priors and graduation analysis; writes reports/coldstart/" }
 drift = { cmd = "python -m charade.analysis.drift", help = "PSI, churn, staleness backtest, online recalibration; writes drift.json and reports/drift/" }
 adapt = { cmd = "python -m charade.analysis.adaptation", help = "Cohort-exposure adaptation layer replay; writes reports/drift/adaptation.md" }
-fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
+fixture = { cmd = "python -m charade.analysis.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
 tf = { shell = "terraform fmt -check -recursive infra/terraform && for env in infra/terraform/envs/*/; do terraform -chdir=$env init -backend=false -input=false >/dev/null && terraform -chdir=$env validate || exit 1; done", help = "Terraform fmt and validate" }
-check = { sequence = ["lint", "types", "test", "test-mlcheck", "mlcheck"], help = "Everything CI runs on Python" }
+imports = { cmd = "lint-imports", help = "Import-layer contracts (no cycles, serving stays light)" }
+check = { sequence = ["lint", "types", "imports", "test", "test-mlcheck", "mlcheck"], help = "Everything CI runs on Python" }
 
 [tool.ruff]
 line-length = 120
@@ -186,6 +188,34 @@ addopts = "-q --cov=charade --cov-branch --cov-report=term-missing"
 
 [tool.coverage.report]
 fail_under = 85
+
+# Dependency direction, enforced by import-linter (`uv run poe imports`). Higher layers may import
+# lower ones, never the reverse; packages in one layer (separated by |) may not import each other.
+# A layers contract also rules out cycles between packages.
+[tool.importlinter]
+root_package = "charade"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Layered packages, no cycles"
+type = "layers"
+containers = ["charade"]
+layers = [
+    "analysis",
+    "serving",
+    "models",
+    "evaluation",
+    "text | ranking | scoring",
+    "features",
+    "data",
+    "config",
+]
+
+[[tool.importlinter.contracts]]
+name = "Serving never imports training, evaluation or analysis code"
+type = "forbidden"
+source_modules = ["charade.serving", "charade.scoring", "charade.ranking", "charade.features"]
+forbidden_modules = ["charade.models", "charade.evaluation", "charade.analysis", "charade.text", "torch", "lightgbm", "sklearn", "optuna"]
 
 [tool.mlcheck]
 package = "charade"
