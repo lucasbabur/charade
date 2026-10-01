@@ -6,14 +6,41 @@ readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.142",
+    "numpy>=2.1",
+    "onnxruntime>=1.30",
+    "polars>=1.30",
+    "prometheus-client>=0.26",
     "pydantic>=2.11",
     "pydantic-settings>=2.15",
+    "redis>=8.1",
+    "structlog>=26.1",
     "uvicorn[standard]>=0.54",
 ]
 
+[project.optional-dependencies]
+# Offline training/analysis stack. Never installed in the serving image (mlcheck MLS001 enforces the import side).
+train = [
+    "lightgbm>=4.7",
+    "matplotlib>=3.11",
+    "onnx>=1.23",
+    "onnxscript>=0.7",
+    "openai>=2.0",
+    "scikit-learn>=1.9",
+    "scipy>=1.18",
+    "sentence-transformers>=6.1",
+    "tenacity>=9.1",
+    "typer>=0.19",
+]
+# Pick exactly one torch build: `--extra cpu` (CI) or `--extra gpu` (CUDA 13, local GTX 1660 SUPER).
+cpu = ["torch>=2.14"]
+gpu = ["torch>=2.14"]
+
 [dependency-groups]
 dev = [
+    "fakeredis>=2.38",
     "httpx>=0.28",
+    "hypothesis>=6.140",
+    "locust>=2.46",
     "mlcheck",
     "poethepoet>=0.48",
     "pyright>=1.1.405",
@@ -29,8 +56,25 @@ build-backend = "hatchling.build"
 [tool.uv.workspace]
 members = ["tools/mlcheck"]
 
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "gpu" }]]
+
 [tool.uv.sources]
 mlcheck = { workspace = true }
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cu130", extra = "gpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
 
 [tool.charade]
 data_dir = "."
@@ -47,6 +91,8 @@ test-mlcheck = { cmd = "pytest", cwd = "tools/mlcheck", help = "mlcheck's own te
 # MLS002 (serving uses shared features) is skipped until the first feature-backed route exists; remove the skip with it.
 mlcheck = { cmd = "mlcheck . --stage static --skip MLS002", help = "ML static gates" }
 mlcheck-data = { cmd = "mlcheck . --stage data", help = "Data contract on the raw CSVs (local only; data is not in git)" }
+eda = { cmd = "python -m charade.analysis.eda", help = "Write reports/eda/eda.md" }
+fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
 tf = { shell = "terraform fmt -check -recursive infra/terraform && for env in infra/terraform/envs/*/; do terraform -chdir=$env init -backend=false -input=false >/dev/null && terraform -chdir=$env validate || exit 1; done", help = "Terraform fmt and validate" }
@@ -65,15 +111,21 @@ ignore = ["PLR0913", "PLR2004", "D105", "D107", "D401"]
 convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "D", "PLR2004"]
+"tests/**" = ["S101", "D", "PLR2004", "S311"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
 [tool.pyright]
 include = ["src", "tests"]
+exclude = ["tools", ".venv"]
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
+# torch, lightgbm, sklearn and polars expose partially-unknown types; strict otherwise.
+reportUnknownMemberType = false
+reportUnknownArgumentType = false
+reportUnknownVariableType = false
+reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
