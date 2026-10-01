@@ -110,3 +110,20 @@ def load_config(root: Path) -> MlcheckConfig:
         if table is not None:
             return MlcheckConfig.model_validate(table)
     raise ConfigNotFoundError(f"no mlcheck.toml or [tool.mlcheck] in {root}")
+
+
+def with_overrides(config: MlcheckConfig, artifacts_dir: Path | None, data_dir: Path | None) -> MlcheckConfig:
+    """Apply CLI overrides: another artifacts directory, or data files located in `data_dir`."""
+    if artifacts_dir is not None:
+        config = config.model_copy(update={"artifacts_dir": artifacts_dir})
+    if data_dir is not None and config.data is not None:
+        data = config.data.model_copy(
+            update={
+                "path": data_dir / config.data.path.name,
+                "foreign_keys": [
+                    fk.model_copy(update={"ref_path": data_dir / fk.ref_path.name}) for fk in config.data.foreign_keys
+                ],
+            }
+        )
+        config = config.model_copy(update={"data": data})
+    return config
