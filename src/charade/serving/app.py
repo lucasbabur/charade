@@ -3,6 +3,7 @@
 import time
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from typing import Annotated
 
 import numpy as np
@@ -29,7 +30,7 @@ from charade.serving.schemas import (
     RankRequest,
     RankResponse,
 )
-from charade.serving.store import Impression, Outcome, StoreUnavailableError
+from charade.serving.store import Outcome, Served, StoreUnavailableError
 
 log = structlog.get_logger()
 
@@ -91,7 +92,7 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
     campaigns = [c.C17 for c in body.candidates]
     cap_counts = (history or UserHistory()).exposures_so_far(campaigns)
     if degraded:
-        warnings.append("feature store unavailable: frequency cap not enforced")
+        warnings.append("feature store unavailable: frequency cap not enforced, decision not stored")
         metrics.CAP_UNENFORCED.inc()
     candidates = [
         Candidate(
@@ -109,6 +110,8 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         if ok
     ]
     decision = decide(candidates, str(character["safety_tier"]), body.request_id, runtime.policy)
+    if decision.chosen_id is not None and not degraded:
+        degraded = await _store_decision(runtime, body, user, decision.chosen_id, warnings)
     done = time.perf_counter()
     _observe(decision.ranked, decision.chosen_id, decision.explored, cold_character, history is None, len(candidates))
     for stage, seconds in (
@@ -157,6 +160,21 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
     )
 
 
+async def _store_decision(runtime: Runtime, body: RankRequest, user: str, chosen: str, warnings: list[str]) -> bool:
+    """Record what this request served, so impression events take their identity from it. True if degraded."""
+    campaign = next(c.C17 for c in body.candidates if c.candidate_id == chosen)
+    served = Served(user=user, hour=epoch_hour(body.hour), candidate_id=chosen, campaign=campaign)
+    try:
+        outcome = await runtime.store.record_decision(body.request_id, served)
+    except StoreUnavailableError:
+        warnings.append("feature store unavailable: decision not stored, its impression cannot be recorded")
+        metrics.DEGRADED.inc()
+        return True
+    if outcome is Outcome.CONFLICT:
+        raise HTTPException(status_code=409, detail="request_id already served a different decision; use a new id")
+    return False
+
+
 def _observe(
     ranked: list[Ranked], chosen: str | None, explored: bool, cold_character: bool, cold_user: bool, n: int
 ) -> None:
@@ -177,27 +195,26 @@ def _observe(
 
 
 async def record_impression(event: ImpressionEvent, runtime: Annotated[Runtime, Depends(_runtime)]) -> EventResult:
-    """Count a served impression in its user's history (once per impression id)."""
-    impression = Impression(
-        user=user_key(event.device_id, event.device_ip, event.device_model),
-        hour=epoch_hour(event.hour),
-        campaign=event.campaign_id,
-    )
+    """Count the served impression of a ranked request once; user, campaign and hour come from its decision."""
     try:
-        outcome = await runtime.store.record_impression(event.impression_id, impression)
+        outcome, impression = await runtime.store.record_impression(event.impression_id, event.request_id)
     except StoreUnavailableError as exc:
         raise HTTPException(status_code=503, detail="feature store unavailable") from exc
+    if outcome is Outcome.UNKNOWN_DECISION:
+        raise HTTPException(status_code=404, detail="unknown or expired request_id")
+    if outcome is Outcome.CONFLICT:
+        raise HTTPException(status_code=409, detail="impression_id already recorded for another request")
+    assert impression is not None  # noqa: S101 - recorded and duplicate outcomes carry the impression
     # Durable outcome record (log pipeline -> S3), emitted on duplicates too: if a previous attempt
     # committed the state but died before logging, the retry restores the record. Delivery is
     # at-least-once; charade.data.events deduplicates by impression_id.
-    if outcome in {Outcome.RECORDED, Outcome.DUPLICATE}:
-        log.info(
-            "impression",
-            impression_id=event.impression_id,
-            request_id=event.request_id,
-            candidate_id=event.candidate_id,
-            hour=event.hour.isoformat(),
-        )
+    log.info(
+        "impression",
+        impression_id=event.impression_id,
+        request_id=impression.request_id,
+        candidate_id=impression.served.candidate_id,
+        hour=datetime.fromtimestamp(impression.served.hour * 3600, UTC).replace(tzinfo=None).isoformat(),
+    )
     return EventResult(outcome="recorded" if outcome is Outcome.RECORDED else "duplicate")
 
 
@@ -278,7 +295,7 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
         methods=["POST"],
         response_model=EventResult,
         tags=["events"],
-        summary="Record a served impression (idempotent on impression_id)",
+        summary="Record the served impression of a ranked request (idempotent on impression_id)",
     )
     api.add_api_route(
         "/v1/events/click",

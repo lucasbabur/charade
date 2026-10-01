@@ -17,7 +17,7 @@ from charade.analysis.requests import creative_pool, request_from_row
 from charade.config import get_settings
 from charade.models.dataset import build_frame
 from charade.serving.app import create_app
-from charade.serving.store import FeatureStore, Impression
+from charade.serving.store import FeatureStore, Served
 
 OUT = Path("reports/sample_rankings.json")
 
@@ -75,9 +75,9 @@ def _replay_history(store: FeatureStore, frame: pl.DataFrame, row: dict[str, obj
 
     async def replay() -> None:
         for e in events.iter_rows(named=True):
-            await store.record_impression(
-                e["id"], Impression(user=e["user"], hour=epoch_hour(e["ts"]), campaign=e["C17"])
-            )
+            served = Served(user=e["user"], hour=epoch_hour(e["ts"]), candidate_id=e["id"], campaign=e["C17"])
+            await store.record_decision(e["id"], served)
+            await store.record_impression(e["id"], e["id"])
             if e["click"]:
                 await store.record_click(e["id"])
 

@@ -20,7 +20,8 @@ class Ranker(FastHttpUser):
     @task
     def rank(self) -> None:
         """POST /v1/rank."""
-        body = random.choice(REQUESTS)
+        # A request id names one decision; reusing it with a different outcome is a 409, so each call gets its own.
+        body = random.choice(REQUESTS) | {"request_id": f"load-{random.getrandbits(64):016x}"}
         with self.client.post("/v1/rank", json=body, name="/v1/rank", catch_response=True) as response:
             if response.status_code != 200:
                 response.failure(f"status {response.status_code}: {(response.text or '')[:120]}")
@@ -28,18 +29,10 @@ class Ranker(FastHttpUser):
             payload = response.json()
             chosen = payload["chosen_id"] if payload else None
         if chosen and random.random() < 0.1:
-            ad = next(c for c in body["candidates"] if c["candidate_id"] == chosen)
-            event = {k: body[k] for k in ("hour", "device_id", "device_ip", "device_model")}
-            impression_id = f"{body['request_id']}-{random.getrandbits(32)}"
+            impression_id = f"{body['request_id']}-imp"
             self.client.post(
                 "/v1/events/impression",
-                json={
-                    **event,
-                    "impression_id": impression_id,
-                    "request_id": body["request_id"],
-                    "candidate_id": chosen,
-                    "campaign_id": ad["C17"],
-                },
+                json={"impression_id": impression_id, "request_id": body["request_id"]},
                 name="/v1/events/impression",
             )
             if random.random() < 0.18:

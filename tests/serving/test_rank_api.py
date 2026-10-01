@@ -1,4 +1,6 @@
+import asyncio
 import copy
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -7,15 +9,16 @@ from fastapi.testclient import TestClient
 from charade.config import Settings
 from charade.features.counters import UserHistory
 from charade.serving.app import create_app
+from charade.serving.assemble import epoch_hour, user_key
 from charade.serving.runtime import Runtime, load_runtime
-from charade.serving.store import Impression, MemoryStore, Outcome, StoreUnavailableError
+from charade.serving.store import MemoryStore, Recorded, Served, StoreUnavailableError
 
 
 class BrokenStore(MemoryStore):
     async def get(self, user: str) -> UserHistory | None:
         raise StoreUnavailableError(user)
 
-    async def record_impression(self, impression_id: str, impression: Impression) -> Outcome:
+    async def record_impression(self, impression_id: str, request_id: str) -> Recorded:
         raise StoreUnavailableError(impression_id)
 
 
@@ -53,16 +56,7 @@ def test_store_outage_degrades_instead_of_failing(bundle: Settings, sample_body:
         response = client.post("/v1/rank", json=sample_body)
         event = client.post(
             "/v1/events/impression",
-            json={
-                "impression_id": "i",
-                "request_id": "r",
-                "candidate_id": "x",
-                "hour": "14102912",
-                "device_id": "x",
-                "device_ip": "y",
-                "device_model": "z",
-                "campaign_id": "c",
-            },
+            json={"impression_id": "i", "request_id": "r"},
         )
     assert response.status_code == 200
     assert response.json()["degraded"] is True
@@ -71,13 +65,7 @@ def test_store_outage_degrades_instead_of_failing(bundle: Settings, sample_body:
 
 def test_impression_and_click_events_feed_the_next_request(bundle: Settings, sample_body: dict[str, object]) -> None:
     store = MemoryStore()
-    event = {k: sample_body[k] for k in ("device_id", "device_ip", "device_model")} | {
-        "impression_id": "imp-1",
-        "request_id": "req-1",
-        "candidate_id": "x",
-        "hour": "14102000",
-        "campaign_id": "c",
-    }
+    event = {"impression_id": "imp-1", "request_id": "req-1"}
     with _client(bundle, store) as client:
         assert client.post("/v1/rank", json=sample_body).json()["cold_start"]["user"] is True
         assert client.post("/v1/events/impression", json=event).json() == {"outcome": "recorded"}
@@ -157,29 +145,46 @@ def test_decisions_are_logged_as_json_events(
 
 
 def test_frequency_cap_counts_impressions_in_the_current_hour(bundle: Settings, sample_body: dict[str, object]) -> None:
-    """Review reproduction: nine impressions in the hour being ranked must gate the campaign now."""
+    """Review reproduction: impressions in the hour being ranked must gate the campaign now."""
     candidates = sample_body["candidates"]
     assert isinstance(candidates, list)
     campaign = candidates[0]["C17"]
-    hour = str(sample_body["hour"])
     store = MemoryStore()
-    device = {k: sample_body[k] for k in ("device_id", "device_ip", "device_model")}
+    user = user_key(str(sample_body["device_id"]), str(sample_body["device_ip"]), str(sample_body["device_model"]))
+    hour = epoch_hour(datetime.fromisoformat(str(sample_body["hour"])))
+
+    async def serve(i: int) -> None:
+        await store.record_decision(f"r{i}", Served(user=user, hour=hour, candidate_id="x", campaign=campaign))
+        await store.record_impression(f"cap-{i}", f"r{i}")
+
+    for i in range(bundle.policy.frequency_cap):
+        asyncio.run(serve(i))
     with _client(bundle, store) as client:
-        for i in range(bundle.policy.frequency_cap):
-            event = device | {
-                "impression_id": f"cap-{i}",
-                "request_id": f"r{i}",
-                "candidate_id": "x",
-                "hour": hour,
-                "campaign_id": campaign,
-            }
-            assert client.post("/v1/events/impression", json=event).status_code == 200
         ranked = client.post("/v1/rank", json=sample_body).json()["ranked"]
     capped = next(r for r in ranked if r["candidate_id"] == candidates[0]["candidate_id"])
     assert "frequency_cap" in capped["gate_reasons"]
 
 
+def test_impression_identity_comes_from_the_decision(bundle: Settings, sample_body: dict[str, object]) -> None:
+    """Review reproduction: an event cannot move an impression to another user or campaign, or reuse ids."""
+    store = MemoryStore()
+    with _client(bundle, store) as client:
+        chosen = client.post("/v1/rank", json=sample_body).json()["chosen_id"]
+        assert client.post("/v1/rank", json=sample_body).status_code == 200  # identical retry
+        other = copy.deepcopy(sample_body) | {"device_id": "someone-else"}
+        assert client.post("/v1/rank", json=other).status_code == 409  # same request_id, other decision
+        recorded = client.post("/v1/events/impression", json={"impression_id": "i1", "request_id": "req-1"})
+        assert recorded.json() == {"outcome": "recorded"}
+        unknown = client.post("/v1/events/impression", json={"impression_id": "i2", "request_id": "never-ranked"})
+        assert unknown.status_code == 404
+        conflict = client.post("/v1/events/impression", json={"impression_id": "i1", "request_id": "req-2"})
+        assert conflict.status_code == 409
+    impression = store.impressions["i1"]
+    assert impression.served.candidate_id == chosen
+    assert list(store.users) == [impression.served.user]
+
+
 def test_store_outage_reports_unenforced_cap(bundle: Settings, sample_body: dict[str, object]) -> None:
     with _client(bundle, BrokenStore()) as client:
         body = client.post("/v1/rank", json=sample_body).json()
-    assert "feature store unavailable: frequency cap not enforced" in body["warnings"]
+    assert "feature store unavailable: frequency cap not enforced, decision not stored" in body["warnings"]

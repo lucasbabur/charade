@@ -1,11 +1,18 @@
 """Online user-history store. Redis in production, in-memory for tests and local runs.
 
-Two kinds of key:
+Three kinds of key:
+    charade:dec:<request>      Served {user, hour, candidate_id, campaign}, written once by /v1/rank, kept 48 h
     charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
-    charade:imp:<impression>   {user, hour, campaign, clicked}, kept 48 h
+    charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 48 h
+
+One canonical identity per event. A decision is immutable: re-recording the same request id with the
+same content is a duplicate, with different content a conflict. An impression event names only its
+impression and request ids; user, hour and campaign come from the stored decision, never from the
+caller, so online history and the training rows rebuilt from logs describe the same impression.
 
 Writes are idempotent and atomic:
-- an impression id is recorded at most once (a retried event is a no-op);
+- an impression id is recorded at most once (a retry is a no-op; a retry naming another request is a
+  conflict);
 - a click is attributed to its impression's user and hour, at most once, even if it arrives late;
 - Redis updates run in WATCH/MULTI transactions and retry on conflict, so concurrent events for the
   same user cannot overwrite each other.
@@ -26,16 +33,19 @@ from collections.abc import Awaitable, Callable
 from enum import StrEnum
 from typing import Any, Protocol
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from redis.asyncio import Redis
 from redis.exceptions import RedisError, WatchError
 
+from charade.data.events import CLICK_WINDOW_HOURS
 from charade.features.counters import UserHistory
 
+DECISION_PREFIX = "charade:dec:"
 USER_PREFIX = "charade:user:"
 IMPRESSION_PREFIX = "charade:imp:"
 USER_TTL_SECONDS = 14 * 24 * 3600
-IMPRESSION_TTL_SECONDS = 48 * 3600
+IMPRESSION_TTL_SECONDS = CLICK_WINDOW_HOURS * 3600
+"""Decisions and impressions live as long as a click can still be attributed (the label maturity window)."""
 MAX_RETRIES = 50
 
 
@@ -48,16 +58,32 @@ class Outcome(StrEnum):
 
     RECORDED = "recorded"
     DUPLICATE = "duplicate"
+    CONFLICT = "conflict"
+    UNKNOWN_DECISION = "unknown_decision"
     UNKNOWN_IMPRESSION = "unknown_impression"
 
 
-class Impression(BaseModel):
-    """What the store remembers about a served impression, for click attribution and deduplication."""
+class Served(BaseModel):
+    """What one decision served: the identity every later event for that request is checked against."""
+
+    model_config = ConfigDict(frozen=True)
 
     user: str
     hour: int
+    candidate_id: str
     campaign: str
+
+
+class Impression(BaseModel):
+    """A served impression, for click attribution and deduplication."""
+
+    request_id: str
+    served: Served
     clicked: bool = False
+
+
+type Recorded = tuple[Outcome, Impression | None]
+"""An impression write's outcome and the canonical impression (None when there is none)."""
 
 
 class FeatureStore(Protocol):
@@ -67,8 +93,12 @@ class FeatureStore(Protocol):
         """History for a user, or None if never seen. Raises StoreUnavailableError."""
         ...
 
-    async def record_impression(self, impression_id: str, impression: Impression) -> Outcome:
-        """Count a served impression once."""
+    async def record_decision(self, request_id: str, served: Served) -> Outcome:
+        """Store what a request served, once; a different decision under the same id is a conflict."""
+        ...
+
+    async def record_impression(self, impression_id: str, request_id: str) -> Recorded:
+        """Count the served impression of a stored decision once."""
         ...
 
     async def record_click(self, impression_id: str) -> Outcome:
@@ -80,16 +110,21 @@ class FeatureStore(Protocol):
         ...
 
 
-def _apply_impression(history: UserHistory | None, impression: Impression) -> UserHistory:
+def _apply_impression(history: UserHistory | None, served: Served) -> UserHistory:
     history = history or UserHistory()
-    history.record(impression.hour, impression.campaign, 0)
+    history.record(served.hour, served.campaign, 0)
     return history
+
+
+def _existing(impression: Impression, request_id: str) -> Recorded:
+    return (Outcome.DUPLICATE if impression.request_id == request_id else Outcome.CONFLICT), impression
 
 
 class MemoryStore:
     """Process-local store (tests, single-process local runs). No awaits inside a write, so writes are atomic."""
 
     def __init__(self) -> None:
+        self.decisions: dict[str, Served] = {}
         self.users: dict[str, UserHistory] = {}
         self.impressions: dict[str, Impression] = {}
 
@@ -98,13 +133,23 @@ class MemoryStore:
         found = self.users.get(user)
         return None if found is None else found.model_copy(deep=True)
 
-    async def record_impression(self, impression_id: str, impression: Impression) -> Outcome:
-        """Count once per impression id."""
+    async def record_decision(self, request_id: str, served: Served) -> Outcome:
+        """Write once; compare on retry."""
+        if request_id not in self.decisions:
+            self.decisions[request_id] = served
+            return Outcome.RECORDED
+        return Outcome.DUPLICATE if self.decisions[request_id] == served else Outcome.CONFLICT
+
+    async def record_impression(self, impression_id: str, request_id: str) -> Recorded:
+        """Count once per impression id, with the decision's identity."""
         if impression_id in self.impressions:
-            return Outcome.DUPLICATE
-        self.impressions[impression_id] = impression
-        self.users[impression.user] = _apply_impression(self.users.get(impression.user), impression)
-        return Outcome.RECORDED
+            return _existing(self.impressions[impression_id], request_id)
+        served = self.decisions.get(request_id)
+        if served is None:
+            return Outcome.UNKNOWN_DECISION, None
+        impression = self.impressions[impression_id] = Impression(request_id=request_id, served=served)
+        self.users[served.user] = _apply_impression(self.users.get(served.user), served)
+        return Outcome.RECORDED, impression
 
     async def record_click(self, impression_id: str) -> Outcome:
         """Count once per impression id."""
@@ -114,8 +159,8 @@ class MemoryStore:
         if impression.clicked:
             return Outcome.DUPLICATE
         impression.clicked = True
-        if impression.user in self.users:
-            self.users[impression.user].record_click(impression.hour)
+        if impression.served.user in self.users:
+            self.users[impression.served.user].record_click(impression.served.hour)
         return Outcome.RECORDED
 
     async def ping(self) -> bool:
@@ -138,22 +183,45 @@ class RedisStore:
             raise StoreUnavailableError(str(exc)) from exc
         return None if raw is None else UserHistory.model_validate_json(raw)
 
-    async def record_impression(self, impression_id: str, impression: Impression) -> Outcome:
-        """WATCH both keys; skip if the impression exists; else write impression and history atomically."""
-        imp_key, user_key = IMPRESSION_PREFIX + impression_id, USER_PREFIX + impression.user
+    async def record_decision(self, request_id: str, served: Served) -> Outcome:
+        """SET NX; on an existing key, compare (a stored decision never changes, so no transaction is needed)."""
+        key, value = DECISION_PREFIX + request_id, served.model_dump_json()
+        if await self._call(self.redis.set(key, value, nx=True, ex=IMPRESSION_TTL_SECONDS)):
+            return Outcome.RECORDED
+        stored = await self._call(self.redis.get(key))
+        return (
+            Outcome.DUPLICATE
+            if stored is not None and Served.model_validate_json(stored) == served
+            else Outcome.CONFLICT
+        )
+
+    async def record_impression(self, impression_id: str, request_id: str) -> Recorded:
+        """Read the immutable decision; WATCH impression and user; write both atomically or report the existing."""
+        raw_dec = await self._call(self.redis.get(DECISION_PREFIX + request_id))
+        imp_key = IMPRESSION_PREFIX + impression_id
+        served = None if raw_dec is None else Served.model_validate_json(raw_dec)
+        user_key = USER_PREFIX + (served.user if served else "")
+        found: list[Impression] = []
 
         async def attempt(pipe: Any) -> Outcome:
-            if await pipe.exists(imp_key):
-                return Outcome.DUPLICATE
+            current = await pipe.get(imp_key)
+            if current is not None:
+                found.append(Impression.model_validate_json(current))
+                return _existing(found[-1], request_id)[0]
+            if served is None:
+                return Outcome.UNKNOWN_DECISION
             raw = await pipe.get(user_key)
-            history = _apply_impression(None if raw is None else UserHistory.model_validate_json(raw), impression)
+            history = _apply_impression(None if raw is None else UserHistory.model_validate_json(raw), served)
+            impression = Impression(request_id=request_id, served=served)
             pipe.multi()
             pipe.set(imp_key, impression.model_dump_json(), ex=IMPRESSION_TTL_SECONDS)
             pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             await pipe.execute()
+            found.append(impression)
             return Outcome.RECORDED
 
-        return await self._transact([imp_key, user_key], attempt)
+        outcome = await self._transact([imp_key, user_key], attempt)
+        return outcome, found[-1] if found else None
 
     async def record_click(self, impression_id: str) -> Outcome:
         """WATCH the impression and its user; mark clicked and add the click to the impression's hour."""
@@ -161,7 +229,7 @@ class RedisStore:
         raw_imp = await self._call(self.redis.get(imp_key))
         if raw_imp is None:
             return Outcome.UNKNOWN_IMPRESSION
-        user_key = USER_PREFIX + Impression.model_validate_json(raw_imp).user
+        user_key = USER_PREFIX + Impression.model_validate_json(raw_imp).served.user
 
         async def attempt(pipe: Any) -> Outcome:
             current = await pipe.get(imp_key)
@@ -176,7 +244,7 @@ class RedisStore:
             pipe.set(imp_key, impression.model_dump_json(), keepttl=True)
             if raw is not None:
                 history = UserHistory.model_validate_json(raw)
-                history.record_click(impression.hour)
+                history.record_click(impression.served.hour)
                 pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
