@@ -142,6 +142,9 @@ ope = { cmd = "python -m charade.analysis.policy_eval", help = "Off-policy evalu
 parity = { cmd = "python -m charade.analysis.parity", help = "Train/serve feature parity on replayed test requests; writes parity.json" }
 loadtest = { shell = "python -m charade.analysis.loadtest && locust -f tests/load/locustfile.py --headless -u ${USERS:-32} -r 32 -t ${DURATION:-90s} --host ${HOST:-http://127.0.0.1:8000} --csv artifacts/loadtest/locust --only-summary --exit-code-on-error 0 && python -m charade.analysis.loadtest summarize artifacts/loadtest/locust_stats.csv", help = "Load-test a running API (docker compose up) and write latency.json" }
 samples = { cmd = "python -m charade.analysis.samples", help = "Rank two example chat contexts through the API; writes reports/sample_rankings.json" }
+coldstart = { cmd = "python -m charade.analysis.coldstart", help = "Cold-start signal, priors and graduation analysis; writes reports/coldstart/" }
+drift = { cmd = "python -m charade.analysis.drift", help = "PSI, churn, staleness backtest, online recalibration; writes drift.json and reports/drift/" }
+adapt = { cmd = "python -m charade.analysis.adaptation", help = "Cohort-exposure adaptation layer replay; writes reports/drift/adaptation.md" }
 fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
