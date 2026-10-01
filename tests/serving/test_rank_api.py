@@ -134,3 +134,16 @@ def test_ops_endpoints(bundle: Settings) -> None:
         assert client.get("/ready").status_code == 200
         assert client.get("/v1/model").json()["calibrator"]
         assert b"charade_request_seconds" in client.get("/metrics").content
+
+
+def test_decisions_are_logged_as_json_events(
+    bundle: Settings, sample_body: dict[str, object], capsys: pytest.CaptureFixture[str]
+) -> None:
+    import json  # noqa: PLC0415
+
+    with _client(bundle) as client:
+        client.post("/v1/rank", json=sample_body)
+    records = [json.loads(line) for line in capsys.readouterr().out.splitlines() if line.startswith("{")]
+    decision = next(r for r in records if r["event"] == "decision")
+    assert decision["request_id"] == "req-1"
+    assert "propensity" in decision
