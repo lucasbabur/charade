@@ -11,6 +11,7 @@ The test split is scored once per run, for every model, after all choices were m
 
 import hashlib
 import json
+import os
 import subprocess
 import time
 from datetime import UTC, datetime
@@ -40,6 +41,11 @@ PRIMARY, BASELINE, GBDT = "dcn_v2", "logreg", "lightgbm"
 
 
 def _git() -> tuple[str, bool]:
+    """(commit, dirty). Images carry the commit in CHARADE_GIT_SHA (no .git inside); builds are clean."""
+    baked = os.environ.get("CHARADE_GIT_SHA")
+    if baked:
+        return baked, False
+
     # Fixed argv, no shell, no user input: git is resolved from PATH on purpose.
     def git(*args: str) -> str:
         return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()  # noqa: S603, S607
