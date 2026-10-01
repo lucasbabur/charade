@@ -7,7 +7,7 @@ from charade import __version__
 from charade.serving.app import app
 from charade.serving.openapi import CONTRACT_PATH, render
 
-ROOT = Path(__file__).parents[1]
+ROOT = Path(__file__).parents[2]
 
 
 @pytest.fixture
