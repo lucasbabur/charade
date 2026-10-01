@@ -18,12 +18,13 @@ client ──POST /v1/rank──▶ FastAPI worker (1 of N, single-threaded libs
                            │ 4. assemble N rows → charade.features.derive + encode (the training code)
                            │ 5. ONNX Runtime, one batched call → logits → calibration map (identity for the shipped model)
                            │ 6. policy: gates → value → evidence intervals → greedy / 5 % exploration → exact propensities
-                           │ 7. JSON decision log: context, every candidate's attributes, pCTR, gates, propensity; chosen id; versions
+                           │ 7. store the decision: request_id → {user, hour, chosen ad, campaign}, write-once (Redis SET NX, 48 h)
+                           │ 8. JSON decision log: context, every candidate's attributes, pCTR, gates, propensity; chosen id; versions
                            ▼
                       RankResponse (ranked list, chosen_id, propensity, confidence, cold_start, degraded)
 
-served impression ──POST /v1/events/impression {impression_id}──▶ Redis (once per id, atomic) ──▶ user history
-late click ────────POST /v1/events/click {impression_id}──────▶ attributed to the impression's hour, once
+served impression ──POST /v1/events/impression {impression_id, request_id}──▶ identity from the stored decision ──▶ user history (once per id, atomic)
+late click ────────POST /v1/events/click {impression_id}──────────────────▶ attributed to the impression's hour, once (within 48 h)
 ```
 
 | Stage (in-process, N = 100) | p50 | p99 | How it stays small |
@@ -52,7 +53,7 @@ Two measured fixes got p99 under budget:
 
 | Condition | Behaviour | Signal |
 |---|---|---|
-| Redis slow or down | Serve with cold-user counters, `degraded: true`; **frequency cap not enforced** (warning in the response); events → 503, retried upstream (idempotent) | `charade_degraded_total`, `charade_frequency_cap_unenforced_total` |
+| Redis slow or down | Serve with cold-user counters, `degraded: true`; **frequency cap not enforced** and the decision not stored (warning in the response), so that request's impression event later gets 404; events → 503, retried upstream (idempotent) | `charade_degraded_total`, `charade_frequency_cap_unenforced_total` |
 | Unknown character | Use `character` metadata from the request if present; else OOV metadata and the **mature** tier (strictest brand safety) | `charade_cold_start_total{entity="character"}` |
 | Unknown categorical values | OOV embedding (index 0) | Drift monitor (PSI) |
 | Every candidate gated | 200, `chosen_id: null`, propensity null | `charade_no_fill_total` |
@@ -60,13 +61,19 @@ Two measured fixes got p99 under budget:
 | Duplicate candidate ids / turn > session length | Deduplicated / clamped, with warnings in the response | — |
 | No model bundle | `/health` 200, `/ready` 503: the load balancer keeps the task out of rotation | — |
 | Out-of-order events | Every counter uses strictly earlier hours, whatever the arrival order (property test over random arrival orders) | — |
-| Retried or duplicated events | No-op: impressions and clicks are keyed by `impression_id` | — |
+| Retried or duplicated events | No-op: decisions are keyed by `request_id`, impressions and clicks by `impression_id` | — |
+| Conflicting retries | 409: a `request_id` re-ranked into a different decision, or an `impression_id` reused for another request. A retry can never change what an event means | — |
+| Impression for an unknown request | 404: user, campaign and hour come only from the stored decision, so an event cannot credit an impression to the wrong user or campaign | — |
 | Concurrent writes for one user | Redis WATCH/MULTI transactions with retry; no lost updates (concurrency test on fakeredis) | — |
 
 ## API
 
 - `POST /v1/rank`: rank candidates for one chat moment.
-- `POST /v1/events/impression` and `POST /v1/events/click`: feed back served impressions and clicks, idempotent on `impression_id` (duplicates return `{"outcome": "duplicate"}`, unknown clicks 404).
+- `POST /v1/events/impression {impression_id, request_id}` and `POST /v1/events/click {impression_id}`: feed back served impressions and clicks, idempotent on `impression_id` (duplicates return `{"outcome": "duplicate"}`; unknown requests or clicks 404; conflicting reuse 409). The impression takes its user, campaign and hour from the decision, never from the caller.
+
+**One identity per event, online and offline.** The online history and the training rows rebuilt from logs (`charade.data.events`) use the same identities: the impression's ad is its decision's chosen candidate. The row builder keeps the first copy of each identical redelivery and drops, by reason, impressions with no decision, conflicting decisions or impressions, and impressions whose ad is not the one served.
+
+**Label maturity.** A click is attributed only within 48 h of its impression (the decision and impression keys expire then), so an impression becomes a training row only after that window closes; younger ones are counted as `label pending`, not written as `click = 0`. The model's user counters still assume clicks from earlier hours were known at serve time (`charade.features.counters`): offline they include a 09:55 impression's 10:10 click in a 10:00 request, online that click arrives later. Measuring the cost needs real click delays, which the data does not have.
 - `GET /v1/model`: loaded version, groups and calibrator.
 - `GET /health`, `GET /ready`: liveness and readiness.
 - `GET /metrics`: Prometheus.
