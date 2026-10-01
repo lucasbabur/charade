@@ -99,7 +99,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLS003 | static | error | no-shuffled-split | CTR data is time-ordered; random or k-fold splits leak future hours, shared users and repeated creatives into training and overstate offline metrics. |
 | MLS004 | static | error | no-global-rng | Global RNG state makes results depend on call order and imports; explicit generators make every stochastic step reproducible from the run's seed. |
 | MLS005 | static | error | safe-model-loading | Model artifacts travel through buckets and registries; pickle-based loading executes code from them. |
-| MLS006 | static | error | no-notebooks | Notebooks hide execution order and state; every result in the docs must come from a re-runnable command. |
+| MLS006 | static | error | no-notebooks | Notebooks hide execution order and state; outside explicitly allowed directories (whose notebooks must be executed in CI), every result must come from a re-runnable command. |
 | MLS007 | static | warning | no-fit-on-eval-data | Fitting anything on validation/test data leaks it. Legitimate cases (calibrator on validation) must be marked explicitly so a reviewer sees them. |
 | MLV001 | serving | error | train-serve-parity | The serving path must produce the same features as the offline pipeline for the same rows; any difference is train/serve skew. |
 | MLV002 | serving | error | onnx-parity | The exported model is what serves traffic; it must reproduce the trained model's outputs. |
