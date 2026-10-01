@@ -256,6 +256,8 @@ def build_project(root: Path) -> None:
                 "run_id": "run-1",
                 "model_version": "dcn@run-1",
                 "split": "test",
+                "config_hash": "cfg-a",
+                "window": "W",
             }
         )
     )

@@ -1,7 +1,6 @@
 """Reproducibility and leakage checks on the run manifest, splits and leakage probes."""
 
 import hashlib
-from collections import Counter
 from itertools import pairwise
 from pathlib import Path
 
@@ -186,22 +185,30 @@ def univariate_feature_auc(ctx: Context) -> Outcome:
 
 @check(
     "MLL006",
-    "holdout-touched-once",
+    "holdout-config-budget",
     Stage.LEAKAGE,
-    "Evaluating repeatedly on the holdout and picking the best turns it into a validation set; each model version "
-    "gets one holdout evaluation.",
+    "Every distinct configuration scored on the holdout is a chance to select on it. Re-scoring an identical "
+    "configuration adds nothing; new configurations spend a pre-registered budget per holdout window.",
 )
-def holdout_touched_once(ctx: Context) -> Outcome:
-    """Each model version appears at most once on the holdout in the evaluation ledger, and the current run once."""
+def holdout_config_budget(ctx: Context) -> Outcome:
+    """Distinct configurations evaluated on the current holdout window stay within `max_holdout_configs`."""
     holdout = ctx.config.holdout_split
-    counts = Counter(e.model_version for e in ctx.ledger if e.split == holdout)
-    repeated = [f"{version}: {n} holdout evaluations" for version, n in counts.items() if n > 1]
-    if repeated:
-        return failed("holdout evaluated more than once", repeated)
-    current = [e for e in ctx.ledger if e.split == holdout and e.run_id == ctx.manifest.run_id]
+    entries = [e for e in ctx.ledger if e.split == holdout]
+    current = [e for e in entries if e.run_id == ctx.manifest.run_id]
     if not current:
         return failed(f"run {ctx.manifest.run_id} has no holdout evaluation in the ledger")
-    return passed(f"{len(counts)} model versions, one holdout evaluation each")
+    if current[0].config_hash is None or current[0].window is None:
+        return failed("current run's ledger entries lack config_hash/window")
+    window = current[0].window
+    configs = sorted({e.config_hash for e in entries if e.window == window and e.config_hash})
+    legacy = sum(1 for e in entries if e.config_hash is None)
+    details = [f"window {window}: configurations {', '.join(c[:8] for c in configs)}"]
+    if legacy:
+        details.append(f"{legacy} legacy entries without a configuration identity (not attributable)")
+    budget = ctx.thresholds.max_holdout_configs
+    if len(configs) > budget:
+        return failed(f"{len(configs)} configurations looked at this holdout (budget {budget})", details)
+    return passed(f"{len(configs)} of {budget} configurations used on this holdout window", details)
 
 
 @check(

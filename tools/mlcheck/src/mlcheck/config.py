@@ -47,6 +47,8 @@ class Thresholds(BaseModel):
     max_univariate_auc: float = 0.9
     max_adversarial_auc: float = 0.8
     min_seeds: int = 3
+    max_holdout_configs: int = 3
+    """Distinct configurations allowed to look at one holdout window (a pre-registered budget)."""
     max_test_ne: float = 0.98
     calibration_low: float = 0.9
     calibration_high: float = 1.1

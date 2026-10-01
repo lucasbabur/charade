@@ -111,6 +111,11 @@ class LedgerEntry(_Strict):
     run_id: str
     model_version: str
     split: str
+    config_hash: str | None = None
+    """Identity of everything that can be chosen while looking at results (model config, feature groups,
+    policy, split windows). None only for entries written before this field existed."""
+    window: str | None = None
+    """The evaluated split's time window, e.g. "2014-10-29T00:00:00/2014-10-30T05:00:00"."""
 
 
 class DecisionCandidate(_Strict):
