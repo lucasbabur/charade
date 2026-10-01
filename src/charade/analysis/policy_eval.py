@@ -14,6 +14,7 @@ produced by the serving code path, `charade.ranking.policy.decide`).
 """
 
 import json
+from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 
@@ -41,7 +42,7 @@ def candidate_sets(test: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
     """(candidates per cell with `mu` and `slot`, evaluated rows with the logged slot)."""
     served = (
         test.group_by(*CELL, "C14", "banner_pos")
-        .agg(pl.len().alias("count"), *[pl.col(f).mode().first() for f in AD_FIELDS[2:]])
+        .agg(pl.len().alias("count"), *[pl.col(f).mode().sort().first() for f in AD_FIELDS[2:]])
         .with_columns((pl.col("count") / pl.col("count").sum().over(CELL)).alias("mu"))
         .sort([*CELL, "count", "C14", "banner_pos"], descending=[False, False, False, True, False, False])
         .with_columns(pl.int_range(pl.len()).over(CELL).alias("slot"))
@@ -112,9 +113,28 @@ def policies(
     return {"uniform random": uniform, "greedy pCTR": greedy, "shipped (gates + 5% Thompson)": shipped}
 
 
-def run(settings: Settings | None = None, data_dir: Path | None = None, report: Path = REPORT) -> list[Estimate]:
-    """Evaluate policies; write ope.json, decisions.jsonl and reports/policy/ope.md."""
-    settings = settings or get_settings()
+@dataclass
+class CandidateMatrices:
+    """Reconstructed candidate sets on the test days, as [rows, TOP_K] matrices (unused slots masked)."""
+
+    rows: pl.DataFrame
+    pairs: pl.DataFrame
+    test_rows: int
+    served: pl.DataFrame
+    mask: np.ndarray
+    pctr: np.ndarray
+    logit: np.ndarray
+    gated: np.ndarray
+    evidence: np.ndarray
+    campaign: np.ndarray
+    logged: np.ndarray
+    y: np.ndarray
+    mu: np.ndarray
+    blocks: np.ndarray
+
+
+def load_candidates(settings: Settings, data_dir: Path | None = None) -> CandidateMatrices:
+    """Build candidate sets, score every (impression, candidate) pair with the shipped bundle."""
     art = settings.artifacts_dir
     scorer = Scorer(art)
     evidence = Evidence.model_validate_json((art / EVIDENCE_FILE).read_text())
@@ -132,26 +152,43 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, report: 
         _gated_expr(settings).alias("gated"),
     )
     n = rows.height
-    mask = _matrix(pairs, "pctr", n, -1.0) >= 0
-    pctr = _matrix(pairs, "pctr", n, 0.0)
-    gated = _matrix(pairs, "gated", n, 1.0).astype(bool)
-    ev = _matrix(pairs, "evidence", n, 0.0)
     ordered = rows.with_row_index("row").sort("row")
-    logged = ordered["logged_slot"].to_numpy()
-    y = ordered["click"].to_numpy().astype(np.float64)
-    mu = ordered["logged_mu"].to_numpy()
-    blocks = ordered["ts"].dt.epoch("s").to_numpy() // 3600
-    q_logged = pctr[np.arange(n), logged]
-    results: list[Estimate] = [_observed(y, blocks)]
+    campaign = np.full((n, TOP_K), "", dtype=object)
+    campaign[pairs["row"].to_numpy(), pairs["slot"].to_numpy()] = pairs["C17"].to_numpy()
+    return CandidateMatrices(
+        rows=ordered,
+        pairs=pairs,
+        test_rows=test.height,
+        served=served,
+        mask=_matrix(pairs, "pctr", n, -1.0) >= 0,
+        pctr=_matrix(pairs, "pctr", n, 0.0),
+        logit=_matrix(pairs, "logit", n, 0.0),
+        gated=_matrix(pairs, "gated", n, 1.0).astype(bool),
+        evidence=_matrix(pairs, "evidence", n, 0.0),
+        campaign=campaign,
+        logged=ordered["logged_slot"].to_numpy(),
+        y=ordered["click"].to_numpy().astype(np.float64),
+        mu=ordered["logged_mu"].to_numpy(),
+        blocks=ordered["ts"].dt.epoch("s").to_numpy() // 3600,
+    )
+
+
+def run(settings: Settings | None = None, data_dir: Path | None = None, report: Path = REPORT) -> list[Estimate]:
+    """Evaluate policies; write ope.json, decisions.jsonl and reports/policy/ope.md."""
+    settings = settings or get_settings()
+    c = load_candidates(settings, data_dir)
+    n = len(c.y)
+    q_logged = c.pctr[np.arange(n), c.logged]
+    results: list[Estimate] = [_observed(c.y, c.blocks)]
     lifts: dict[str, dict[str, tuple[float, float, float]]] = {}
-    logit = _matrix(pairs, "logit", n, 0.0)
-    for name, pi in policies(pctr, logit, mask, ev, gated, settings).items():
-        args = (pi[np.arange(n), logged], mu, y, q_logged, (pi * pctr).sum(axis=1), blocks)
+    for name, pi in policies(c.pctr, c.logit, c.mask, c.evidence, c.gated, settings).items():
+        args = (pi[np.arange(n), c.logged], c.mu, c.y, q_logged, (pi * c.pctr).sum(axis=1), c.blocks)
         results += estimate(name, *args)
         lifts[name] = lift(*args)
+    art = settings.artifacts_dir
     art.joinpath("ope.json").write_text(json.dumps({"policies": [r.model_dump() for r in results]}, indent=2))
-    _write_decisions(pairs, ordered, settings, art / "decisions.jsonl")
-    _write_report(results, lifts, test.height, n, served, report)
+    _write_decisions(c.pairs, c.rows, settings, art / "decisions.jsonl")
+    _write_report(results, lifts, c.test_rows, n, c.served, report)
     return results
 
 
