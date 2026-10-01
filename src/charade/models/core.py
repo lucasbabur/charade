@@ -53,7 +53,7 @@ def _id_field(spec: FeatureSpec) -> int | None:
     return names.index("character_id") if "character_id" in names else None
 
 
-def train_dcn(prep: Prepared, cfg: DcnConfig, seed: int) -> TrainResult:
+def train_dcn(prep: Prepared, cfg: DcnConfig, seed: int, fixed_steps: int | None = None) -> TrainResult:
     """One DCN-v2 seed, early-stopped on validation."""
     torch.manual_seed(seed)  # weight init is part of the seed
     model = DCNv2(
@@ -75,6 +75,7 @@ def train_dcn(prep: Prepared, cfg: DcnConfig, seed: int) -> TrainResult:
         id_dropout=cfg.character_id_dropout,
         id_dropout_field=_id_field(prep.spec),
         seed=seed,
+        fixed_steps=fixed_steps,
     )
     return train(model, prep.x["train"], prep.y["train"], prep.x["val"], prep.y["val"], config)
 

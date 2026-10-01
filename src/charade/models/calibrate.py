@@ -1,7 +1,9 @@
 """Fit a calibration map on the validation day.
 
-Candidates: identity, Platt (on the logit) and isotonic. The choice is made by 2-fold
-cross-validation over validation hours (even/odd hours), so the comparison never touches test.
+Candidates, simplest first: identity, Platt (on the logit), isotonic. Each is scored by 2-fold
+cross-validation over validation hours (even/odd), so the comparison never touches test. The
+simplest map within `TOLERANCE` log loss of the best wins: a more flexible map must earn its place
+by more than noise (isotonic once won by 0.00003 and introduced pCTR ties as a side effect).
 Calibrating on the most recent day also absorbs the day-level CTR level shift (H9).
 """
 
@@ -11,6 +13,9 @@ from sklearn.linear_model import LogisticRegression
 
 from charade.evaluation.metrics import logloss_rows
 from charade.scoring.calibration import CalibrationKind, Calibrator
+
+TOLERANCE = 1e-4
+"""Log-loss margin a more flexible calibration map must beat the simpler one by (per row)."""
 
 
 def _fit(kind: CalibrationKind, logits: np.ndarray, y: np.ndarray) -> Calibrator:
@@ -34,5 +39,6 @@ def fit_calibrator(logits: np.ndarray, y: np.ndarray, hours: np.ndarray) -> tupl
             for fold in (folds, ~folds)
         ]
         scores[str(kind)] = float(sum(losses) / len(y))
-    best = CalibrationKind(min(scores, key=scores.__getitem__))
+    floor = min(scores.values())
+    best = next(k for k in CalibrationKind if scores[str(k)] <= floor + TOLERANCE)
     return _fit(best, logits, y), scores

@@ -89,3 +89,18 @@ def test_paired_bootstrap_brackets_mean() -> None:
     diff = rng.normal(0.01, 0.1, 5000)
     mean, low, high = paired_bootstrap(diff, np.arange(5000) // 100)
     assert low < mean < high
+
+
+def test_calibration_prefers_the_simplest_map_within_tolerance() -> None:
+    """A calibrated model: identity is within noise of Platt/isotonic, so identity wins."""
+    rng = np.random.default_rng(3)
+    logits_ = rng.normal(-1.5, 1.0, 20_000)
+    y = rng.binomial(1, 1 / (1 + np.exp(-logits_))).astype(np.float64)
+    calibrator, _ = fit_calibrator(logits_, y, np.arange(len(y)) % 24)
+    assert calibrator.kind is CalibrationKind.IDENTITY
+
+
+def test_fixed_step_training_runs_exactly_that_many_steps(features: pl.DataFrame) -> None:
+    prep = prepare(features, GROUPS, text=False)
+    result = train_dcn(prep, TINY, seed=0, fixed_steps=7)
+    assert result.best_step == 7
