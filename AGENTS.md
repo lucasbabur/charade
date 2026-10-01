@@ -20,6 +20,8 @@ Only commands that work today are listed. When you add a command, add it here in
 | Terraform fmt + validate | `uv run poe tf` |
 | Regenerate OpenAPI contract | `uv run poe openapi` (commit `docs/api/openapi.json`) |
 | Data contract on raw CSVs | `uv run poe mlcheck-data` |
+| Train + evaluate + export (GPU if available) | `uv run poe train` (then `uv run mlcheck .`) |
+| Ablations / tuning / EDA / text bake-off | `uv run poe ablate` / `tune` / `eda` / `text` |
 | Run the API | `uv run poe serve` |
 | One ML gate with evidence | `uv run mlcheck . --only MLM004 -v` |
 | Lint workflows | `actionlint` |
