@@ -46,9 +46,8 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | `parity.json` | offline vs serving features, torch vs ONNX outputs | MLV001–002 |
 | `latency.json` | load-test p50/p95/p99, error rate, N candidates | MLV003–004 |
 | `ope.json` | per policy and estimator: value, CI, ESS, max weight | MLP001–002 |
-| `decisions.jsonl` | sampled decision logs: candidates, gates, chosen id, propensity, exploration flag | MLP003–004 |
-| `drift.json` | PSI per feature per period vs reference | MLP005 | policy | error | propensities-form-a-distribution | A propensity in (0, 1] can still be wrong. When per-candidate propensities are logged they must form the policy's distribution: gated candidates 0, eligible ones summing to 1, and the served ad's propensity equal to its own entry. |
-| MLX001 |
+| `decisions.jsonl` | sampled decision logs: candidates (with per-candidate propensity), gates, chosen id, propensity, exploration flag | MLP003–005 |
+| `drift.json` | PSI per feature per period vs reference | MLX001 |
 
 ## Statistics used
 
@@ -76,7 +75,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLL003 | leakage | error | fit-window | Every fitted object (vocabulary, encoder, prior, scaler, model, calibrator) must be fitted only on data that precedes the holdout, inside the split it declares. |
 | MLL004 | leakage | error | shuffled-label-auc | Retraining on shuffled labels must give chance-level AUC; anything else means the pipeline leaks the label. |
 | MLL005 | leakage | error | univariate-feature-auc | No single feature should predict clicks almost perfectly; one that does is usually derived from the label. |
-| MLL006 | leakage | error | holdout-touched-once | Evaluating repeatedly on the holdout and picking the best turns it into a validation set; each model version gets one holdout evaluation. |
+| MLL006 | leakage | error | holdout-touched-once | Evaluating repeatedly on the holdout and picking the best turns it into a validation set; each model version gets one holdout evaluation. Limitation: it detects re-scoring the same model version, not repeated looks at the holdout across versions; the evaluation ledger makes those visible to a reviewer. |
 | MLL007 | leakage | warning | adversarial-validation | A classifier that separates train from holdout rows with high AUC means strong covariate shift; offline metrics on that holdout will not transfer. |
 | MLM001 | model | error | predictions-contract | Every gate below is computed from predictions.parquet; it must hold primary and baseline predictions on every evaluation split for the same ids. |
 | MLM002 | model | error | prediction-sanity | Probabilities must be finite, strictly inside (0,1) and not constant; a 0 or 1 makes log loss infinite and a constant model ranks nothing. |
@@ -106,6 +105,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLV002 | serving | error | onnx-parity | The exported model is what serves traffic; it must reproduce the trained model's outputs. |
 | MLV003 | serving | error | latency-p99 | The ad slot waits for the ranker; p99 over budget means blank slots or a timed-out auction. |
 | MLV004 | serving | error | load-error-rate | Fast responses do not count if they are errors. |
+| MLP005 | policy | error | propensities-form-a-distribution | A propensity in (0, 1] can still be wrong. When per-candidate propensities are logged they must form the policy's distribution: gated candidates 0, eligible ones summing to 1, and the served ad's propensity equal to its own entry. |
 | MLX001 | drift | warning | feature-drift-psi | PSI above 0.25 marks a feature whose distribution moved enough to invalidate what the model learned about it. |
 
 ## Result on the shipped run (`uv run mlcheck .`)
@@ -124,8 +124,8 @@ Gates that pass with margin:
 - beats baseline, CI excluding zero;
 - calibration 1.012 and ECE 0.005;
 - exact train/serve parity, ONNX within 1.9e-6;
-- p99 26 ms at 400 rps;
-- 3,000 decisions respecting gates with valid propensities.
+- p99 28 ms at 400 rps;
+- 3,000 decisions respecting gates, with per-candidate propensities that form the policy's exact distribution.
 
 ## Tests
 

@@ -72,7 +72,7 @@ Each one is enforced by an mlcheck gate. Breaking one fails CI.
 9. **Calibration matters as much as ranking.** Log loss and normalized entropy are the primary metrics; AUC is secondary. A model that improves AUC but breaks calibration (MLM005–007) does not ship.
 10. **Claims need intervals.** A "model A beats B" statement needs a paired hour-block bootstrap CI (MLM004). Use one seed and one split only for debugging.
 11. **Notebooks only in `experiments/`.** Each experiment is a folder with a frontmatter README (id, hypotheses, status, conclusion) and a notebook paired with a `.py` (edit the `.py`, then `jupytext --sync`). Logic lives in `src/charade/analysis`; CI executes every notebook on the fixture. Notebooks anywhere else fail MLS006.
-12. **Gated ads are never served**, and every served ad logs its propensity (MLP003–004).
+12. **Gated ads are never served**, and every candidate logs its exact propensity; logged propensities must form the policy's distribution (MLP003–005, recovery test in `tests/ranking`).
 
 ## Data facts you will otherwise get wrong
 

@@ -6,7 +6,7 @@ updated-at: 2026-10-01
 
 # 08 — Serving architecture (< 50 ms p99)
 
-**Bottom line:** 100 candidates ranked at **p50 8 / p99 26 ms, 400 rps, 0 errors** (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)).
+**Bottom line:** 100 candidates ranked at **p50 7 / p99 28 ms, 400 rps, 0 errors**, with impression and click events in the mix (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)).
 
 ## Request path
 
@@ -17,12 +17,13 @@ client ──POST /v1/rank──▶ FastAPI worker (1 of N, single-threaded libs
                            │ 3. user history ← Redis GET (20 ms budget) ──timeout──▶ cold-user defaults, degraded=true
                            │ 4. assemble N rows → charade.features.derive + encode (the training code)
                            │ 5. ONNX Runtime, one batched call → logits → isotonic calibration
-                           │ 6. policy: gates → value → Beta intervals → greedy / Thompson → propensity
-                           │ 7. structured decision log (request id, chosen, propensity, versions)
+                           │ 6. policy: gates → value → evidence intervals → greedy / 5 % exploration → exact propensities
+                           │ 7. JSON decision log: every candidate with pCTR, gates, propensity; chosen id; versions
                            ▼
                       RankResponse (ranked list, chosen_id, propensity, confidence, cold_start, degraded)
 
-served impression ──POST /v1/events/impression──▶ Redis user history (counters for the next request)
+served impression ──POST /v1/events/impression {impression_id}──▶ Redis (once per id, atomic) ──▶ user history
+late click ────────POST /v1/events/click {impression_id}──────▶ attributed to the impression's hour, once
 ```
 
 | Stage (in-process, N = 100) | p50 | p99 | How it stays small |
@@ -30,7 +31,7 @@ served impression ──POST /v1/events/impression──▶ Redis user history (
 | Parse | 0.12 ms | 0.18 ms | pydantic v2 |
 | Assemble (derive + encode) | 1.7 ms | 2.4 ms | Shared polars code; encode switches to dict lookups below 2,000 rows (polars `replace_strict` rebuilds hash maps per call, 2.5 ms → 0.3 ms) |
 | Score | 1.6 ms | 2.0 ms | ONNX Runtime CPU, one call for all candidates, 1 intra-op thread |
-| Policy | 0.8 ms | 1.3 ms | Analytic Beta intervals (normal approximation), 64 Thompson draws only for propensities |
+| Policy | 0.8 ms | 1.3 ms | Analytic intervals (normal approximation); closed-form exploration distribution |
 | Redis GET | ~0.3 ms | bounded at 20 ms | One key per user; the timeout degrades, never fails |
 
 Two measured fixes got p99 under budget:
@@ -44,7 +45,7 @@ Two measured fixes got p99 under budget:
 | Precomputed offline | Model (ONNX), calibrator, vocabularies + scaling (`feature_spec.json`), character table, (campaign, genre) evidence | Nothing is fitted or joined at request time |
 | In process memory | All of the above (~10 MB per worker) | No network hop except the user history |
 | Online store | Per-user counters: totals, last two active hours, 24 h hourly buckets, per-campaign (count, last hour, count in last hour), capped at 200 campaigns | Exactly reproduces the offline counter definitions (parity tests, including hypothesis-generated event sequences) |
-| Approximated | Beta posterior quantiles (normal approximation); Thompson propensity from 64 draws (≥ 1/64 resolution); exposure counts at hour granularity | Each costs microseconds instead of milliseconds; each is documented where it is used |
+| Approximated | Evidence-interval quantiles (normal approximation); exposure counts at hour granularity; user detail kept for 48 h (snapshots more than 24 h behind a user's newest event see pruned detail) | Each costs microseconds instead of milliseconds; each is documented where it is used |
 | Not on the hot path | Text embeddings, character enrichment, retraining, OPE | Offline jobs; serving reads their outputs |
 
 ## Failure modes
@@ -58,12 +59,14 @@ Two measured fixes got p99 under budget:
 | Non-finite score | Candidate dropped with a warning; all dropped → 503 | `charade_score_errors_total` |
 | Duplicate candidate ids / turn > session length | Deduplicated / clamped, with warnings in the response | — |
 | No model bundle | `/health` 200, `/ready` 503: the load balancer keeps the task out of rotation | — |
-| Out-of-order events | Recency is computed from strictly earlier hours only; never negative (found by the load test, fixed, regression test) | — |
+| Out-of-order events | Every counter uses strictly earlier hours, whatever the arrival order (property test over random arrival orders) | — |
+| Retried or duplicated events | No-op: impressions and clicks are keyed by `impression_id` | — |
+| Concurrent writes for one user | Redis WATCH/MULTI transactions with retry; no lost updates (concurrency test on fakeredis) | — |
 
 ## API
 
 - `POST /v1/rank`: rank candidates for one chat moment.
-- `POST /v1/events/impression`: feed back served impressions and clicks.
+- `POST /v1/events/impression` and `POST /v1/events/click`: feed back served impressions and clicks, idempotent on `impression_id` (duplicates return `{"outcome": "duplicate"}`, unknown clicks 404).
 - `GET /v1/model`: loaded version, groups and calibrator.
 - `GET /health`, `GET /ready`: liveness and readiness.
 - `GET /metrics`: Prometheus.
@@ -83,4 +86,4 @@ USERS=32 uv run poe loadtest                   # capacity probe
 
 - **Stateless workers:** scale horizontally behind the ALB (ECS Fargate, [09-operations.md](09-operations.md)). Autoscale on CPU at about 50 % and on request count per target.
 - **Redis:** ElastiCache with replicas. The per-user key design shards cleanly.
-- **Larger N or models:** the model is about 2 ms of the 26 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.
+- **Larger N or models:** the model is about 2 ms of the 28 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.

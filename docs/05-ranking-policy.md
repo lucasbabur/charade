@@ -6,72 +6,65 @@ updated-at: 2026-10-01
 
 # 05 — Candidate ranking
 
-**Bottom line:** gate, rank by pCTR × bid × pacing, serve greedily on 95 % of traffic and by Thompson sampling on 5 %, and log the propensity. Offline, greedy ranking beats the logging policy by **+1.28 pp CTR (DR, [+0.07, +2.50])**; with gates and exploration it is +1.13 pp, CI touching zero ([ope.md](../reports/policy/ope.md)).
+**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.21 pp CTR (DR, [+0.21, +2.17])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
 
-## Pipeline per request
+## Pipeline per request (`charade.ranking.policy.decide`)
 
 | Step | Rule | Why |
 |---|---|---|
 | 1. Brand-safety gate | `advertiser_max_tier[C21]` ≥ character `safety_tier`, else gated | An advertiser that is family-safe must never appear next to a mature persona, whatever its pCTR. The data has no advertiser preferences, so the matrix in `[tool.charade.policy]` is illustrative (advertiser 157 ≤ suggestive, 48 = sfw only) |
-| 2. Frequency cap | `prior_exposures(user, campaign) ≥ 8` → gated | CTR drops from 19.2 % on first exposure to 13–15 % after; the model already prices this (`log_user_campaign_imps`), so the cap is a user-experience limit, not a CTR lever |
-| 3. Budget gate | Campaign's pacer reports its daily budget spent → gated | Never serve what cannot be billed |
-| 4. Score | calibrated pCTR from one batched ONNX call | One forward pass for all N candidates |
-| 5. Value | pCTR × bid × pacing multiplier | Bid defaults to 1 (pure CTR ranking, as the brief asks). Pacing (`charade.ranking.pacing.Pacer`) is a PI controller on spend against a linear daily target that throttles campaigns ahead of schedule |
-| 6. Uncertainty | Beta(pCTR·n, (1−pCTR)·n), n = training impressions of (campaign, genre), clipped to [20, 1000] | A campaign never shown on romance characters gets a wide interval, so the system knows what it does not know |
-| 7. Decision | Greedy on value; on the 5 % bucket `sha256(request_id)`, the first of 64 Thompson draws | Exploration spend is bounded, deterministic per request and auditable |
-| 8. Propensity | (1 − ε)·1[served = greedy] + ε·P̂_TS(served), with P̂ from the same 64 draws (≥ 1/64 for an explored pick) | Every logged decision becomes usable for off-policy evaluation and unbiased retraining |
+| 2. Frequency cap | `prior_exposures(user, campaign) ≥ 8` → gated | CTR drops from 19.2 % on first exposure to 13–15 % after. The model already prices this (`log_user_campaign_imps`), so the cap is a user-experience limit |
+| 3. Score | Calibrated pCTR from one batched ONNX call | One forward pass for all N candidates |
+| 4. Value | pCTR × bid | Bid defaults to 1 (pure CTR ranking, as the brief asks) |
+| 5. Evidence interval | Beta(pCTR·n, (1−pCTR)·n), n = training impressions of (campaign, genre), clipped to [20, 1000] | A heuristic width, not a calibrated posterior over prediction error. Never-seen pairings get wide intervals |
+| 6. Decision | Greedy = best eligible by value, then raw logit (isotonic calibration ties pCTRs), then id. On the hashed 5 % exploration bucket, sample from q_i ∝ (upper bound_i × bid_i)² over eligible candidates | Exploration favours plausible winners and uncertain candidates, with a bounded, auditable budget |
+| 7. Propensity | **Exact:** p_i = 0.95 · 1[i = greedy] + 0.05 · q_i, 0 if gated; logged for every candidate | Makes every logged decision valid for off-policy evaluation and counterfactual training |
 
-**Response per candidate:** rank (null if gated), pCTR, 90 % interval, value, gate reasons. The decision also carries `confidence: low` when the top two candidates' intervals overlap.
+**Response per candidate:** rank (null if gated), pCTR, interval, value, gate reasons, propensity. The decision also carries `confidence: low` when the top two intervals overlap. That is a heuristic flag for callers and monitoring, not a statistical guarantee.
 
-## Ordering when the model is uncertain
+**Not connected: budget pacing.** `charade.ranking.pacing.Pacer` (a PI controller on spend) and the budget gate exist and are tested, and the policy consumes `pacing` and `budget_exhausted`. But the data has no budgets or spend, so the API always passes pacing 1 and "not exhausted". Wiring it needs a spend feed and per-campaign pacer state in Redis.
 
-- **Exploit the posterior mean.** Greedy ranks by the mean; a lower-bound policy would lock in incumbents on 95 % of traffic.
-- **Explore where intervals are wide, on a capped share.** The Thompson bucket gives uncertain candidates traffic in proportion to their chance of being best. That is where evidence is cheapest to buy (cold campaigns, cold characters).
-- **Say so.** `confidence: low` lets the caller (or a business rule) prefer a safer default, and lets monitoring count how often the system is guessing.
-- **Ties are deterministic:** value, then candidate id.
+## Why exact propensities
 
-## Offline evaluation
+The first version explored with Thompson sampling. It estimated the served ad's probability from 64 posterior draws, including the draw that selected it, which biased the estimate upward. An external review measured it: with 100 identical candidates and full exploration, every ad's true probability is 1 %, and the mean logged value was 2.6 %. The policy now samples from an explicit distribution, so every probability is closed-form. Three checks guard it:
 
-The logs show one ad per impression. Candidate sets are reconstructed per publisher × hour cell: the creatives (C14 + `banner_pos`) served in that cell, top 10 by frequency. Each one has a logging propensity μ equal to its share of the cell's impressions. Every evaluated impression keeps its own user, character and context, and every candidate is re-scored for that impression, including the user's exposure count to that candidate's campaign. Coverage: 102,874 of 127,406 test impressions (80.7 %), 5,484 cells, 4.1 candidates per cell on average.
+- **Recovery test:** logged probabilities match empirical selection frequencies within 4 standard errors over 40,000 requests (`tests/ranking/test_policy.py`). The 100-identical-candidates case logs exactly 1 %.
+- **mlcheck MLP005:** in `decisions.jsonl`, per-candidate propensities sum to 1, are 0 for gated candidates, and the served ad's value equals its own entry.
+- **OPE uses the serving code:** the offline evaluation calls `decide()` for every reconstructed request instead of reimplementing the policy.
+
+## Offline evaluation (estimates under assumptions)
+
+The logs show one ad per impression, so candidate sets are reconstructed:
+- **Candidates:** for each publisher × hour cell, the top 10 creatives (C14 + `banner_pos`) served there.
+- **Logging propensity μ:** each creative's share of the cell's impressions.
+- **Scoring:** every evaluated impression keeps its own user, character and context, and every candidate is re-scored for it.
+- **Coverage:** 102,874 of 127,406 test impressions (80.7 %).
 
 | Policy | SNIPS lift vs logging | DR lift vs logging | ESS |
 |---|---|---|---|
 | Uniform random | +0.37 pp [−0.00, +0.71] | −0.19 pp [−0.53, +0.13] | 17,149 |
-| Greedy pCTR | +2.37 pp [+1.14, +3.62] | **+1.28 pp [+0.07, +2.50]** | 4,236 |
-| **Shipped (gates + 5 % Thompson)** | +2.12 pp [+0.90, +3.25] | **+1.13 pp [−0.09, +2.20]** | 4,516 |
+| Greedy pCTR, no gates | +2.45 pp [+1.40, +3.59] | +1.37 pp [+0.28, +2.45] | 4,059 |
+| **Shipped policy (gates + 5 % exploration)** | +2.18 pp [+1.12, +3.25] | **+1.21 pp [+0.21, +2.17]** | 4,397 |
 
-Paired hour-block bootstrap (1,000 resamples, the same hours for policy and logging). The observed logging CTR is 17.23 %. Greedy policies break pCTR ties (isotonic plateaus) with the raw logit, as serving does.
+Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.23 %.
 
-Reading it:
-- **Random is a sanity check.** It lands where the logger does, as it should when the logger is roughly frequency-proportional.
-- **The model's ranking adds about +1.3 pp (DR, about 7 % relative).** SNIPS says about +2.4 pp. DR is the more conservative estimate: it leans on the model for actions it rarely sees.
-- **Gates and exploration cost about 0.15 pp** of estimated CTR against pure greedy (DR 18.36 % vs 18.51 %). That is the price of brand safety, frequency caps and the 5 % learning budget, and the reason the shipped policy's DR interval touches zero while greedy's does not.
+**What the intervals do and do not cover.** They cover sampling noise given the assumptions. They do not cover bias from the assumptions themselves:
+1. Impression share within a publisher-hour is treated as the logging propensity, i.e. no unobserved targeting on character, user or device.
+2. The candidate set is assumed to be the served set.
+3. ESS is about 4 % of rows.
 
-Assumptions to keep in mind:
-1. The cell share is the logging propensity, i.e. no unobserved confounding within a publisher-hour.
-2. The candidate set is the served set, so a real retrieval layer offers different candidates.
-3. ESS is about 4 % of rows: the estimates are directional and the intervals are honest about it.
+Read the table as "ranking by the model is very likely better than the historical allocation, by an amount of order 1 pp". It is not a forecast of production lift.
 
-The first production change should be logging true propensities and full candidate sets, which the serving path now logs with every decision.
-
-## Verified in code
-
-- **Property tests** (hypothesis, 200 cases): a gated candidate is never served. The propensity is in (0, 1]. Open candidates are ordered by value. The output is identical for the same request id.
-- **Exploration bucket:** hits 5 % ± 1 % over 20,000 ids.
-- **mlcheck MLP003/MLP004** on 3,000 sampled decisions from the serving code path: no gated candidate served, every served ad has a propensity, and a lone eligible candidate logs propensity 1.
-- **OPE estimators** recover a known policy value on synthetic logged data (IPS, SNIPS, DR CIs cover the truth).
+- **Random lands near the logging CTR,** as expected when logging is roughly frequency-proportional.
+- **Gates and exploration cost about 0.16 pp** against ungated greedy (DR 18.44 % vs 18.60 %): the price of brand safety, frequency caps and the learning budget.
+- **Earlier numbers:** before this fix, the shipped policy's DR interval touched zero (+1.13 pp [−0.09, +2.20]). The new exploration distribution concentrates on plausible candidates, and the evaluation now uses the serving tie-break, which moved both rows.
 
 ## Sample rankings ([reports/sample_rankings.json](../reports/sample_rankings.json), `uv run poe samples`)
 
-The same eight candidates are ranked for two chat moments through the real API:
-
 | | Mature romance character, returning user, turn ≥ 6 | New sfw mentor character (not in the table, metadata in the request), new user, turn 1 |
 |---|---|---|
-| Served | `4687@1`, pCTR 0.210 [0.189, 0.231], greedy, propensity 1.0, confidence high | `15705@0` from the **exploration bucket**, propensity 0.009, confidence **low** |
+| Served | `4687@1`, pCTR 0.210 [0.189, 0.231], greedy, propensity 0.967 | `15705@0` from the **exploration bucket**, propensity 0.008, confidence **low** |
 | Top of the ranking | 4687@1 0.210 · 16208@1 0.149 · 20108@0 0.119 | 4687@1 0.119 · 15705@0 0.119 · 16208@1 0.117 (near-ties) |
-| Gated | `19772@1` (advertiser 48, sfw-only) despite the 2nd-highest pCTR 0.162 → `brand_safety` | none: the character is sfw, so `19772@1` is eligible (0.110) |
+| Gated | `19772@1` (advertiser 48, sfw-only), propensity 0, despite pCTR 0.162 | none: the character is sfw, so `19772@1` is eligible |
 
-What it shows:
-- The same ads are worth much more to a romance character's returning user (0.21 vs 0.12).
-- The brand-safety gate overrides pCTR.
-- A brand-new character with a new user produces flat, overlapping estimates. The system says so (`confidence: low`), and this request happened to fall in the 5 % bucket, so it spent the impression learning, and logged the 0.9 % propensity that makes the outcome usable.
+The same ads are worth much more for the romance character's returning user (0.21 vs 0.12), and the brand-safety gate overrides pCTR. For the brand-new character the estimates are flat; that request fell in the exploration bucket and logged its exact 0.8 % probability.

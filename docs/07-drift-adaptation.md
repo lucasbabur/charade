@@ -75,6 +75,6 @@ The test is replayed over 102,874 impressions on the test days, on the reconstru
 - **"Holds CTR steady" means "no loss detectable"**, not proven equivalence. The DR intervals are wide because the logged data supports only about 4 % effective samples.
 - **Repeat exposure here is a proxy for fatigue.** The model also prices fatigue directly (`log_user_campaign_imps`), so the user-level effect is partly handled before this layer.
 - **Path to production:**
-  1. Keep the per-genre decayed campaign counts in Redis next to the pacing state.
-  2. Feed `exp(−λ · share)` into the candidate's `pacing` multiplier, which already exists in `charade.ranking.policy`.
+  1. Keep the per-genre decayed campaign counts in Redis next to the user histories.
+  2. Feed `exp(−λ · share)` into the candidate's value multiplier (`Candidate.pacing`, currently unused because budget pacing is not wired).
   3. A/B test λ online, because offline estimates this wide cannot settle a 0.1 pp question.

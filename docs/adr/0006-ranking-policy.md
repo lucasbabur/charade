@@ -1,10 +1,10 @@
 ---
-title: "ADR 0006: Greedy pCTR with gates and a 5 % Thompson bucket; propensities logged"
+title: "ADR 0006: Greedy pCTR with gates and 5 % exploration; exact propensities logged"
 created-at: 2026-10-01
 updated-at: 2026-10-01
 ---
 
-# ADR 0006: Greedy pCTR with gates and a 5 % Thompson bucket; propensities logged
+# ADR 0006: Greedy pCTR with gates and 5 % exploration; exact propensities logged
 
 
 ## Context
@@ -13,8 +13,10 @@ The logs have no propensities, so policy quality can only be estimated offline w
 
 ## Decision
 
-Hard gates (brand safety per advertiser × tier, frequency cap, budget) → value pCTR × bid × pacing → greedy on 95 % of traffic, Thompson sampling from a (campaign, genre)-evidence Beta posterior on a hashed 5 % bucket → log the propensity of the served ad. Ties between equal calibrated pCTRs (isotonic plateaus) are broken by the raw logit.
+Hard gates (brand safety per advertiser × tier, frequency cap) → value pCTR × bid → greedy on 95 % of traffic; on a hashed 5 % bucket, sample from q ∝ (evidence upper bound × bid)². Each candidate's probability p_i = 0.95·1[greedy] + 0.05·q_i is closed-form and logged for every candidate. Ties between equal calibrated pCTRs are broken by the raw logit, then candidate id. The budget gate and pacing multiplier exist in the library but are not wired to a spend feed.
+
+Superseded detail: the first version used Thompson sampling and estimated the served ad's probability from the same draws that selected it, which biased propensities upward (2.6 % logged vs 1 % true in a review reproduction). Replaced because a policy whose logs cannot be trusted defeats the reason for exploring.
 
 ## Consequences
 
-DR lift over logging: greedy +1.28 pp [+0.07, +2.50]; shipped +1.13 pp [−0.09, +2.20] (gates and exploration cost ~0.15 pp). Every served decision becomes off-policy-evaluable.
+Offline DR lift over logging, under reconstructed candidate sets and frequency-share propensities: shipped +1.21 pp [+0.21, +2.17], ungated greedy +1.37 pp. A recovery test and mlcheck MLP005 hold the propensities to the policy's exact distribution.
