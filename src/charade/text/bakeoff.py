@@ -30,26 +30,30 @@ MIN_IMPRESSIONS = 100
 REPORT = Path("reports/text_bakeoff.csv")
 
 
-def _residuals(frame: pl.DataFrame, split: str) -> pl.DataFrame:
+def _residuals(frame: pl.DataFrame, split: str, min_impressions: int) -> pl.DataFrame:
     part = frame.filter(pl.col("split") == split)
     cell = part.group_by(["genre", "safety_tier"]).agg(pl.col("click").mean().alias("cell_ctr"))
     return (
         part.group_by("character_id", "genre", "safety_tier")
         .agg(pl.len().alias("n"), pl.col("click").mean().alias("ctr"))
-        .filter(pl.col("n") >= MIN_IMPRESSIONS)
+        .filter(pl.col("n") >= min_impressions)
         .join(cell, on=["genre", "safety_tier"])
         .select("character_id", (pl.col("ctr") - pl.col("cell_ctr")).alias("residual"))
     )
 
 
 def run(
-    providers: list[Provider], data_dir: Path, derived_dir: Path = DERIVED_DIR, report: Path = REPORT
+    providers: list[Provider],
+    data_dir: Path,
+    derived_dir: Path = DERIVED_DIR,
+    report: Path = REPORT,
+    min_impressions: int = MIN_IMPRESSIONS,
 ) -> pl.DataFrame:
     """Embed with each provider, write reduced vectors and the bake-off table."""
     settings = get_settings()
     characters = load_characters(data_dir / "characters.csv").sort("character_id")
     frame = assign_split(load_joined(data_dir), settings.train_end, settings.val_end)
-    train_res, val_res = _residuals(frame, "train"), _residuals(frame, "val")
+    train_res, val_res = _residuals(frame, "train", min_impressions), _residuals(frame, "val", min_impressions)
     ids = characters["character_id"].to_list()
     index = {c: i for i, c in enumerate(ids)}
     rows: list[dict[str, object]] = []
