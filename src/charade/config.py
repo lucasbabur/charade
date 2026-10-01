@@ -87,6 +87,9 @@ class Settings(BaseSettings):
     val_end: datetime
     model: ModelConfig = Field(default_factory=ModelConfig)
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
+    redis_url: str | None = None
+    """`CHARADE_REDIS_URL`; without it serving uses an in-process store."""
+    store_timeout_ms: float = 10.0
 
     gemini_api_key: SecretStr | None = _secret("GEMINI_API_KEY")
     voyage_api_key: SecretStr | None = _secret("VOYAGE_API_KEY")

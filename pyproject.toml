@@ -83,6 +83,9 @@ artifacts_dir = "artifacts/current"
 seed = 20141021
 train_end = "2014-10-27T23:00:00"
 val_end = "2014-10-28T23:00:00"
+# Serving: Redis read budget. Within the 50 ms p99 envelope, a slow store degrades to cold-user
+# defaults instead of failing (docs/08-serving-architecture.md).
+store_timeout_ms = 20.0
 
 # Shipped model. Values come from reports/tuning/{dcn,gbdt}.csv (best trial on the inner split,
 # train 10-21..26 / select 10-27); see docs/04-models-evaluation.md. `groups` and `text_provider`
@@ -128,8 +131,7 @@ lint = { sequence = [{ shell = "ruff check . && ruff format --check ." }, { shel
 types = { sequence = [{ cmd = "pyright" }, { cmd = "pyright", cwd = "tools/mlcheck" }], help = "Pyright strict" }
 test = { cmd = "pytest", help = "Charade tests with coverage gate" }
 test-mlcheck = { cmd = "pytest", cwd = "tools/mlcheck", help = "mlcheck's own tests" }
-# MLS002 (serving uses shared features) is skipped until the first feature-backed route exists; remove the skip with it.
-mlcheck = { cmd = "mlcheck . --stage static --skip MLS002", help = "ML static gates" }
+mlcheck = { cmd = "mlcheck . --stage static", help = "ML static gates" }
 mlcheck-data = { cmd = "mlcheck . --stage data", help = "Data contract on the raw CSVs (local only; data is not in git)" }
 eda = { cmd = "python -m charade.analysis.eda", help = "Write reports/eda/eda.md" }
 text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descriptions and write reports/text_bakeoff.csv (OPENAI_API_KEY optional)" }
@@ -137,6 +139,9 @@ tune = { cmd = "python -m charade.models.tune", help = "Optuna search on the inn
 train = { cmd = "python -m charade.models.pipeline", help = "Train, calibrate, evaluate once on test, export; writes artifacts and reports/models/metrics.json" }
 ablate = { cmd = "python -m charade.models.ablate", help = "Feature-group ablations on validation; writes reports/models/ablations.csv" }
 ope = { cmd = "python -m charade.analysis.policy_eval", help = "Off-policy evaluation of ranking policies on test; writes ope.json, decisions.jsonl, reports/policy/ope.md" }
+parity = { cmd = "python -m charade.analysis.parity", help = "Train/serve feature parity on replayed test requests; writes parity.json" }
+loadtest = { shell = "python -m charade.analysis.loadtest && locust -f tests/load/locustfile.py --headless -u ${USERS:-32} -r 32 -t ${DURATION:-90s} --host ${HOST:-http://127.0.0.1:8000} --csv artifacts/loadtest/locust --only-summary --exit-code-on-error 0 && python -m charade.analysis.loadtest summarize artifacts/loadtest/locust_stats.csv", help = "Load-test a running API (docker compose up) and write latency.json" }
+samples = { cmd = "python -m charade.analysis.samples", help = "Rank two example chat contexts through the API; writes reports/sample_rankings.json" }
 fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
