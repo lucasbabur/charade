@@ -1,0 +1,8 @@
+*
+!pyproject.toml
+!uv.lock
+!README.md
+!src/
+!tools/mlcheck/pyproject.toml
+!tools/mlcheck/README.md
+**/__pycache__
