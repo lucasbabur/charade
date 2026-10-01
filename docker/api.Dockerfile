@@ -12,7 +12,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --no-dev --no-editable
 
-FROM python:3.12-slim-trixie AS runtime
+FROM python:3.14-slim-trixie AS runtime
 RUN groupadd --system --gid 10001 app && useradd --system --uid 10001 --gid app --no-create-home app
 WORKDIR /app
 COPY --from=build --chown=app:app /app/.venv /app/.venv
