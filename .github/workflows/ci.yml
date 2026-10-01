@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Lint, types, tests, mlcheck, OpenAPI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with:
+          enable-cache: true
+      - name: Install
+        run: uv sync --all-packages --locked
+      - name: Lint and format
+        run: uv run poe lint
+      - name: Types
+        run: uv run poe types
+      - name: Tests (charade)
+        run: uv run poe test
+      - name: Tests (mlcheck)
+        run: uv run poe test-mlcheck
+      - name: ML static gates
+        run: uv run poe mlcheck
+      - name: OpenAPI contract is current
+        run: |
+          uv run poe openapi
+          git diff --exit-code -- docs/api/openapi.json
+
+  terraform:
+    name: Terraform fmt and validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.13.5"
+      - uses: astral-sh/setup-uv@v10
+      - name: Validate
+        run: uv run --no-project --with poethepoet poe tf
+
+  actionlint:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: actionlint
+        uses: docker://rhysd/actionlint:1.7.12
+        with:
+          args: -color
