@@ -42,6 +42,9 @@ dev = [
     "httpx>=0.28",
     "hypothesis>=6.140",
     "import-linter>=2.15",
+    "ipykernel>=7.4",
+    "jupytext>=1.19",
+    "nbclient>=0.11",
     "locust>=2.46",
     "mlcheck",
     "poethepoet>=0.48",
@@ -150,6 +153,8 @@ fixture = { cmd = "python -m charade.analysis.fixture", help = "Rebuild tests/fi
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
 tf = { shell = "terraform fmt -check -recursive infra/terraform && for env in infra/terraform/envs/*/; do terraform -chdir=$env init -backend=false -input=false >/dev/null && terraform -chdir=$env validate || exit 1; done", help = "Terraform fmt and validate" }
+experiments = { shell = "for nb in experiments/E*/notebook.py; do jupytext --execute --set-formats ipynb,py:percent \"$nb\" || exit 1; done", help = "Execute every experiment notebook on the full data (E004 retrains; ~6 min on a GPU)" }
+test-notebooks = { cmd = "pytest -m notebooks --no-cov", help = "Execute every experiment notebook in smoke mode (fixture data, tiny model)" }
 imports = { cmd = "lint-imports", help = "Import-layer contracts (no cycles, serving stays light)" }
 check = { sequence = ["lint", "types", "imports", "test", "test-mlcheck", "mlcheck"], help = "Everything CI runs on Python" }
 
@@ -167,6 +172,8 @@ convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "D", "PLR2004", "S311"]
+# Notebooks (jupytext percent scripts): a bare expression at the end of a cell is how a notebook displays it.
+"experiments/**" = ["D", "B018", "E402", "E501", "INP001", "T201", "PLR2004"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -184,7 +191,8 @@ reportMissingTypeStubs = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --cov=charade --cov-branch --cov-report=term-missing"
+addopts = "-q -m 'not notebooks' --cov=charade --cov-branch --cov-report=term-missing"
+markers = ["notebooks: executes experiment notebooks in smoke mode (slow; `uv run poe test-notebooks`)"]
 
 [tool.coverage.report]
 fail_under = 85
@@ -219,6 +227,7 @@ forbidden_modules = ["charade.models", "charade.evaluation", "charade.analysis",
 
 [tool.mlcheck]
 package = "charade"
+notebooks_allowed_in = ["experiments"]
 source_root = "src"
 serving_package = "charade.serving"
 features_package = "charade.features"
