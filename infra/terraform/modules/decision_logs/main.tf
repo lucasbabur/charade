@@ -55,6 +55,30 @@ resource "aws_kinesis_firehose_delivery_stream" "decisions" {
     buffering_interval  = 300
     compression_format  = "GZIP"
     kms_key_arn         = var.kms_key_arn
+
+    # CloudWatch Logs hands Firehose gzipped subscription envelopes. Decompress them, keep only each log
+    # event's message, and end every record with a newline, so S3 holds gzipped JSON lines: the exact
+    # input of charade.data.events.
+    processing_configuration {
+      enabled = true
+      processors {
+        type = "Decompression"
+        parameters {
+          parameter_name  = "CompressionFormat"
+          parameter_value = "GZIP"
+        }
+      }
+      processors {
+        type = "CloudWatchLogProcessing"
+        parameters {
+          parameter_name  = "DataMessageExtraction"
+          parameter_value = "true"
+        }
+      }
+      processors {
+        type = "AppendDelimiterToRecord"
+      }
+    }
   }
 }
 
