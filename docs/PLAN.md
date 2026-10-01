@@ -1,3 +1,5 @@
+> **Status:** the original plan, written before the data work. Where it differs from the implementation, the numbered docs and [adr/](adr/) win (e.g. the shipped model drops character ID and text, settings live in `pyproject.toml`, the layout is by ML concern). Kept for traceability of intent.
+
 # Plan — Simula CTR ranking take-home (v2, detailed)
 
 **Index**

@@ -2,7 +2,7 @@
 
 Charade (**chara**cter + **ad**) ranks contextual ads inside AI companion chats. For each ad opportunity (character, conversation moment, publisher, device, hour) and a set of candidate ads, it predicts the click probability, filters out ads that don't fit (brand safety, frequency caps, budget), and returns a ranked list in under 50 ms.
 
-Design and results live in [docs/](docs/index.md).
+Results in one page: [docs/00-summary.md](docs/00-summary.md). Everything else: [docs/index.md](docs/index.md).
 
 ## 🚀 Run it
 
