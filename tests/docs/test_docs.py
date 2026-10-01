@@ -1,17 +1,22 @@
 """Documentation guards: frontmatter, freshness, links and commands (cheap checks that catch rot)."""
 
+import json
 import re
 import subprocess
 import tomllib
 from datetime import date
 from pathlib import Path
 
+import jupytext
 import pytest
 
 ROOT = Path(__file__).parents[2]
 DOCS = sorted([*ROOT.glob("docs/*.md"), *ROOT.glob("docs/adr/*.md")])
+EXPERIMENTS = sorted(ROOT.glob("experiments/E*/README.md"))
+EXPERIMENT_FIELDS = ("id", "title", "hypotheses", "status", "conclusion", "created-at", "updated-at")
 LINKED = [
     *DOCS,
+    *EXPERIMENTS,
     ROOT / "README.md",
     ROOT / "AGENTS.md",
     ROOT / "tools/mlcheck/AGENTS.md",
@@ -53,10 +58,13 @@ def test_frontmatter_has_exactly_title_and_dates(path: Path) -> None:
     assert created <= updated
 
 
-@pytest.mark.parametrize("path", DOCS, ids=lambda p: str(p.relative_to(ROOT)))
+@pytest.mark.parametrize("path", [*DOCS, *EXPERIMENTS], ids=lambda p: str(p.relative_to(ROOT)))
 def test_updated_at_is_bumped_when_the_doc_changes(path: Path) -> None:
-    """`updated-at` must be no older than the last commit that touched the doc (author date survives rebases)."""
-    relative = str(path.relative_to(ROOT))
+    """`updated-at` must be no older than the last commit that touched the doc (author date survives rebases).
+
+    For an experiment, any change in its folder (README or notebook) counts.
+    """
+    relative = str((path.parent if path in EXPERIMENTS else path).relative_to(ROOT))
     if _git("rev-parse", "--is-shallow-repository") == "true":
         pytest.skip("shallow clone: history unavailable (CI checks out with fetch-depth 0)")
     last = _git("log", "-1", "--format=%as", "--", relative)
@@ -89,3 +97,53 @@ def test_documented_poe_tasks_exist() -> None:
         if task not in tasks
     }
     assert not missing, sorted(missing)
+
+
+def _hypothesis_rows() -> dict[str, str]:
+    text = (ROOT / "docs/hypotheses.md").read_text()
+    return {m.group(1): m.group(0) for m in re.finditer(r"^\| (H\d+) \|.*$", text, re.MULTILINE)}
+
+
+def _ids(value: str) -> list[str]:
+    return [item.strip() for item in value.strip("[]").split(",") if item.strip()]
+
+
+@pytest.mark.parametrize("path", EXPERIMENTS, ids=lambda p: p.parent.name)
+def test_experiment_metadata(path: Path) -> None:
+    meta = _frontmatter(path)
+    assert tuple(meta) == EXPERIMENT_FIELDS, f"{path.parent.name}: frontmatter must be exactly {EXPERIMENT_FIELDS}"
+    assert path.parent.name.startswith(meta["id"] + "-")
+    assert meta["status"] in {"planned", "running", "concluded"}
+    assert set(_ids(meta["hypotheses"])) <= set(_hypothesis_rows()), "unknown hypothesis id"
+    if meta["status"] == "concluded":
+        assert meta["conclusion"], "a concluded experiment states its conclusion"
+
+
+@pytest.mark.parametrize("path", EXPERIMENTS, ids=lambda p: p.parent.name)
+def test_notebook_is_paired_and_executed(path: Path) -> None:
+    source, notebook = path.parent / "notebook.py", path.parent / "notebook.ipynb"
+    paired = jupytext.writes(jupytext.read(notebook), fmt="py:percent")
+    assert paired == source.read_text(), "notebook.ipynb and notebook.py differ: run `jupytext --sync`"
+    if _frontmatter(path)["status"] == "concluded":
+        cells = json.loads(notebook.read_text())["cells"]
+        assert all(c.get("execution_count") for c in cells if c["cell_type"] == "code"), (
+            "concluded notebook is not executed"
+        )
+
+
+def test_hypotheses_and_experiments_reference_each_other() -> None:
+    """The hypotheses table links exactly the experiments whose frontmatter names that hypothesis."""
+    rows = _hypothesis_rows()
+    declared: dict[str, set[str]] = {h: set() for h in rows}
+    for path in EXPERIMENTS:
+        meta = _frontmatter(path)
+        for hypothesis in _ids(meta["hypotheses"]):
+            declared[hypothesis].add(meta["id"])
+    linked = {h: set(re.findall(r"\[(E\d+)\]\(", row)) for h, row in rows.items()}
+    assert linked == declared
+    assert all(declared.values()), "every hypothesis has at least one experiment"
+
+
+def test_every_experiment_is_indexed() -> None:
+    index = (ROOT / "docs/index.md").read_text()
+    assert all(f"experiments/{p.parent.name}/README.md" in index for p in EXPERIMENTS)
