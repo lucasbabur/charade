@@ -1,6 +1,10 @@
-# ADR 0003: Normalized entropy is the primary metric
+---
+title: "ADR 0003: Normalized entropy is the primary metric"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0003: Normalized entropy is the primary metric
 
 
 ## Context

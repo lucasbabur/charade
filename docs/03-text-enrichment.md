@@ -1,3 +1,9 @@
+---
+title: "Character text"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 03 — Character text
 
 **Bottom line:** descriptions are templates: embeddings recover genre perfectly but predict no CTR beyond genre × tier (ρ ≈ 0 ± 0.1), and adding them hurts validation log loss ([04](04-models-evaluation.md)). The pipeline stays for real free-text personas.

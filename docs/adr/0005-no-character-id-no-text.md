@@ -1,6 +1,10 @@
-# ADR 0005: No character ID and no description text in the shipped model
+---
+title: "ADR 0005: No character ID and no description text in the shipped model"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0005: No character ID and no description text in the shipped model
 
 
 ## Context

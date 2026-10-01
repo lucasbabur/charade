@@ -1,3 +1,9 @@
+---
+title: "Candidate ranking"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 05 — Candidate ranking
 
 **Bottom line:** gate, rank by pCTR × bid × pacing, serve greedily on 95 % of traffic and by Thompson sampling on 5 %, and log the propensity. Offline, greedy ranking beats the logging policy by **+1.28 pp CTR (DR, [+0.07, +2.50])**; with gates and exploration it is +1.13 pp, CI touching zero ([ope.md](../reports/policy/ope.md)).

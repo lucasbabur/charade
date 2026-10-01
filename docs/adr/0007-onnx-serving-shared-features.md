@@ -1,6 +1,10 @@
-# ADR 0007: ONNX serving and one shared feature transform
+---
+title: "ADR 0007: ONNX serving and one shared feature transform"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0007: ONNX serving and one shared feature transform
 
 
 ## Context

@@ -1,3 +1,9 @@
+---
+title: "Drift and adaptation"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 07 — Drift and adaptation
 
 **Bottom line:** the CTR level shifts daily and ads rotate fast (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. Online recalibration adds nothing; an exposure penalty cuts cohort concentration 30 % with no detectable CTR loss ([drift.md](../reports/drift/drift.md)).

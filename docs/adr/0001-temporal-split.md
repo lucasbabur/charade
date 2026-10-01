@@ -1,6 +1,10 @@
-# ADR 0001: Temporal split, test touched once
+---
+title: "ADR 0001: Temporal split, test touched once"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0001: Temporal split, test touched once
 
 
 ## Context

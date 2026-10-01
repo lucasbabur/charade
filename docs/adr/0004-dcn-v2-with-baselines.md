@@ -1,6 +1,10 @@
-# ADR 0004: DCN-v2 seed ensemble ships; LightGBM and logistic are yardsticks
+---
+title: "ADR 0004: DCN-v2 seed ensemble ships; LightGBM and logistic are yardsticks"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0004: DCN-v2 seed ensemble ships; LightGBM and logistic are yardsticks
 
 
 ## Context

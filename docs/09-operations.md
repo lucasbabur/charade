@@ -1,3 +1,9 @@
+---
+title: "Operations: infrastructure, delivery, monitoring, runbooks"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 09 — Operations: infrastructure, delivery, monitoring, runbooks
 
 **Bottom line:** one Terraform module builds an AWS environment (VPC, ECS API behind an internal ALB, Redis, Firehose decision logs, daily gated retraining, alarms, GitHub OIDC); validated with tflint and checkov, never applied.

@@ -1,3 +1,9 @@
+---
+title: "Features"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 02 — Features
 
 **Bottom line:** 25 embedded categoricals and 10 standardized dense inputs, all fitted on training rows and defined once in `charade.features` for training and serving; groups were kept or dropped by validation ablation ([04](04-models-evaluation.md)).

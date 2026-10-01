@@ -1,6 +1,10 @@
-# ADR 0002: A candidate is banner_pos + C14 and its hierarchy
+---
+title: "ADR 0002: A candidate is banner_pos + C14 and its hierarchy"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0002: A candidate is banner_pos + C14 and its hierarchy
 
 
 ## Context

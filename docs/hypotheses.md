@@ -1,3 +1,9 @@
+---
+title: "Pre-registered hypotheses"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # Pre-registered hypotheses
 
 Written on 2026-10-01, **before any model was trained**. Each hypothesis has a prediction, the test that decides it, and the decision it drives. Results are filled in only from generated reports; a refuted hypothesis is reported as refuted, not reworded.

@@ -1,3 +1,9 @@
+---
+title: "Next steps"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 10 — Next steps
 
 Ordered by expected value per week of work.

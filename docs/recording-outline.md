@@ -1,3 +1,9 @@
+---
+title: "Recording outline (~12 minutes)"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # Recording outline (~12 minutes)
 
 Talking points with the artifact to show on screen. Numbers are taken from `reports/`.

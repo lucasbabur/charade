@@ -1,6 +1,10 @@
-# ADR 0006: Greedy pCTR with gates and a 5 % Thompson bucket; propensities logged
+---
+title: "ADR 0006: Greedy pCTR with gates and a 5 % Thompson bucket; propensities logged"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0006: Greedy pCTR with gates and a 5 % Thompson bucket; propensities logged
 
 
 ## Context

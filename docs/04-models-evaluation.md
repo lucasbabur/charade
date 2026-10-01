@@ -1,3 +1,9 @@
+---
+title: "Models and evaluation"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 04 — Models and evaluation
 
 **Bottom line:** a 3-seed DCN-v2 ensemble, isotonic-calibrated, reaches **test NE 0.8848** (AUC 0.737, pred/obs 1.012), beating LightGBM by −0.0040 [−0.0052, −0.0027] and logistic by −0.0120 [−0.0138, −0.0102] log loss. Validation ablations dropped character ID and conversation features and rejected text ([metrics.json](../reports/models/metrics.json)).

@@ -1,3 +1,9 @@
+---
+title: "Cold start"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 06 — Cold start
 
 **Bottom line:** a character is its genre and safety tier (no measurable spread beyond them), so the shipped model has no character ID and scores new characters like old ones: test NE 0.906 cold vs 0.885 warm (n = 1,478, no CI computed) ([coldstart.md](../reports/coldstart/coldstart.md)).
