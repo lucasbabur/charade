@@ -122,6 +122,7 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
                 "candidate_id": r.candidate_id,
                 "pctr": r.pctr,
                 "value": r.value,
+                "propensity": r.propensity,
                 "gate_reasons": [str(g) for g in r.gate_reasons],
             }
             for r in decision.ranked

@@ -623,6 +623,11 @@
             "title": "Pctr Low",
             "type": "number"
           },
+          "propensity": {
+            "description": "Exact probability that this request serves this candidate (0 if gated)",
+            "title": "Propensity",
+            "type": "number"
+          },
           "rank": {
             "anyOf": [
               {
@@ -648,7 +653,8 @@
           "pctr_high",
           "value",
           "gated",
-          "gate_reasons"
+          "gate_reasons",
+          "propensity"
         ],
         "title": "RankedAd",
         "type": "object"

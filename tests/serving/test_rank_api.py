@@ -161,4 +161,5 @@ def test_decisions_are_logged_as_json_events(
     assert decision["request_id"] == "req-1"
     assert "propensity" in decision
     assert len(decision["candidates"]) == 6
-    assert {"candidate_id", "pctr", "value", "gate_reasons"} <= set(decision["candidates"][0])
+    assert {"candidate_id", "pctr", "value", "propensity", "gate_reasons"} <= set(decision["candidates"][0])
+    assert abs(sum(c["propensity"] for c in decision["candidates"]) - 1) < 1e-9
