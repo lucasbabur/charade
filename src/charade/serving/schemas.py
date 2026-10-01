@@ -129,6 +129,7 @@ class RankedAd(BaseModel):
     value: float = Field(description="pCTR x bid x pacing; the ranking key")
     gated: bool
     gate_reasons: list[GateReason]
+    propensity: float = Field(description="Exact probability that this request serves this candidate (0 if gated)")
 
 
 class ColdStart(BaseModel):
