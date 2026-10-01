@@ -6,8 +6,10 @@ only place features are defined.
 
 import polars as pl
 
-from charade.data.load import PLACEHOLDER_DEVICE_ID
 from charade.features.counters import counter_features
+
+PLACEHOLDER_DEVICE_ID = "a99f214a"
+"""`device_id` value on 82 % of rows; a 'device unknown' marker, not a user."""
 
 APP_SURFACE_SITE_ID = "85f751fd"
 """Rows served inside a host app carry this `site_id`; everything else is a web surface."""

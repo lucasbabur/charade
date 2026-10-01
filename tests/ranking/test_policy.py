@@ -2,8 +2,9 @@ import numpy as np
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
+from charade.config import PolicyConfig
 from charade.ranking.pacing import Pacer
-from charade.ranking.policy import Candidate, GateReason, PolicyConfig, decide, explores
+from charade.ranking.policy import Candidate, GateReason, decide, explores
 
 CONFIG = PolicyConfig(advertiser_max_tier={"family": "sfw"})
 

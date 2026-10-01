@@ -9,9 +9,8 @@ from datetime import datetime
 import numpy as np
 import polars as pl
 
-from charade.data.load import PLACEHOLDER_DEVICE_ID
 from charade.features.counters import RAW_COUNTER_COLUMNS, UserHistory
-from charade.features.derive import derive
+from charade.features.derive import PLACEHOLDER_DEVICE_ID, derive
 from charade.features.spec import Encoded, FeatureSpec, encode
 from charade.serving.schemas import RankRequest
 
