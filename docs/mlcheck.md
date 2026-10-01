@@ -42,7 +42,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | `splits.parquet` | `id, split, ts` | MLL001–002 |
 | `predictions.parquet` | `id, split, model, label, pred, ts, slice_<name>…` for primary **and** baseline on val + test | MLM* |
 | `leakage.json` | shuffled-label AUC, per-feature univariate AUC, adversarial AUC | MLL004–005, MLL007 |
-| `evaluation_ledger.jsonl` | one line per evaluation: run, model version, split | MLL006 |
+| `evaluation_ledger.jsonl` | one line per evaluation: run, model version, split, configuration hash (model + features + policy + windows), window | MLL006 |
 | `parity.json` | offline vs serving features, torch vs ONNX outputs | MLV001–002 |
 | `latency.json` | load-test p50/p95/p99, error rate, N candidates | MLV003–004 |
 | `ope.json` | per policy and estimator: value, CI, ESS, max weight | MLP001–002 |
@@ -75,7 +75,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLL003 | leakage | error | fit-window | Every fitted object (vocabulary, encoder, prior, scaler, model, calibrator) must be fitted only on data that precedes the holdout, inside the split it declares. |
 | MLL004 | leakage | error | shuffled-label-auc | Retraining on shuffled labels must give chance-level AUC; anything else means the pipeline leaks the label. |
 | MLL005 | leakage | error | univariate-feature-auc | No single feature should predict clicks almost perfectly; one that does is usually derived from the label. |
-| MLL006 | leakage | error | holdout-touched-once | Evaluating repeatedly on the holdout and picking the best turns it into a validation set; each model version gets one holdout evaluation. Limitation: it detects re-scoring the same model version, not repeated looks at the holdout across versions; the evaluation ledger makes those visible to a reviewer. |
+| MLL006 | leakage | error | holdout-config-budget | Every distinct configuration scored on the holdout is a chance to select on it. Re-scoring an identical configuration adds nothing; new configurations spend a pre-registered budget per holdout window. |
 | MLL007 | leakage | warning | adversarial-validation | A classifier that separates train from holdout rows with high AUC means strong covariate shift; offline metrics on that holdout will not transfer. |
 | MLM001 | model | error | predictions-contract | Every gate below is computed from predictions.parquet; it must hold primary and baseline predictions on every evaluation split for the same ids. |
 | MLM002 | model | error | prediction-sanity | Probabilities must be finite, strictly inside (0,1) and not constant; a 0 or 1 makes log loss infinite and a constant model ranks nothing. |

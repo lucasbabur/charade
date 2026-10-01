@@ -16,7 +16,7 @@ updated-at: 2026-10-01
 | Training + early stopping (4 validation passes per epoch, patience 4) | Train 10-21..27; stop on 10-28 | Production retrains on everything up to yesterday |
 | Calibration choice (identity / Platt / isotonic) | 10-28, 2-fold over even/odd hours | Fitting on the most recent day absorbs the daily CTR level shift (H9) |
 | Ablations | 10-28, raw logits | Group decisions never look at test |
-| **Test** | 10-29 + 10-30 05h, scored once per model version | Logged in `evaluation_ledger.jsonl` (MLL006) |
+| **Test** | 10-29 + 10-30 05h | Every scoring logged with a configuration hash; at most 3 configurations per model family may look at this window (MLL006) |
 
 **Primary metric: normalized entropy (NE)**, the log loss divided by the entropy of the evaluation set's base rate. The auction ranks by pCTR × bid, so the probabilities must be right, not just well ordered. AUC, calibration ratio and ECE are reported alongside. Any claim that one model beats another needs a paired bootstrap that resamples whole hours, because rows within an hour share traffic mix.
 

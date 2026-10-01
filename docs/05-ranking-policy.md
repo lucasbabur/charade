@@ -13,7 +13,7 @@ updated-at: 2026-10-01
 | Step | Rule | Why |
 |---|---|---|
 | 1. Brand-safety gate | `advertiser_max_tier[C21]` ≥ character `safety_tier`, else gated | An advertiser that is family-safe must never appear next to a mature persona, whatever its pCTR. The data has no advertiser preferences, so the matrix in `[tool.charade.policy]` is illustrative (advertiser 157 ≤ suggestive, 48 = sfw only) |
-| 2. Frequency cap | `prior_exposures(user, campaign) ≥ 8` → gated | CTR drops from 19.2 % on first exposure to 13–15 % after. The model already prices this (`log_user_campaign_imps`), so the cap is a user-experience limit |
+| 2. Frequency cap | Every exposure of the campaign to the user recorded so far, **including the current hour**, ≥ 8 → gated | A hard limit needs the live count; the model feature `log_user_campaign_imps` deliberately excludes the current hour, so the two use different counters. If Redis is unavailable there is no exposure state: the cap fails open, the response warns, and `charade_frequency_cap_unenforced_total` counts it |
 | 3. Score | Calibrated pCTR from one batched ONNX call | One forward pass for all N candidates |
 | 4. Value | pCTR × bid | Bid defaults to 1 (pure CTR ranking, as the brief asks) |
 | 5. Evidence interval | Beta(pCTR·n, (1−pCTR)·n), n = training impressions of (campaign, genre), clipped to [20, 1000] | A heuristic width, not a calibrated posterior over prediction error. Never-seen pairings get wide intervals |
@@ -53,7 +53,7 @@ Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.23 
 2. The candidate set is assumed to be the served set.
 3. ESS is about 4 % of rows.
 
-Read the table as "ranking by the model is very likely better than the historical allocation, by an amount of order 1 pp". It is not a forecast of production lift.
+Read the table as a demonstration of the evaluation machinery under these assumptions. It is not evidence of business impact and not grounds for a rollout: real candidate sets, logged propensities and outcomes (which the API now records) come first, then an online test.
 
 - **Random lands near the logging CTR,** as expected when logging is roughly frequency-proportional.
 - **Gates and exploration cost about 0.16 pp** against ungated greedy (DR 18.44 % vs 18.60 %): the price of brand safety, frequency caps and the learning budget.

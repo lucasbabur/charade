@@ -54,8 +54,11 @@ It does this in **p99 28 ms at 400 rps** for 100 candidates.
 - **Not run:** OpenAI embeddings (the key had no quota), Gemini and Voyage (no keys). Given ρ ≈ 0 for two very different embedders, a third would not change the decision on this data.
 - **Brand-safety preferences** are illustrative; the data has none.
 - **Budget pacing is not connected to the API.** The pacer and budget gate are tested library code, but there is no spend feed to drive them.
+- **The feedback loop is code, not a running job.** The API logs decisions, impressions and clicks durably, and `charade.data.events` turns them into training rows (tested end to end), but no scheduled job builds the S3 export yet.
 - **Daily retraining is validated, not operated.** Rolling windows, immutable bundle promotion and redeploy are scripted and covered by Terraform validation, but they have never run on AWS.
 - **`confidence` and the evidence intervals are heuristics** derived from training support, not calibrated posteriors.
-- **Earlier versions had two correctness bugs** an external review found: Thompson-sampling propensities biased upward, and counters that let later-hour events leak into earlier snapshots. Both are fixed with recovery and arrival-order property tests ([05](05-ranking-policy.md), [08](08-serving-architecture.md)).
+- **External reviews found three correctness bugs, all fixed with tests:** Thompson-sampling propensities biased upward; counters that let later-hour events leak into earlier snapshots; and a frequency cap that ignored the current hour, because it reused the causal model feature. The cap now counts every recorded exposure; the feature still excludes the current hour.
+- **MLL006 is a budget, not a proof.** It caps how many distinct configurations look at one holdout window; it cannot prove results were not used to choose among them.
+- **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation and graduation procedures are what transfer.
 
 Next steps: [10-next-steps.md](10-next-steps.md).
