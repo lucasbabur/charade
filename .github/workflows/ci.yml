@@ -51,6 +51,25 @@ jobs:
       - uses: astral-sh/setup-uv@v10.2.0
       - name: Validate
         run: uv run --no-project --with poethepoet poe tf
+      - uses: terraform-linters/setup-tflint@v6
+        with:
+          tflint_version: v0.64.0
+      - name: tflint
+        working-directory: infra/terraform
+        run: |
+          tflint --init --config "$PWD/.tflint.hcl"
+          tflint --recursive --config "$PWD/.tflint.hcl" --format compact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: checkov
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: infra/terraform
+          framework: terraform
+          quiet: true
+          compact: true
+          skip_path: .terraform
+          download_external_modules: false
 
   actionlint:
     name: Lint workflows
@@ -69,11 +88,18 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - name: hadolint
+      - name: hadolint (api)
         uses: hadolint/hadolint-action@v3.5.0
         with:
           dockerfile: docker/api.Dockerfile
           failure-threshold: warning
+      - name: hadolint (train)
+        uses: hadolint/hadolint-action@v3.5.0
+        with:
+          dockerfile: docker/train.Dockerfile
+          failure-threshold: warning
+      - name: shellcheck
+        run: shellcheck scripts/*.sh
       - uses: docker/setup-buildx-action@v4
       - name: Build
         uses: docker/build-push-action@v7
