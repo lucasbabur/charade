@@ -5,8 +5,14 @@ publisher x hour cell (`site_id`, `app_id`, `ts`), the candidates are the creati
 cell (`C14` + `banner_pos`, with the creative's other ad fields), capped at the `TOP_K` most
 frequent. The logging propensity of an ad is its share of the cell's impressions. Each evaluated
 impression keeps its own context and user, and every candidate is scored as if it had been shown
-there (including its own user x campaign exposure count). Rows whose logged ad is outside the
-cell's top-K, or in single-candidate cells, are excluded and the coverage is reported.
+there (including its own user x campaign exposure count). Single-creative cells are excluded (a
+property of the cell, not of the logged action) and the coverage is reported.
+
+The estimand is the CTR over every impression in a multi-creative cell. An impression whose logged ad
+is outside the cell's top-K stays in that population: the evaluated policies never choose that ad, so
+their probability of the logged action is 0, and `mu` stays the ad's share of the whole cell. (Dropping
+those rows while keeping unconditional shares, as an earlier version did, conditions on the logged
+action and biases IPS upward.)
 
 Policies: logging (observed CTR), uniform random, greedy pCTR without gates, and the shipped policy.
 The shipped policy's per-candidate probabilities, gates and ordering all come from the serving code
@@ -44,20 +50,19 @@ REPORT = Path("reports/policy/ope.md")
 
 
 def candidate_sets(test: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
-    """(candidates per cell with `mu` and `slot`, evaluated rows with the logged slot)."""
-    served = (
+    """(top-K candidates per cell with `mu` and `slot`, evaluated rows with the logged slot or -1)."""
+    shares = (
         test.group_by(*CELL, "C14", "banner_pos")
         .agg(pl.len().alias("count"), *[pl.col(f).mode().sort().first() for f in AD_FIELDS[2:]])
         .with_columns((pl.col("count") / pl.col("count").sum().over(CELL)).alias("mu"))
         .sort([*CELL, "count", "C14", "banner_pos"], descending=[False, False, False, True, False, False])
-        .with_columns(pl.int_range(pl.len()).over(CELL).alias("slot"))
-        .filter(pl.col("slot") < TOP_K)
-        .with_columns(pl.len().over(CELL).alias("k"))
+        .with_columns(pl.int_range(pl.len()).over(CELL).alias("slot"), pl.len().over(CELL).alias("k"))
         .filter(pl.col("k") >= 2)
     )
     rows = test.join(
-        served.select(*CELL, "C14", "banner_pos", "slot", "mu"), on=[*CELL, "C14", "banner_pos"], how="inner"
-    )
+        shares.select(*CELL, "C14", "banner_pos", "slot", "mu"), on=[*CELL, "C14", "banner_pos"], how="inner"
+    ).with_columns(pl.when(pl.col("slot") < TOP_K).then(pl.col("slot")).otherwise(-1).alias("slot"))
+    served = shares.filter(pl.col("slot") < TOP_K).with_columns(pl.len().over(CELL).alias("k"))
     return served, rows.rename({"slot": "logged_slot", "mu": "logged_mu"})
 
 
@@ -168,6 +173,11 @@ class CandidateMatrices:
     mu: np.ndarray
     blocks: np.ndarray
 
+    def at_logged(self, matrix: np.ndarray) -> np.ndarray:
+        """Each row's entry for its logged ad; 0 when that ad is outside the candidate set."""
+        inside = self.logged >= 0
+        return np.where(inside, matrix[np.arange(len(self.y)), np.where(inside, self.logged, 0)], 0.0)
+
 
 def reward_model(frame: pl.DataFrame, settings: Settings) -> Callable[[pl.DataFrame], np.ndarray]:
     """Independent outcome model for the doubly robust estimator.
@@ -253,11 +263,11 @@ def run(
     settings = settings or get_settings()
     c = load_candidates(settings, data_dir, split)
     n = len(c.y)
-    q_logged = c.reward[np.arange(n), c.logged]
+    q_logged = c.at_logged(c.reward)
     results: list[Estimate] = [_observed(c.y, c.blocks)]
     lifts: dict[str, dict[str, tuple[float, float, float]]] = {}
     for name, pi in policies(c.candidates, n, settings).items():
-        args = (pi[np.arange(n), c.logged], c.mu, c.y, q_logged, (pi * c.reward).sum(axis=1), c.blocks)
+        args = (c.at_logged(pi), c.mu, c.y, q_logged, (pi * c.reward).sum(axis=1), c.blocks)
         results += estimate(name, *args)
         lifts[name] = lift(*args)
     if split == "test":

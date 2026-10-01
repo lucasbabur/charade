@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
+import pytest
 
 from charade.analysis import policy_eval
 from charade.config import Settings
@@ -65,3 +66,32 @@ def test_candidate_sets_keep_only_multi_candidate_cells(bundle: Settings) -> Non
     assert rows.height == 5
     assert set(served["k"].to_list()) == {3}
     del bundle
+
+
+def test_rows_whose_logged_ad_is_outside_the_top_k_stay_in_the_population() -> None:
+    """Eleven equally frequent ads, all with CTR 0.2: a uniform policy over the top ten is worth 0.2.
+
+    Dropping the eleventh ad's rows while keeping its unconditional share (an earlier version) gave 0.22.
+    """
+    n_ads, per_ad = 11, 10
+    frame = pl.DataFrame(
+        {
+            "site_id": ["s"] * n_ads * per_ad,
+            "app_id": ["a"] * n_ads * per_ad,
+            "ts": [0] * n_ads * per_ad,
+            "C14": [f"c{i:02d}" for i in range(n_ads) for _ in range(per_ad)],
+            "banner_pos": ["0"] * n_ads * per_ad,
+            "click": [int(j < 2) for _ in range(n_ads) for j in range(per_ad)],
+            **{f: ["f"] * n_ads * per_ad for f in ("C15", "C16", "C17", "C18", "C19", "C21")},
+        }
+    )
+    served, rows = policy_eval.candidate_sets(frame)
+    assert served.height == policy_eval.TOP_K
+    assert rows.height == n_ads * per_ad
+    assert (rows["logged_slot"] == -1).sum() == per_ad
+    logged = rows["logged_slot"].to_numpy()
+    pi = np.where(logged >= 0, 1 / policy_eval.TOP_K, 0.0)
+    y = rows["click"].to_numpy().astype(np.float64)
+    zeros = np.zeros_like(y)
+    ips = estimate("uniform top-k", pi, rows["logged_mu"].to_numpy(), y, zeros, zeros, np.zeros(len(y), np.int64))[0]
+    assert ips.value == pytest.approx(0.2)
