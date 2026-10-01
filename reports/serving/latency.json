@@ -1,10 +1,10 @@
 {
   "source": "locust",
   "n_candidates": 100,
-  "requests": 47582,
-  "duration_s": 119.09015226364136,
-  "p50_ms": 9.0,
-  "p95_ms": 17.0,
-  "p99_ms": 28.0,
+  "requests": 47610,
+  "duration_s": 119.08057284355164,
+  "p50_ms": 8.0,
+  "p95_ms": 14.0,
+  "p99_ms": 26.0,
   "error_rate": 0.0
 }

@@ -8,17 +8,17 @@ Evaluated impressions: 102,874 of 127,406 test rows (80.7%); cells: 5,484; mean 
 | uniform random | ips | 0.1905 | [0.1814, 0.1987] | 17,149 | 196.9 |
 | uniform random | snips | 0.1760 | [0.1694, 0.1819] | 17,149 | 196.9 |
 | uniform random | dr | 0.1704 | [0.1623, 0.1775] | 17,149 | 196.9 |
-| greedy pCTR | ips | 0.1991 | [0.1848, 0.2121] | 5,417 | 445.0 |
-| greedy pCTR | snips | 0.1950 | [0.1819, 0.2067] | 5,417 | 445.0 |
-| greedy pCTR | dr | 0.1847 | [0.1710, 0.1967] | 5,417 | 445.0 |
-| shipped (gates + 5% Thompson) | ips | 0.1928 | [0.1794, 0.2044] | 5,709 | 425.9 |
-| shipped (gates + 5% Thompson) | snips | 0.1933 | [0.1796, 0.2055] | 5,709 | 425.9 |
-| shipped (gates + 5% Thompson) | dr | 0.1839 | [0.1701, 0.1959] | 5,709 | 425.9 |
+| greedy pCTR | ips | 0.2021 | [0.1857, 0.2168] | 4,235 | 445.0 |
+| greedy pCTR | snips | 0.1960 | [0.1819, 0.2099] | 4,235 | 445.0 |
+| greedy pCTR | dr | 0.1852 | [0.1713, 0.1981] | 4,235 | 445.0 |
+| shipped (gates + 5% Thompson) | ips | 0.1943 | [0.1803, 0.2067] | 4,515 | 426.0 |
+| shipped (gates + 5% Thompson) | snips | 0.1936 | [0.1796, 0.2064] | 4,515 | 426.0 |
+| shipped (gates + 5% Thompson) | dr | 0.1836 | [0.1696, 0.1966] | 4,515 | 426.0 |
 
 ## Lift over the logging policy (paired hour-block bootstrap)
 
 | Policy | SNIPS lift [95 % CI] | DR lift [95 % CI] |
 |---|---|---|
 | uniform random | +0.0037 [-0.0000, +0.0071] | -0.0019 [-0.0053, +0.0013] |
-| greedy pCTR | +0.0227 [+0.0110, +0.0341] | +0.0124 [+0.0008, +0.0237] |
-| shipped (gates + 5% Thompson) | +0.0210 [+0.0094, +0.0325] | +0.0116 [+0.0001, +0.0226] |
+| greedy pCTR | +0.0237 [+0.0115, +0.0362] | +0.0129 [+0.0007, +0.0250] |
+| shipped (gates + 5% Thompson) | +0.0213 [+0.0090, +0.0326] | +0.0113 [-0.0009, +0.0221] |
