@@ -101,17 +101,25 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLV004 | serving | error | load-error-rate | Fast responses do not count if they are errors. |
 | MLX001 | drift | warning | feature-drift-psi | PSI above 0.25 marks a feature whose distribution moved enough to invalidate what the model learned about it. |
 
-## Result on the provided data (2026-10-01, before any model code exists)
+## Result on the shipped run (`uv run mlcheck .`)
 
-```
-[data]  MLD001–005, 008–010 PASS (1,000,000 rows, CTR 18.04 %, 2014-10-21 00h → 10-30 05h, FK + creation order clean)
-        MLD006 WARN  2014-10-30: 22,956 rows vs median 104,199 (partial day: weight it, don't trust its daily metrics)
-        MLD007 WARN  device_id='a99f214a' 82.2 %, device_type='1' 92.1 %, C1='1005' 91.6 %, device_conn_type='0' 86.4 %, app_id='ecad2386' 64.4 %
-[static] MLS001–005, 007 FAIL: source package src/charade not found (expected until the package exists)
-```
+**46 checks: 42 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
 
-The two warnings drove design decisions: the user-proxy definition (placeholder `device_id`) and per-day calibration reporting.
+| Warning | Finding | Where it is handled |
+|---|---|---|
+| MLD006 period-volume | 2014-10-30 has 22,956 rows (partial day) | Kept in test, never read alone ([01](01-data.md)) |
+| MLD007 dominant-values | `device_id = a99f214a` on 82 %, plus four low-cardinality fields | User proxy and the `device_id_real` token ([01](01-data.md), [02](02-features.md)) |
+| MLL007 adversarial-validation | Train vs test AUC 0.96, driven by creative and campaign rotation | Daily retraining, hierarchy backoff ([07](07-drift-adaptation.md)) |
+| MLX001 feature-drift-psi | PSI > 0.25 on ad ids, `app_id`, and `hour_of_day` (partial last day) | Same as above |
+
+Gates that pass with margin:
+- leakage (shuffled-label AUC 0.472; strongest single feature 0.671);
+- beats baseline, CI excluding zero;
+- calibration 1.012 and ECE 0.005;
+- exact train/serve parity, ONNX within 1.9e-6;
+- p99 26 ms at 400 rps;
+- 3,000 decisions respecting gates with valid propensities.
 
 ## Tests
 
-`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 46 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 110 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.
+`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 46 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 111 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.
