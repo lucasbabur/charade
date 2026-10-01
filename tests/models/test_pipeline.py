@@ -3,21 +3,14 @@ from pathlib import Path
 
 import pytest
 
-from charade.config import DcnConfig, GbdtConfig, ModelConfig, Settings, get_settings
+from charade.config import Settings
 from charade.models import ablate, pipeline
 from charade.scoring.scorer import Scorer
-from tests.conftest import FIXTURES
-
-TINY = ModelConfig(
-    dcn=DcnConfig(
-        embedding_dim=4, cross_layers=1, cross_rank=8, hidden=[16], max_epochs=2, batch_size=512, seeds=[0, 1, 2]
-    ),
-    gbdt=GbdtConfig(num_leaves=7, max_rounds=30, min_data_in_leaf=20),
-)
+from tests.conftest import FIXTURES, fixture_settings
 
 
 def _settings(tmp_path: Path) -> Settings:
-    return get_settings().model_copy(update={"data_dir": FIXTURES, "artifacts_dir": tmp_path / "art", "model": TINY})
+    return fixture_settings(tmp_path / "art")
 
 
 def test_pipeline_writes_the_mlcheck_contract(tmp_path: Path) -> None:
