@@ -15,6 +15,7 @@ from charade.config import get_settings
 from charade.ranking.policy import Candidate, Ranked, decide
 from charade.serving import metrics
 from charade.serving.assemble import assemble, epoch_hour, unknown_character, user_key
+from charade.serving.logging import configure_logging
 from charade.serving.runtime import Runtime, load_runtime
 from charade.serving.schemas import (
     ColdStart,
@@ -196,6 +197,7 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
 
     @asynccontextmanager
     async def lifespan(api: FastAPI) -> AsyncGenerator[None]:
+        configure_logging()
         api.state.runtime = runtime or load_runtime(get_settings())
         yield
 
