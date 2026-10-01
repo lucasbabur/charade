@@ -187,8 +187,10 @@ async def record_impression(event: ImpressionEvent, runtime: Annotated[Runtime, 
         outcome = await runtime.store.record_impression(event.impression_id, impression)
     except StoreUnavailableError as exc:
         raise HTTPException(status_code=503, detail="feature store unavailable") from exc
-    if outcome is Outcome.RECORDED:
-        # Durable outcome record (log pipeline -> S3); charade.data.events joins it to its decision.
+    # Durable outcome record (log pipeline -> S3), emitted on duplicates too: if a previous attempt
+    # committed the state but died before logging, the retry restores the record. Delivery is
+    # at-least-once; charade.data.events deduplicates by impression_id.
+    if outcome in {Outcome.RECORDED, Outcome.DUPLICATE}:
         log.info(
             "impression",
             impression_id=event.impression_id,
@@ -207,8 +209,7 @@ async def record_click(event: ClickEvent, runtime: Annotated[Runtime, Depends(_r
         raise HTTPException(status_code=503, detail="feature store unavailable") from exc
     if outcome is Outcome.UNKNOWN_IMPRESSION:
         raise HTTPException(status_code=404, detail="unknown or expired impression_id")
-    if outcome is Outcome.RECORDED:
-        log.info("click", impression_id=event.impression_id)
+    log.info("click", impression_id=event.impression_id)  # at-least-once, as for impressions
     return EventResult(outcome="recorded" if outcome is Outcome.RECORDED else "duplicate")
 
 

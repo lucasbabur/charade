@@ -6,7 +6,9 @@ The API writes three JSON events (CloudWatch -> Firehose -> S3 in production):
     click       impression_id                                   (once per impression_id, may arrive late)
 
 Each impression joins its decision on request_id and its served candidate's attributes on
-candidate_id; click = 1 if a click event exists for the impression. The result has exactly the
+candidate_id; click = 1 if a click event exists for the impression. Events are delivered
+at least once (the API re-emits on retried writes), so impressions and clicks are deduplicated
+by impression_id. The result has exactly the
 columns of `impressions.csv`, so the training pipeline consumes it unchanged. Impressions whose
 decision is missing (log loss, retention) are dropped and counted, not guessed.
 """
@@ -35,18 +37,18 @@ def _records(lines: Iterable[str]) -> Iterable[dict[str, object]]:
 def build_rows(lines: Iterable[str]) -> tuple[pl.DataFrame, int]:
     """(training rows in the impressions.csv schema, impressions dropped for a missing decision)."""
     decisions: dict[str, dict[str, object]] = {}
-    impressions: list[dict[str, object]] = []
+    impressions: dict[str, dict[str, object]] = {}
     clicked: set[str] = set()
     for record in _records(lines):
         if record["event"] == "decision":
             decisions[str(record["request_id"])] = record
         elif record["event"] == "impression":
-            impressions.append(record)
+            impressions.setdefault(str(record["impression_id"]), record)  # at-least-once: keep the first
         else:
             clicked.add(str(record["impression_id"]))
     rows: list[dict[str, object]] = []
     dropped = 0
-    for imp in impressions:
+    for imp in impressions.values():
         decision = decisions.get(str(imp["request_id"]))
         ads = decision.get("ads") if decision else None
         if not isinstance(ads, dict) or str(imp["candidate_id"]) not in ads:
