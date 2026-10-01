@@ -1,0 +1,446 @@
+[
+  {
+    "context": "mature romance, returning user, turn 6+",
+    "request": {
+      "request_id": "sample-romance-mature-returning",
+      "hour": "2014-10-29T00:00:00",
+      "character_id": "cfe667382d",
+      "conversation_turn": 7,
+      "session_msg_count": 14,
+      "site_id": "9e8cf15d",
+      "site_domain": "0d3cb7be",
+      "site_category": "f028772b",
+      "app_id": "ecad2386",
+      "app_domain": "7801e8d9",
+      "app_category": "07d7df22",
+      "device_id": "a99f214a",
+      "device_ip": "dbf394c0",
+      "device_model": "8a4875bd",
+      "device_type": "1",
+      "device_conn_type": "0",
+      "C1": "1005",
+      "C20": "-1",
+      "candidates": [
+        {
+          "candidate_id": "21611@0",
+          "banner_pos": "0",
+          "C14": "21611",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2480",
+          "C18": "3",
+          "C19": "297",
+          "C21": "61",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "21189@0",
+          "banner_pos": "0",
+          "C14": "21189",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2424",
+          "C18": "1",
+          "C19": "161",
+          "C21": "71",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "21191@0",
+          "banner_pos": "0",
+          "C14": "21191",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2424",
+          "C18": "1",
+          "C19": "161",
+          "C21": "71",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "20108@0",
+          "banner_pos": "0",
+          "C14": "20108",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2299",
+          "C18": "2",
+          "C19": "1327",
+          "C21": "52",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "16208@1",
+          "banner_pos": "1",
+          "C14": "16208",
+          "C15": "320",
+          "C16": "50",
+          "C17": "1800",
+          "C18": "3",
+          "C19": "167",
+          "C21": "23",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "15705@0",
+          "banner_pos": "0",
+          "C14": "15705",
+          "C15": "320",
+          "C16": "50",
+          "C17": "1722",
+          "C18": "0",
+          "C19": "35",
+          "C21": "79",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "4687@1",
+          "banner_pos": "1",
+          "C14": "4687",
+          "C15": "320",
+          "C16": "50",
+          "C17": "423",
+          "C18": "2",
+          "C19": "39",
+          "C21": "32",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "19772@1",
+          "banner_pos": "1",
+          "C14": "19772",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2227",
+          "C18": "0",
+          "C19": "679",
+          "C21": "48",
+          "bid": 1.0
+        }
+      ],
+      "character": null
+    },
+    "response": {
+      "request_id": "sample-romance-mature-returning",
+      "chosen_id": "4687@1",
+      "propensity": 1.0,
+      "explored": false,
+      "confidence": "high",
+      "degraded": false,
+      "cold_start": {
+        "character": false,
+        "user": false
+      },
+      "warnings": [],
+      "model_version": "20261001T053712Z-d05ce6c9",
+      "ranked": [
+        {
+          "candidate_id": "4687@1",
+          "rank": 1,
+          "pctr": 0.2097560975609756,
+          "pctr_low": 0.1885877607226263,
+          "pctr_high": 0.2309244343993249,
+          "value": 0.2097560975609756,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "16208@1",
+          "rank": 2,
+          "pctr": 0.1488469601677149,
+          "pctr_low": 0.130340529025668,
+          "pctr_high": 0.1673533913097618,
+          "value": 0.1488469601677149,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "20108@0",
+          "rank": 3,
+          "pctr": 0.11884393063583815,
+          "pctr_low": 0.10201859309250572,
+          "pctr_high": 0.13566926817917058,
+          "value": 0.11884393063583815,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "15705@0",
+          "rank": 4,
+          "pctr": 0.11732851985559564,
+          "pctr_low": 0.10059642928670973,
+          "pctr_high": 0.13406061042448156,
+          "value": 0.11732851985559564,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "21611@0",
+          "rank": 5,
+          "pctr": 0.1022763706316127,
+          "pctr_low": 0.08652175376966542,
+          "pctr_high": 0.11803098749355995,
+          "value": 0.1022763706316127,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "21191@0",
+          "rank": 6,
+          "pctr": 0.09421457997492387,
+          "pctr_low": 0.07902588066122203,
+          "pctr_high": 0.10940327928862571,
+          "value": 0.09421457997492387,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "21189@0",
+          "rank": 7,
+          "pctr": 0.0861913357400722,
+          "pctr_low": 0.07159955467480819,
+          "pctr_high": 0.10078311680533622,
+          "value": 0.0861913357400722,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "19772@1",
+          "rank": null,
+          "pctr": 0.16161616161616163,
+          "pctr_low": 0.14247744964887188,
+          "pctr_high": 0.18075487358345138,
+          "value": 0.16161616161616163,
+          "gated": true,
+          "gate_reasons": [
+            "brand_safety"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "context": "new sfw mentor character, new user, turn 1",
+    "request": {
+      "request_id": "sample-new-mentor-character",
+      "hour": "2014-10-29T00:00:00",
+      "character_id": "brand-new-character",
+      "conversation_turn": 1,
+      "session_msg_count": 1,
+      "site_id": "17caea14",
+      "site_domain": "0dde25ec",
+      "site_category": "f028772b",
+      "app_id": "ecad2386",
+      "app_domain": "7801e8d9",
+      "app_category": "07d7df22",
+      "device_id": "a99f214a",
+      "device_ip": "eb307034",
+      "device_model": "1f0bc64f",
+      "device_type": "1",
+      "device_conn_type": "0",
+      "C1": "1005",
+      "C20": "-1",
+      "candidates": [
+        {
+          "candidate_id": "21611@0",
+          "banner_pos": "0",
+          "C14": "21611",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2480",
+          "C18": "3",
+          "C19": "297",
+          "C21": "61",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "21189@0",
+          "banner_pos": "0",
+          "C14": "21189",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2424",
+          "C18": "1",
+          "C19": "161",
+          "C21": "71",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "21191@0",
+          "banner_pos": "0",
+          "C14": "21191",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2424",
+          "C18": "1",
+          "C19": "161",
+          "C21": "71",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "20108@0",
+          "banner_pos": "0",
+          "C14": "20108",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2299",
+          "C18": "2",
+          "C19": "1327",
+          "C21": "52",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "16208@1",
+          "banner_pos": "1",
+          "C14": "16208",
+          "C15": "320",
+          "C16": "50",
+          "C17": "1800",
+          "C18": "3",
+          "C19": "167",
+          "C21": "23",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "15705@0",
+          "banner_pos": "0",
+          "C14": "15705",
+          "C15": "320",
+          "C16": "50",
+          "C17": "1722",
+          "C18": "0",
+          "C19": "35",
+          "C21": "79",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "4687@1",
+          "banner_pos": "1",
+          "C14": "4687",
+          "C15": "320",
+          "C16": "50",
+          "C17": "423",
+          "C18": "2",
+          "C19": "39",
+          "C21": "32",
+          "bid": 1.0
+        },
+        {
+          "candidate_id": "19772@1",
+          "banner_pos": "1",
+          "C14": "19772",
+          "C15": "320",
+          "C16": "50",
+          "C17": "2227",
+          "C18": "0",
+          "C19": "679",
+          "C21": "48",
+          "bid": 1.0
+        }
+      ],
+      "character": {
+        "genre": "mentor",
+        "safety_tier": "sfw",
+        "creator_type": "community",
+        "num_interactions": 0,
+        "created_at": "2014-10-29T00:00:00"
+      }
+    },
+    "response": {
+      "request_id": "sample-new-mentor-character",
+      "chosen_id": "15705@0",
+      "propensity": 0.009375000000000001,
+      "explored": true,
+      "confidence": "low",
+      "degraded": false,
+      "cold_start": {
+        "character": true,
+        "user": true
+      },
+      "warnings": [],
+      "model_version": "20261001T053712Z-d05ce6c9",
+      "ranked": [
+        {
+          "candidate_id": "4687@1",
+          "rank": 1,
+          "pctr": 0.11884393063583815,
+          "pctr_low": 0.10201859309250572,
+          "pctr_high": 0.13566926817917058,
+          "value": 0.11884393063583815,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "15705@0",
+          "rank": 2,
+          "pctr": 0.11884393063583815,
+          "pctr_low": 0.10201859309250572,
+          "pctr_high": 0.13566926817917058,
+          "value": 0.11884393063583815,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "16208@1",
+          "rank": 3,
+          "pctr": 0.11732851985559564,
+          "pctr_low": 0.10059642928670973,
+          "pctr_high": 0.13406061042448156,
+          "value": 0.11732851985559564,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "20108@0",
+          "rank": 4,
+          "pctr": 0.11732851985559564,
+          "pctr_low": 0.10059642928670973,
+          "pctr_high": 0.13406061042448156,
+          "value": 0.11732851985559564,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "19772@1",
+          "rank": 5,
+          "pctr": 0.10975609756097561,
+          "pctr_low": 0.09350369032309913,
+          "pctr_high": 0.1260085047988521,
+          "value": 0.10975609756097561,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "21189@0",
+          "rank": 6,
+          "pctr": 0.0861913357400722,
+          "pctr_low": 0.07159955467480819,
+          "pctr_high": 0.10078311680533622,
+          "value": 0.0861913357400722,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "21191@0",
+          "rank": 7,
+          "pctr": 0.0861913357400722,
+          "pctr_low": 0.07159955467480819,
+          "pctr_high": 0.10078311680533622,
+          "value": 0.0861913357400722,
+          "gated": false,
+          "gate_reasons": []
+        },
+        {
+          "candidate_id": "21611@0",
+          "rank": 8,
+          "pctr": 0.06764466177669112,
+          "pctr_low": 0.05458727227700429,
+          "pctr_high": 0.08070205127637796,
+          "value": 0.06764466177669112,
+          "gated": false,
+          "gate_reasons": []
+        }
+      ]
+    }
+  }
+]
