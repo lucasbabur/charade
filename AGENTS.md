@@ -23,6 +23,7 @@ Only commands that work today are listed. When you add a command, add it here in
 | Run the API | `uv run poe serve` |
 | One ML gate with evidence | `uv run mlcheck . --only MLM004 -v` |
 | Lint workflows | `actionlint` |
+| Build and run API + Redis | `docker compose up --build` |
 
 Tasks live in `[tool.poe.tasks]`. CI calls the same tasks, so a green `poe check` locally means a green Python job.
 
@@ -38,7 +39,7 @@ tools/mlcheck/            ML release gates (own tests, own AGENTS.md)
 artifacts/current/        run output in the mlcheck artifact contract (gitignored)
 reports/                  generated figures/tables, committed; never hand-edited
 docs/                     everything explained; index at docs/index.md
-infra/terraform/, docker/, .github/workflows/
+infra/terraform/, docker/, docker-compose.yml, .github/ (workflows; dependabot.yml is the only non-pyproject config because GitHub requires its location)
 ```
 
 ## Settings

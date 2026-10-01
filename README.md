@@ -14,6 +14,7 @@ cp .env.sample .env                            # optional: overrides and API key
 cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
 uv run poe mlcheck-data                        # check the data contract
 uv run poe serve                               # API on http://127.0.0.1:8000 (docs at /docs)
+docker compose up --build                      # or: API + Redis in containers
 uv run poe                                     # list every task
 ```
 
