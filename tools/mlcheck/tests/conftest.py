@@ -187,8 +187,8 @@ def _write_reports(art: Path) -> None:
         {
             "request_id": "r1",
             "candidates": [
-                {"candidate_id": "a", "pctr": 0.2, "gated": False},
-                {"candidate_id": "b", "pctr": 0.4, "gated": True, "gate_reasons": ["brand_safety"]},
+                {"candidate_id": "a", "pctr": 0.2, "gated": False, "propensity": 1.0},
+                {"candidate_id": "b", "pctr": 0.4, "gated": True, "gate_reasons": ["brand_safety"], "propensity": 0.0},
             ],
             "chosen_id": "a",
             "propensity": 1.0,
@@ -204,8 +204,8 @@ def _write_reports(art: Path) -> None:
         {
             "request_id": "r3",
             "candidates": [
-                {"candidate_id": "d", "pctr": 0.1, "gated": False},
-                {"candidate_id": "e", "pctr": 0.3, "gated": False},
+                {"candidate_id": "d", "pctr": 0.1, "gated": False, "propensity": 0.02},
+                {"candidate_id": "e", "pctr": 0.3, "gated": False, "propensity": 0.98},
             ],
             "chosen_id": "d",
             "propensity": 0.02,

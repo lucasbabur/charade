@@ -38,7 +38,7 @@ Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatte
 | [08-serving-architecture.md](08-serving-architecture.md) | Request path, latency budget, failure modes |
 | [09-operations.md](09-operations.md) | AWS topology, delivery, alarms, runbooks |
 | [10-next-steps.md](10-next-steps.md) | Data, models, scaling |
-| [mlcheck.md](mlcheck.md) | The 46 ML release gates and their artifact contract |
+| [mlcheck.md](mlcheck.md) | The 47 ML release gates and their artifact contract |
 | [adr/](adr/) | One decision per file |
 | [api/openapi.json](api/openapi.json) | Generated API contract (CI fails if stale) |
 | [recording-outline.md](recording-outline.md) | Video walkthrough script |

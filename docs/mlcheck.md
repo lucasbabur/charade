@@ -47,7 +47,8 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | `latency.json` | load-test p50/p95/p99, error rate, N candidates | MLV003–004 |
 | `ope.json` | per policy and estimator: value, CI, ESS, max weight | MLP001–002 |
 | `decisions.jsonl` | sampled decision logs: candidates, gates, chosen id, propensity, exploration flag | MLP003–004 |
-| `drift.json` | PSI per feature per period vs reference | MLX001 |
+| `drift.json` | PSI per feature per period vs reference | MLP005 | policy | error | propensities-form-a-distribution | A propensity in (0, 1] can still be wrong. When per-candidate propensities are logged they must form the policy's distribution: gated candidates 0, eligible ones summing to 1, and the served ad's propensity equal to its own entry. |
+| MLX001 |
 
 ## Statistics used
 
@@ -109,7 +110,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 
 ## Result on the shipped run (`uv run mlcheck .`)
 
-**46 checks: 42 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
+**47 checks: 42 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
 
 | Warning | Finding | Where it is handled |
 |---|---|---|
@@ -128,4 +129,4 @@ Gates that pass with margin:
 
 ## Tests
 
-`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 46 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 111 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.
+`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 47 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 111 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.

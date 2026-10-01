@@ -100,6 +100,15 @@ def _miscalibrate(factor: float) -> Callable[[pl.DataFrame], pl.DataFrame]:
     )
 
 
+def _inflate_served_propensity(root: Path) -> None:
+    """The bias the review found: the served ad's logged probability exceeds its true share."""
+    path = root / ART / "decisions.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    rows[2]["propensity"] = 0.05
+    rows[2]["candidates"][0]["propensity"] = 0.05
+    path.write_text("\n".join(json.dumps(r) for r in rows))
+
+
 BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLS001": _append_source("serving/app.py", "\nfrom demo_pkg.training import train\n"),
     "MLS002": lambda root: (root / "src/demo_pkg/serving/app.py").write_text("def score(x):\n    return x\n"),
@@ -196,6 +205,7 @@ BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLP002": _json("ope.json", lambda o: o["policies"][0].__setitem__("value", 0.5)),
     "MLP003": _serve_gated,
     "MLP004": _single_eligible_not_certain,
+    "MLP005": _inflate_served_propensity,
     "MLX001": _json("drift.json", _set("psi", {"site": {"2014-10-26": 0.41}})),
 }
 

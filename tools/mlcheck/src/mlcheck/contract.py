@@ -120,6 +120,8 @@ class DecisionCandidate(_Strict):
     pctr: float
     gated: bool
     gate_reasons: list[str] = Field(default_factory=list[str])
+    propensity: float | None = None
+    """Probability that the policy serves this candidate for this request, when the policy logs it."""
 
 
 class Decision(_Strict):
