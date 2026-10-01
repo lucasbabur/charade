@@ -55,3 +55,25 @@ def test_ablations_compare_against_full_model(tmp_path: Path, monkeypatch: pytes
 def test_baked_commit_is_used_inside_images(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CHARADE_GIT_SHA", "a" * 40)
     assert pipeline._git() == ("a" * 40, False)  # pyright: ignore[reportPrivateUsage]
+
+
+def test_generated_reports_do_not_make_the_tree_dirty(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    import subprocess  # noqa: PLC0415
+
+    monkeypatch.delenv("CHARADE_GIT_SHA", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", *args], check=True, capture_output=True)  # noqa: S603, S607
+
+    git("init", "-q")
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "--allow-empty", "-m", "init")
+    (tmp_path / "reports").mkdir()
+    (tmp_path / "src.py").write_text("a = 1\n")
+    (tmp_path / "reports" / "metrics.json").write_text("{}\n")
+    git("add", ".")
+    git("-c", "user.email=t@t", "-c", "user.name=t", "commit", "-q", "-m", "files")
+    (tmp_path / "reports" / "metrics.json").write_text('{"new": 1}\n')
+    assert pipeline._git()[1] is False  # pyright: ignore[reportPrivateUsage]
+    (tmp_path / "src.py").write_text("a = 2\n")
+    assert pipeline._git()[1] is True  # pyright: ignore[reportPrivateUsage]
