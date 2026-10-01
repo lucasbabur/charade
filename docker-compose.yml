@@ -7,6 +7,10 @@ services:
       - "8000:8000"
     environment:
       CHARADE_REDIS_URL: redis://redis:6379/0
+      CHARADE_ARTIFACTS_DIR: /app/artifacts/current
+      WEB_CONCURRENCY: "8"
+    volumes:
+      - ./artifacts/current:/app/artifacts/current:ro
     depends_on:
       redis:
         condition: service_healthy
