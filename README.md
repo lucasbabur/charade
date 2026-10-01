@@ -13,6 +13,7 @@ uv sync --all-packages --extra train --extra gpu  # install (use --extra cpu wit
 cp .env.sample .env                            # optional: overrides and API keys
 cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
 uv run poe mlcheck-data                        # check the data contract
+uv run poe train                               # train + calibrate + evaluate + export (~1 min on a GTX 1660)
 uv run poe serve                               # API on http://127.0.0.1:8000 (docs at /docs)
 docker compose up --build                      # or: API + Redis in containers
 uv run poe                                     # list every task
@@ -20,7 +21,7 @@ uv run poe                                     # list every task
 
 The API contract is committed at [docs/api/openapi.json](docs/api/openapi.json) and regenerated with `uv run poe openapi`. CI fails if it is stale.
 
-> 🚧 Training, evaluation and ranking are being built. Their tasks will appear in `uv run poe` as they land.
+> 🚧 Ranking, drift and serving are being built. Their tasks will appear in `uv run poe` as they land.
 
 ## ⚙️ Settings
 

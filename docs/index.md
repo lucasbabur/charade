@@ -21,7 +21,7 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 | [01-data.md](01-data.md) | ✅ | 0, 3 | What the data is (Avazu + synthetic characters), contract, placeholders, C-feature hierarchy |
 | 02-features.md | ⬜ | 4, 5 | Every feature: definition, train/serve source, leakage notes, ablation Δ |
 | [03-text-enrichment.md](03-text-enrichment.md) | ✅ | 6 | Template finding, embedding bake-off, Claude attributes, safety cross-check |
-| 04-models-evaluation.md | ⬜ | 7, 8 | Split rationale, models, metrics with CIs, slices, calibration, ablations, OPE |
+| [04-models-evaluation.md](04-models-evaluation.md) | ✅ | 7, 8 | Split rationale, models, metrics with CIs, slices, calibration, ablations, OPE |
 | 05-ranking-policy.md | ⬜ | 9 | Gates, EV, fatigue, pacing, exploration and propensities, ordering under uncertainty |
 | 06-cold-start.md | ⬜ | 10 | Signals before the first click, priors, graduation rule |
 | 07-drift-adaptation.md | ⬜ | 11 | Temporal shifts, staleness cost, adaptation simulator results |
