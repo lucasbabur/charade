@@ -14,7 +14,7 @@ Only commands that work today are listed. When you add a command, add it here in
 
 | Purpose | Command |
 |---|---|
-| Install everything | `uv sync --all-packages` |
+| Install everything | `uv sync --all-packages --extra train --extra gpu` (`--extra cpu` without CUDA) |
 | List tasks | `uv run poe` |
 | Everything CI runs on Python | `uv run poe check` (lint, types, tests, mlcheck tests, ML static gates) |
 | Terraform fmt + validate | `uv run poe tf` |
