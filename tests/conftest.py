@@ -41,3 +41,15 @@ def bundle(tmp_path_factory: pytest.TempPathFactory) -> Settings:
     settings = fixture_settings(root / "art")
     pipeline.run(settings, reports=root / "reports")
     return settings
+
+
+@pytest.fixture(scope="session")
+def sample_body(bundle: Settings) -> dict[str, object]:
+    from charade.analysis.requests import creative_pool, request_from_row  # noqa: PLC0415
+    from charade.models.dataset import build_frame  # noqa: PLC0415
+
+    frame = build_frame(FIXTURES, None)
+    test = frame.filter(pl.col("split") == "test")
+    pool = creative_pool(frame).head(6).to_dicts()
+    row = test.row(0, named=True)
+    return request_from_row(row, pool, "req-1").model_dump(mode="json")

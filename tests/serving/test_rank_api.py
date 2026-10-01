@@ -1,18 +1,14 @@
 import copy
 from pathlib import Path
 
-import polars as pl
 import pytest
 from fastapi.testclient import TestClient
 
-from charade.analysis.requests import creative_pool, request_from_row
 from charade.config import Settings
 from charade.features.counters import UserHistory
-from charade.models.dataset import build_frame
 from charade.serving.app import create_app
 from charade.serving.runtime import Runtime, load_runtime
 from charade.serving.store import Impression, MemoryStore, Outcome, StoreUnavailableError
-from tests.conftest import FIXTURES
 
 
 class BrokenStore(MemoryStore):
@@ -21,15 +17,6 @@ class BrokenStore(MemoryStore):
 
     async def record_impression(self, impression_id: str, impression: Impression) -> Outcome:
         raise StoreUnavailableError(impression_id)
-
-
-@pytest.fixture(scope="module")
-def sample_body(bundle: Settings) -> dict[str, object]:
-    frame = build_frame(FIXTURES, None)
-    test = frame.filter(pl.col("split") == "test")
-    pool = creative_pool(frame).head(6).to_dicts()
-    row = test.row(0, named=True)
-    return request_from_row(row, pool, "req-1").model_dump(mode="json")
 
 
 def _client(bundle: Settings, store: MemoryStore | None = None) -> TestClient:
@@ -68,6 +55,8 @@ def test_store_outage_degrades_instead_of_failing(bundle: Settings, sample_body:
             "/v1/events/impression",
             json={
                 "impression_id": "i",
+                "request_id": "r",
+                "candidate_id": "x",
                 "hour": "14102912",
                 "device_id": "x",
                 "device_ip": "y",
@@ -84,6 +73,8 @@ def test_impression_and_click_events_feed_the_next_request(bundle: Settings, sam
     store = MemoryStore()
     event = {k: sample_body[k] for k in ("device_id", "device_ip", "device_model")} | {
         "impression_id": "imp-1",
+        "request_id": "req-1",
+        "candidate_id": "x",
         "hour": "14102000",
         "campaign_id": "c",
     }
@@ -163,3 +154,32 @@ def test_decisions_are_logged_as_json_events(
     assert len(decision["candidates"]) == 6
     assert {"candidate_id", "pctr", "value", "propensity", "gate_reasons"} <= set(decision["candidates"][0])
     assert abs(sum(c["propensity"] for c in decision["candidates"]) - 1) < 1e-9
+
+
+def test_frequency_cap_counts_impressions_in_the_current_hour(bundle: Settings, sample_body: dict[str, object]) -> None:
+    """Review reproduction: nine impressions in the hour being ranked must gate the campaign now."""
+    candidates = sample_body["candidates"]
+    assert isinstance(candidates, list)
+    campaign = candidates[0]["C17"]
+    hour = str(sample_body["hour"])
+    store = MemoryStore()
+    device = {k: sample_body[k] for k in ("device_id", "device_ip", "device_model")}
+    with _client(bundle, store) as client:
+        for i in range(bundle.policy.frequency_cap):
+            event = device | {
+                "impression_id": f"cap-{i}",
+                "request_id": f"r{i}",
+                "candidate_id": "x",
+                "hour": hour,
+                "campaign_id": campaign,
+            }
+            assert client.post("/v1/events/impression", json=event).status_code == 200
+        ranked = client.post("/v1/rank", json=sample_body).json()["ranked"]
+    capped = next(r for r in ranked if r["candidate_id"] == candidates[0]["candidate_id"])
+    assert "frequency_cap" in capped["gate_reasons"]
+
+
+def test_store_outage_reports_unenforced_cap(bundle: Settings, sample_body: dict[str, object]) -> None:
+    with _client(bundle, BrokenStore()) as client:
+        body = client.post("/v1/rank", json=sample_body).json()
+    assert "feature store unavailable: frequency cap not enforced" in body["warnings"]

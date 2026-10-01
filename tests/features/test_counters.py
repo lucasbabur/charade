@@ -114,3 +114,11 @@ def test_late_click_is_attributed_to_its_impression_hour() -> None:
     history.record_click(100)
     assert history.snapshot(101, ["c"])["user_clicks"][0] == 1
     assert history.snapshot(100, ["c"])["user_clicks"][0] == 0
+
+
+def test_cap_exposures_include_the_current_hour_but_the_feature_does_not() -> None:
+    history = UserHistory()
+    for _ in range(9):
+        history.record(100, "c", 0)
+    assert history.snapshot(100, ["c"])["user_campaign_imps"][0] == 0
+    assert history.exposures_so_far(["c"])[0] == 9

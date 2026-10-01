@@ -12,6 +12,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from charade import __version__
 from charade.config import get_settings
+from charade.features.counters import UserHistory
 from charade.ranking.policy import Candidate, Ranked, decide
 from charade.serving import metrics
 from charade.serving.assemble import assemble, epoch_hour, unknown_character, user_key
@@ -74,7 +75,7 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         history, degraded = None, True
         metrics.DEGRADED.inc()
     fetched = time.perf_counter()
-    frame, encoded = assemble(body, character, history, scorer.spec)
+    _, encoded = assemble(body, character, history, scorer.spec)
     assembled = time.perf_counter()
     logits, pctr = scorer.score(encoded)
     scored = time.perf_counter()
@@ -85,6 +86,13 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         if not finite.any():
             raise HTTPException(status_code=503, detail="no candidate could be scored")
     genre = str(character["genre"])
+    # Frequency cap counts every recorded exposure (current hour included), unlike the causal model
+    # feature. With the store down there is no exposure state: the cap fails open, flagged as degraded.
+    campaigns = [c.C17 for c in body.candidates]
+    cap_counts = (history or UserHistory()).exposures_so_far(campaigns)
+    if degraded:
+        warnings.append("feature store unavailable: frequency cap not enforced")
+        metrics.CAP_UNENFORCED.inc()
     candidates = [
         Candidate(
             candidate_id=c.candidate_id,
@@ -97,7 +105,7 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
             prior_exposures=int(e),
             logit=float(z),
         )
-        for c, p, z, e, ok in zip(body.candidates, pctr, logits, frame["user_campaign_imps"], finite, strict=True)
+        for c, p, z, e, ok in zip(body.candidates, pctr, logits, cap_counts, finite, strict=True)
         if ok
     ]
     decision = decide(candidates, str(character["safety_tier"]), body.request_id, runtime.policy)
@@ -129,6 +137,9 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         ],
         character_id=body.character_id,
         hour=body.hour.isoformat(),
+        # Everything needed to rebuild a training row for whichever candidate gets served.
+        context=body.model_dump(mode="json", exclude={"candidates", "character", "request_id", "hour"}),
+        ads={c.candidate_id: c.model_dump(exclude={"candidate_id", "bid"}) for c in body.candidates},
         model_version=runtime.model_version,
         degraded=degraded,
     )
@@ -176,6 +187,15 @@ async def record_impression(event: ImpressionEvent, runtime: Annotated[Runtime, 
         outcome = await runtime.store.record_impression(event.impression_id, impression)
     except StoreUnavailableError as exc:
         raise HTTPException(status_code=503, detail="feature store unavailable") from exc
+    if outcome is Outcome.RECORDED:
+        # Durable outcome record (log pipeline -> S3); charade.data.events joins it to its decision.
+        log.info(
+            "impression",
+            impression_id=event.impression_id,
+            request_id=event.request_id,
+            candidate_id=event.candidate_id,
+            hour=event.hour.isoformat(),
+        )
     return EventResult(outcome="recorded" if outcome is Outcome.RECORDED else "duplicate")
 
 
@@ -187,6 +207,8 @@ async def record_click(event: ClickEvent, runtime: Annotated[Runtime, Depends(_r
         raise HTTPException(status_code=503, detail="feature store unavailable") from exc
     if outcome is Outcome.UNKNOWN_IMPRESSION:
         raise HTTPException(status_code=404, detail="unknown or expired impression_id")
+    if outcome is Outcome.RECORDED:
+        log.info("click", impression_id=event.impression_id)
     return EventResult(outcome="recorded" if outcome is Outcome.RECORDED else "duplicate")
 
 

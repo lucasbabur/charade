@@ -1,6 +1,6 @@
-# Decision logs (the training and off-policy-evaluation data of tomorrow): the API writes one JSON
-# "decision" event per request to stdout; a subscription filter streams them through Firehose into
-# S3, partitioned by hour, compressed. Clicks are joined by request_id downstream.
+# Serving logs (the training and off-policy-evaluation data of tomorrow): the API writes JSON
+# "decision", "impression" and "click" events to stdout; a subscription filter streams them through
+# Firehose into S3, partitioned by hour, compressed. charade.data.events joins them into training rows.
 
 data "aws_iam_policy_document" "assume_firehose" {
   statement {
@@ -90,7 +90,7 @@ resource "aws_iam_role_policy" "logs" {
 resource "aws_cloudwatch_log_subscription_filter" "decisions" {
   name            = "${var.name}-decisions"
   log_group_name  = var.api_log_group_name
-  filter_pattern  = "{ $.event = \"decision\" }"
+  filter_pattern  = "{ ($.event = \"decision\") || ($.event = \"impression\") || ($.event = \"click\") }"
   destination_arn = aws_kinesis_firehose_delivery_stream.decisions.arn
   role_arn        = aws_iam_role.logs.arn
 }
