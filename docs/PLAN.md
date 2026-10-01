@@ -55,7 +55,7 @@ DuckDB profile of the provided CSVs, 2026-10-01.
 1. **Baseline first; complexity has to earn its place.** Every component beyond the logistic baseline ships only if a paired-bootstrap CI on validation logloss excludes zero. Ablations are a deliverable, not an afterthought.
 2. **Pre-registration.** The metric, split, decision rules and expected effects are written in `docs/adr/` before results exist. The test window is touched once; the run id is recorded.
 3. **Time is the only honest split.** Nothing fitted (vocabularies, encoders, priors, PCA, calibrators, scalers) sees data after the train cutoff. Counters use strictly earlier hours (order within an hour is unknown, so the same hour is excluded).
-4. **One transform, two callers.** Training and the API call the same `simula_ctr.features` functions (mlcheck MLS002). A parity report guards against train/serve skew (MLV001).
+4. **One transform, two callers.** Training and the API call the same `cameo.features` functions (mlcheck MLS002). A parity report guards against train/serve skew (MLV001).
 5. **Calibration is first-class.** Ranking uses pCTR × bid, so probabilities must be right, not just well ordered. Logloss and normalized entropy are primary; AUC is secondary.
 6. **Uncertainty in every number.** Block-bootstrap CIs (hour blocks), 3 seeds for neural models, effective sample size for off-policy estimates.
 7. **Slices before averages.** Cold/warm character, genre, tier, surface, day and new/seen user are reported for every model.
@@ -73,7 +73,7 @@ Organised by ML concern, not by clean-architecture layer. Those layers protect a
 
 ```
 take_home_assigment/
-├── src/simula_ctr/
+├── src/cameo/
 │   ├── config.py            # pydantic-settings: paths, seeds, split dates, thresholds
 │   ├── data/                # pandera contracts, polars loader (CSV → day-partitioned parquet), temporal split, backtest folds
 │   ├── features/            # THE transform: user proxy, causal counters, vocabularies, character features; used by training and serving
