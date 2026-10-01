@@ -99,15 +99,21 @@ def _prediction_frame(prep: Prepared, model: str, preds: dict[str, np.ndarray]) 
     return pl.concat(parts)
 
 
-def _comparisons(prep: Prepared, preds: dict[str, dict[str, np.ndarray]]) -> dict[str, dict[str, float]]:
-    """Paired hour-block bootstrap of test log loss: primary minus each other model."""
+def _comparisons(
+    prep: Prepared, preds: dict[str, dict[str, np.ndarray]], singles: dict[str, np.ndarray]
+) -> dict[str, dict[str, float]]:
+    """Paired hour-block bootstrap of test log loss (uncalibrated singles compare seed 0 with seed 0)."""
     y = prep.y["test"]
     blocks = prep.frame.filter(pl.col("split") == "test")["ts"].dt.epoch("s").to_numpy() // 3600
+    pairs = {
+        f"{PRIMARY}-{BASELINE}": (preds[PRIMARY]["test"], preds[BASELINE]["test"]),
+        f"{PRIMARY}-{GBDT} (3-seed ensembles, calibrated)": (preds[PRIMARY]["test"], preds[GBDT]["test"]),
+        f"{PRIMARY}-{GBDT} (single seed each, uncalibrated)": (singles[PRIMARY], singles[GBDT]),
+    }
     out: dict[str, dict[str, float]] = {}
-    for other in (BASELINE, GBDT):
-        diff = logloss_rows(y, preds[PRIMARY]["test"]) - logloss_rows(y, preds[other]["test"])
-        mean, low, high = paired_bootstrap(diff, blocks)
-        out[f"{PRIMARY}-{other}"] = {"delta_logloss": mean, "ci_low": low, "ci_high": high}
+    for name, (a, b) in pairs.items():
+        mean, low, high = paired_bootstrap(logloss_rows(y, a) - logloss_rows(y, b), blocks)
+        out[name] = {"delta_logloss": mean, "ci_low": low, "ci_high": high}
     return out
 
 
@@ -142,14 +148,16 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
 
     ensemble, seed_results = train_dcn_ensemble(prep, cfg.dcn, cfg.dcn.seeds)
     baseline = train_logistic(prep, settings.seed)
-    gbdt = train_gbdt(
-        prep.spec, prep.x["train"], prep.y["train"], prep.x["val"], prep.y["val"], cfg.gbdt, settings.seed
-    )
+    # Same number of seeds as the DCN ensemble, so the shipped comparison is ensemble vs ensemble.
+    gbdts = [
+        train_gbdt(prep.spec, prep.x["train"], prep.y["train"], prep.x["val"], prep.y["val"], cfg.gbdt, seed)
+        for seed in cfg.dcn.seeds
+    ]
 
     raw = {
         PRIMARY: {s: logits(ensemble, prep, s) for s in ("val", "test")},
         BASELINE: {s: logits(baseline.model, prep, s) for s in ("val", "test")},
-        GBDT: {s: _logit(predict_gbdt(gbdt, prep.x[s])) for s in ("val", "test")},
+        GBDT: {s: np.mean([_logit(predict_gbdt(g, prep.x[s])) for g in gbdts], axis=0) for s in ("val", "test")},
     }
     calibrators, calibration_scores, preds = {}, {}, {}
     for name, by_split in raw.items():
@@ -205,7 +213,7 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
         },
         "windows": windows,
         "fitted_artifacts": fitted,
-        "model_seeds": {PRIMARY: cfg.dcn.seeds, BASELINE: [settings.seed], GBDT: [settings.seed]},
+        "model_seeds": {PRIMARY: cfg.dcn.seeds, BASELINE: [settings.seed], GBDT: cfg.dcn.seeds},
         "library_versions": {p: version(p) for p in ("torch", "lightgbm", "polars", "onnxruntime", "scikit-learn")},
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
@@ -241,7 +249,14 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
         },
         "dcn_seed_val_ne_uncalibrated": seed_val,
         "dcn_best_steps": [r.best_step for r in seed_results],
-        "comparisons_test": _comparisons(prep, preds),
+        "comparisons_test": _comparisons(
+            prep,
+            preds,
+            {
+                PRIMARY: 1 / (1 + np.exp(-logits(seed_results[0].model, prep, "test"))),
+                GBDT: predict_gbdt(gbdts[0], prep.x["test"]),
+            },
+        ),
         "slices_test": _slice_table(prep, preds[PRIMARY]["test"]),
         "onnx_max_abs_diff": onnx_diff,
         "rows": {s: len(prep.y[s]) for s in SPLITS},
