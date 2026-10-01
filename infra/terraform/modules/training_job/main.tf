@@ -1,7 +1,8 @@
 # Daily retraining (docs/07: a frozen model loses ~0.003 NE per day). EventBridge Scheduler starts a
 # Fargate task from the training image that runs: train -> ope -> parity -> drift ->
-# `mlcheck --strict` -> promote. Promotion copies the bundle to bundles/<run_id>/ and repoints
-# bundles/current only if every gate passes; a failed gate leaves production untouched.
+# mlcheck -> promote -> redeploy (scripts/retrain.sh). Promotion uploads an immutable bundles/<run_id>/
+# and overwrites the one-line bundles/CURRENT pointer only if every blocking gate passes, then forces
+# a new deployment of the API service; a failed gate leaves production untouched.
 
 data "aws_region" "current" {}
 
@@ -51,6 +52,11 @@ data "aws_iam_policy_document" "task" {
     resources = [var.artifacts_bucket_arn, "${var.artifacts_bucket_arn}/runs/*", "${var.artifacts_bucket_arn}/bundles/*"]
   }
   statement {
+    sid       = "RedeployApi"
+    actions   = ["ecs:UpdateService", "ecs:DescribeServices"]
+    resources = [var.api_service_arn]
+  }
+  statement {
     actions   = ["kms:Decrypt", "kms:GenerateDataKey"]
     resources = [var.kms_key_arn]
   }
@@ -85,6 +91,8 @@ resource "aws_ecs_task_definition" "train" {
     environment = [
       { name = "CHARADE_DATA_URI", value = var.data_uri },
       { name = "CHARADE_ARTIFACTS_URI", value = "s3://${var.artifacts_bucket_name}" },
+      { name = "CHARADE_ECS_CLUSTER", value = var.cluster_arn },
+      { name = "CHARADE_ECS_SERVICE", value = var.api_service_arn },
     ]
     logConfiguration = {
       logDriver = "awslogs"

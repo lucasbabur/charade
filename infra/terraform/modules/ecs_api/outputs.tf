@@ -8,6 +8,11 @@ output "cluster_arn" {
   value       = aws_ecs_cluster.this.arn
 }
 
+output "service_arn" {
+  description = "ECS service ARN (the retrain job redeploys it)."
+  value       = aws_ecs_service.api.id
+}
+
 output "service_name" {
   description = "ECS service name."
   value       = aws_ecs_service.api.name
