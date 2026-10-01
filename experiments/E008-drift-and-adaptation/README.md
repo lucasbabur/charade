@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Daily retraining with gated promotion; no online recalibration; exposure penalty recommended at lambda = 4 pending an online A/B test.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E008-drift-and-adaptation/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E008-drift-and-adaptation/notebook.py`.

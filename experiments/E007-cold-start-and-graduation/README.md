@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** No character ID in the model; graduation is re-measured on fresh data instead of fixed as a constant.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E007-cold-start-and-graduation/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E007-cold-start-and-graduation/notebook.py`.

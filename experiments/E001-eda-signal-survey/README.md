@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Keep genre, tier and causal user counters; treat turn and age as ablation candidates; exclude same-hour counts.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E001-eda-signal-survey/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E001-eda-signal-survey/notebook.py`.

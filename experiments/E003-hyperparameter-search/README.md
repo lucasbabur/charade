@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Copy the best trials into `[tool.charade.model]` (done by hand, citing the CSVs).
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E003-hyperparameter-search/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E003-hyperparameter-search/notebook.py`.

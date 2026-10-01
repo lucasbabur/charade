@@ -153,7 +153,7 @@ fixture = { cmd = "python -m charade.analysis.fixture", help = "Rebuild tests/fi
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
 tf = { shell = "terraform fmt -check -recursive infra/terraform && for env in infra/terraform/envs/*/; do terraform -chdir=$env init -backend=false -input=false >/dev/null && terraform -chdir=$env validate || exit 1; done", help = "Terraform fmt and validate" }
-experiments = { shell = "for nb in experiments/E*/notebook.py; do jupytext --execute --set-formats ipynb,py:percent \"$nb\" || exit 1; done", help = "Execute every experiment notebook on the full data (E004 retrains; ~6 min on a GPU)" }
+experiments = { cmd = "python -m charade.analysis.notebooks", help = "Execute experiment notebooks on the full data (all, or the given notebook.py paths; E004 retrains)" }
 test-notebooks = { cmd = "pytest -m notebooks --no-cov", help = "Execute every experiment notebook in smoke mode (fixture data, tiny model)" }
 imports = { cmd = "lint-imports", help = "Import-layer contracts (no cycles, serving stays light)" }
 check = { sequence = ["lint", "types", "imports", "test", "test-mlcheck", "mlcheck"], help = "Everything CI runs on Python" }
