@@ -25,10 +25,11 @@ class PolicyConfig(BaseModel):
     max_evidence: float = 1000.0
     frequency_cap: int = 8
     """Max earlier impressions of one campaign to one user before the campaign is gated for that user."""
-    propensity_draws: int = 64
+    exploration_sharpness: float = Field(default=2.0, ge=0)
+    """Exploration samples q_i proportional to (upper evidence bound x bid x pacing)^k: k = 0 is uniform,
+    larger k favours plausible winners; uncertain candidates have higher upper bounds."""
     advertiser_max_tier: dict[str, str] = Field(default_factory=dict[str, str])
     """Advertiser (C21) -> highest character safety tier it accepts. Unlisted advertisers accept all tiers."""
-    low_confidence_overlap: bool = True
 
 
 class DcnConfig(BaseModel):
