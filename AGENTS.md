@@ -6,7 +6,7 @@ Instructions for AI coding agents (Claude Code, Codex, Cursor, …) working in t
 
 **Charade** is a CTR prediction and candidate-ranking system for contextual ads inside AI companion chats (Simula take-home). Given an impression (character, conversation turn, publisher, device, hour) and N candidate ads, it predicts calibrated P(click) and returns a gated, explained ranking in under 50 ms p99. The stack is Python 3.12, uv workspace, polars, PyTorch (DCN-v2), LightGBM (challenger), ONNX Runtime (serving), FastAPI, Redis, Terraform (AWS), Docker.
 
-The source of truth for design is [docs/PLAN.md](docs/PLAN.md); for gates it is [docs/mlcheck.md](docs/mlcheck.md). If code and PLAN disagree, stop and ask; do not silently pick one.
+Design decisions live in [docs/adr/](docs/adr/); gates in [docs/mlcheck.md](docs/mlcheck.md). If code and an ADR disagree, stop and ask; do not silently pick one.
 
 ## Commands
 
@@ -37,10 +37,10 @@ The raw data (`impressions.csv`, `characters.csv`, 170 MB) sits in the repo root
 
 ## Layout
 
-The code is organised by ML concern, not by clean-architecture layers ([ADR in PLAN §2](docs/PLAN.md#2-repository-layout)).
+The code is organised by ML concern, not by clean-architecture layers ([ADR 0008](docs/adr/0008-ml-layout-and-mlcheck.md)).
 
 ```
-src/charade/{data,features,text,models,evaluation,ranking,coldstart,drift,serving}/  cli.py, config.py
+src/charade/{data,features,text,models,evaluation,ranking,scoring,serving,analysis}/  config.py
 tools/mlcheck/            ML release gates (own tests, own AGENTS.md)
 artifacts/current/        run output in the mlcheck artifact contract (gitignored)
 reports/                  generated figures/tables, committed; never hand-edited
@@ -50,7 +50,7 @@ infra/terraform/, docker/, docker-compose.yml, .github/ (workflows; dependabot.y
 
 ## Settings
 
-**All settings live in `pyproject.toml`** — no YAML, `.ini`, `setup.cfg`, `.ruff.toml` or stray config files. Tool settings go under `[tool.<name>]`. Project settings go under `[tool.charade]`: paths, seeds, split dates, `experiments.<name>` and `policy` (safety matrix, fatigue, pacing, exploration). `charade.config` loads them with pydantic-settings (`PyprojectTomlConfigSettingsSource`); environment variables override them, and secrets come only from the environment. An experiment is a new `[tool.charade.experiments.<name>]` table, not a code edit.
+**All settings live in `pyproject.toml`** — no YAML, `.ini`, `setup.cfg`, `.ruff.toml` or stray config files. Tool settings go under `[tool.<name>]`. Project settings go under `[tool.charade]`: paths, seeds, split dates, `model` (feature groups, DCN and LightGBM hyperparameters) and `policy` (brand-safety matrix, caps, exploration). `charade.config` loads them with pydantic-settings; `CHARADE_*` environment variables override them, and secrets come only from the environment.
 
 ## Invariants
 
@@ -71,21 +71,15 @@ Each one is enforced by an mlcheck gate. Breaking one fails CI.
 
 ## Data facts you will otherwise get wrong
 
-- `device_id='a99f214a'` is a placeholder on 82 % of rows. The user proxy is `device_id` when real, otherwise `hash(device_ip, device_model)`.
-- The C-features are an ad hierarchy: C14 = creative → C17 = campaign → C21 = advertiser; C15×C16 = size. C1 and C20 vary within a creative, so they are context. A candidate = `banner_pos` + C14 (+ derived fields).
-- The genre is the `character_name` prefix (`romance_…`). Romance and horror run ~+4 pp CTR, mentor −4 pp; mature tier +2–3 pp.
-- Descriptions are templated, and words add ≤ 0.44 pp within genre. Do not expect text to rescue a model.
-- `conversation_turn`/`session_msg_count` show flat CTR. `session_msg_count` and `num_interactions` may leak future information; keep them behind ablation flags.
-- 2014-10-30 is a partial day (23k rows). Weight it accordingly; don't read its daily metrics alone.
-- Daily CTR swings 16.5–19.6 % and the test days are low. Check per-day calibration.
+Read [docs/01-data.md](docs/01-data.md) before touching features. The traps: `device_id='a99f214a'` is a placeholder (82 % of rows); C14 → C17 → C21 is creative → campaign → advertiser; genre is the `character_name` prefix; same-hour user counts leak; 2014-10-30 is a partial day.
 
 ## External APIs (paid)
 
-Embeddings (Gemini, Voyage, OpenAI) and Claude Haiku 4.5 attribute extraction run **offline only**, through `charade.text`, cached by `sha256(text)+model+prompt_version`.
+Embedding providers (`charade.text.embed`; OpenAI is the only paid one implemented) run **offline only**, cached by provider and a hash of the texts.
 
-- Never call them from tests or CI. Use recorded responses.
+- Never call them from tests or CI; tests use TF-IDF.
 - Never call them from `serving/`.
-- Keys come from the environment (`GEMINI_API_KEY`, `VOYAGE_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`). Never write keys to files, logs or artifacts.
+- Keys come from the environment ([.env.sample](.env.sample)). Never write keys to files, logs or artifacts.
 - Ask before running a full re-embed: the cost is trivial, but the cache is the reproducibility record.
 
 ## Workflow
@@ -103,9 +97,11 @@ Embeddings (Gemini, Voyage, OpenAI) and Claude Haiku 4.5 attribute extraction ru
 - [ ] `uv run poe check` passes (and `uv run poe tf` if you touched `infra/`). Coverage on touched packages ≥ 85 % branch.
 - [ ] `uv run mlcheck . --stage static` passes. If you touched training or evaluation, the full run gates pass with `--strict`, or every WARN is explained in the docs.
 - [ ] If the API changed, `docs/api/openapi.json` is regenerated and committed.
-- [ ] The docs and `docs/index.md` status column are updated.
+- [ ] Every doc you changed has its `updated-at` bumped (CI checks it), links resolve and `uv run poe` commands exist (`tests/docs`).
 - [ ] No secrets, raw data, notebooks or artifacts are staged.
 
 ## Writing style for docs and code comments
 
 Maximum density. Lead with the conclusion, then the evidence (a number with its interval and source). No filler, no marketing. Comments explain *why*, never *what*. Match the surrounding code's naming and idiom.
+
+Docs in `docs/` start with frontmatter (`title`, `created-at`, `updated-at`, ISO dates). Each fact has one home: state it once and link to it elsewhere. Delete superseded docs; git keeps history.
