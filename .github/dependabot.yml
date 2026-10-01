@@ -18,6 +18,10 @@ updates:
     directory: /docker
     schedule:
       interval: weekly
+    ignore:
+      # Python is pinned to 3.12 in pyproject.toml; bump it there deliberately, not via base-image tags.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
   - package-ecosystem: terraform
     directories: ["/infra/terraform/envs/*", "/infra/terraform/modules/*"]
     schedule:
