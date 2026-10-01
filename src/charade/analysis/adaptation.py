@@ -78,13 +78,10 @@ def simulate(c: CandidateMatrices, lam: float, half_life: float = HALF_LIFE) -> 
 
 def _dr_rows(c: CandidateMatrices, chosen: np.ndarray) -> np.ndarray:
     """Per-row doubly robust value with the independent reward model (not the policy's own pCTR)."""
-    n = len(c.y)
     pi = np.zeros_like(c.reward)
     ok = chosen >= 0
-    pi[np.arange(n)[ok], chosen[ok]] = 1.0
-    w = pi[np.arange(n), c.logged] / c.mu
-    q_logged = c.reward[np.arange(n), c.logged]
-    return (pi * c.reward).sum(axis=1) + w * (c.y - q_logged)
+    pi[np.arange(len(c.y))[ok], chosen[ok]] = 1.0
+    return (pi * c.reward).sum(axis=1) + c.at_logged(pi) / c.mu * (c.y - c.at_logged(c.reward))
 
 
 MAX_LOSS_PP = 0.2
