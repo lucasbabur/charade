@@ -63,13 +63,14 @@ def test_simulation_never_serves_gated_slots(bundle: Settings) -> None:
     assert not c.gated[np.arange(len(chosen))[served], chosen[served]].any()
 
 
-def test_lambda_selection_rule() -> None:
+def test_lambda_selection_rule_is_non_inferiority() -> None:
+    """The lower bound must clear -0.2 pp; a wide interval that merely contains 0 does not qualify."""
     val = pl.DataFrame(
         {
             "lambda": [0.0, 2.0, 4.0, 8.0],
-            "dr_delta_vs_greedy": [0.0, -0.001, -0.0015, -0.004],
-            "ci_low": [0.0, -0.008, -0.009, -0.012],
-            "ci_high": [0.0, 0.006, 0.006, 0.003],
+            "dr_delta_vs_greedy": [0.0, -0.0005, -0.0008, 0.0],
+            "ci_low": [0.0, -0.0015, -0.0019, -0.009],
+            "ci_high": [0.0, 0.0005, 0.0003, 0.009],
         }
     )
     assert adaptation.select(val) == 4.0
