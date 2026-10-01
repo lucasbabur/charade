@@ -12,6 +12,8 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from charade.ranking.policy import PolicyConfig
+
 
 def _secret(name: str) -> SecretStr | None:
     return Field(default=None, validation_alias=AliasChoices(name))
@@ -84,6 +86,7 @@ class Settings(BaseSettings):
     train_end: datetime
     val_end: datetime
     model: ModelConfig = Field(default_factory=ModelConfig)
+    policy: PolicyConfig = Field(default_factory=PolicyConfig)
 
     gemini_api_key: SecretStr | None = _secret("GEMINI_API_KEY")
     voyage_api_key: SecretStr | None = _secret("VOYAGE_API_KEY")

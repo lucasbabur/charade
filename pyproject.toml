@@ -91,6 +91,17 @@ val_end = "2014-10-28T23:00:00"
 # character_id and conversation are dropped: their ablation CIs include zero (decision rule in docs/hypotheses.md).
 groups = ["context", "device", "ad", "character_meta", "user_history"]
 
+# Ranking policy (docs/05-ranking-policy.md). The data has no advertiser preferences, so the
+# brand-safety matrix below is illustrative: advertiser 157 accepts up to suggestive characters,
+# advertiser 48 only sfw ones. Every other advertiser accepts all tiers.
+[tool.charade.policy]
+exploration_rate = 0.05
+min_evidence = 20.0
+max_evidence = 1000.0
+frequency_cap = 8
+propensity_draws = 64
+advertiser_max_tier = { "157" = "suggestive", "48" = "sfw" }
+
 [tool.charade.model.dcn]
 embedding_dim = 24
 cross_layers = 2
@@ -125,6 +136,7 @@ text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descrip
 tune = { cmd = "python -m charade.models.tune", help = "Optuna search on the inner split; writes reports/tuning/" }
 train = { cmd = "python -m charade.models.pipeline", help = "Train, calibrate, evaluate once on test, export; writes artifacts and reports/models/metrics.json" }
 ablate = { cmd = "python -m charade.models.ablate", help = "Feature-group ablations on validation; writes reports/models/ablations.csv" }
+ope = { cmd = "python -m charade.analysis.policy_eval", help = "Off-policy evaluation of ranking policies on test; writes ope.json, decisions.jsonl, reports/policy/ope.md" }
 fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
