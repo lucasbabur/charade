@@ -35,8 +35,7 @@ def test_pca_ignores_characters_published_after_training() -> None:
 
 def test_bakeoff_writes_reduced_vectors_and_report(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(embed, "CACHE_DIR", tmp_path / "cache")
-    monkeypatch.setattr(bakeoff, "MIN_IMPRESSIONS", 5)
-    table = bakeoff.run([Provider.TFIDF], FIXTURES, tmp_path / "derived", tmp_path / "bakeoff.csv")
+    table = bakeoff.run([Provider.TFIDF], FIXTURES, tmp_path / "derived", tmp_path / "bakeoff.csv", min_impressions=5)
     assert table["genre_knn_acc"][0] > 0.9
     assert (tmp_path / "derived" / "text_tfidf.parquet").is_file()
     assert table["rho_ci_low"][0] <= table["residual_rho"][0] <= table["rho_ci_high"][0]
