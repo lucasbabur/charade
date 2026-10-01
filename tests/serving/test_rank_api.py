@@ -11,7 +11,7 @@ from charade.features.counters import UserHistory
 from charade.models.dataset import build_frame
 from charade.serving.app import create_app
 from charade.serving.runtime import Runtime, load_runtime
-from charade.serving.store import MemoryStore, StoreUnavailableError
+from charade.serving.store import Impression, MemoryStore, Outcome, StoreUnavailableError
 from tests.conftest import FIXTURES
 
 
@@ -19,8 +19,8 @@ class BrokenStore(MemoryStore):
     async def get(self, user: str) -> UserHistory | None:
         raise StoreUnavailableError(user)
 
-    async def record(self, user: str, hour: int, campaign: str, clicked: bool) -> None:
-        raise StoreUnavailableError(user)
+    async def record_impression(self, impression_id: str, impression: Impression) -> Outcome:
+        raise StoreUnavailableError(impression_id)
 
 
 @pytest.fixture(scope="module")
@@ -66,24 +66,37 @@ def test_store_outage_degrades_instead_of_failing(bundle: Settings, sample_body:
         response = client.post("/v1/rank", json=sample_body)
         event = client.post(
             "/v1/events/impression",
-            json={"hour": "14102912", "device_id": "x", "device_ip": "y", "device_model": "z", "campaign_id": "c"},
+            json={
+                "impression_id": "i",
+                "hour": "14102912",
+                "device_id": "x",
+                "device_ip": "y",
+                "device_model": "z",
+                "campaign_id": "c",
+            },
         )
     assert response.status_code == 200
     assert response.json()["degraded"] is True
     assert event.status_code == 503
 
 
-def test_impression_events_feed_the_next_request(bundle: Settings, sample_body: dict[str, object]) -> None:
+def test_impression_and_click_events_feed_the_next_request(bundle: Settings, sample_body: dict[str, object]) -> None:
     store = MemoryStore()
     event = {k: sample_body[k] for k in ("device_id", "device_ip", "device_model")} | {
+        "impression_id": "imp-1",
         "hour": "14102000",
         "campaign_id": "c",
-        "clicked": True,
     }
     with _client(bundle, store) as client:
         assert client.post("/v1/rank", json=sample_body).json()["cold_start"]["user"] is True
-        assert client.post("/v1/events/impression", json=event).status_code == 204
+        assert client.post("/v1/events/impression", json=event).json() == {"outcome": "recorded"}
+        assert client.post("/v1/events/impression", json=event).json() == {"outcome": "duplicate"}
+        assert client.post("/v1/events/click", json={"impression_id": "imp-1"}).json() == {"outcome": "recorded"}
+        assert client.post("/v1/events/click", json={"impression_id": "imp-1"}).json() == {"outcome": "duplicate"}
+        assert client.post("/v1/events/click", json={"impression_id": "unknown"}).status_code == 404
         assert client.post("/v1/rank", json=sample_body).json()["cold_start"]["user"] is False
+    history = next(iter(store.users.values()))
+    assert (history.imps, history.clicks) == (1, 1)
 
 
 def test_duplicates_and_inconsistent_turns_are_repaired_with_warnings(

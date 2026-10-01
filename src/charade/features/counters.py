@@ -87,58 +87,83 @@ def counter_features(frame: pl.DataFrame) -> Mapping[str, pl.Expr]:
     }
 
 
-class UserHistory(BaseModel):
-    """Online counter state for one user, the reference for the Redis store (same fields).
+WINDOW_HOURS = 48
+"""Hourly detail kept per user, measured back from the newest event. Snapshots for hours within 24 h of
+the newest event are exact whatever the arrival order; older requests (rare) see pruned detail."""
 
-    `snapshot(hour, campaigns)` returns what `offline_counters` computes for an impression at
-    `hour`. Hours are integer epoch hours. Buckets older than 24 h are pruned, because only totals,
-    the last two distinct hours and per-campaign (total, last hour, count in last hour) are needed.
+
+class UserHistory(BaseModel):
+    """Online counter state for one user (the Redis store persists exactly this).
+
+    `snapshot(hour, campaigns)` returns what `offline_counters` computes for an impression at `hour`:
+    only events from strictly earlier hours count, whatever order the events arrived in. Totals cover
+    all time; hourly buckets (overall and per campaign) cover the last `WINDOW_HOURS`, so events from
+    the current or later hours can be subtracted and the 24 h window summed.
     """
 
     imps: int = 0
     clicks: int = 0
-    last_hour: int | None = None
-    prev_hour: int | None = None
+    newest: int | None = None
+    pruned_last: int | None = None
+    """Latest hour among buckets already pruned (for hours-since-last beyond the window)."""
     buckets: dict[int, tuple[int, int]] = Field(default_factory=dict[int, tuple[int, int]])
-    campaigns: dict[str, tuple[int, int, int]] = Field(default_factory=dict[str, tuple[int, int, int]])
+    campaign_totals: dict[str, int] = Field(default_factory=dict[str, int])
+    campaign_buckets: dict[str, dict[int, int]] = Field(default_factory=dict[str, dict[int, int]])
 
-    def record(self, hour: int, campaign: str, click: int) -> None:
-        """Add one impression (and its click) at `hour`. Events must arrive in non-decreasing hour."""
-        if self.last_hour != hour:
-            self.prev_hour, self.last_hour = self.last_hour, hour
-        n, k = self.buckets.get(hour, (0, 0))
-        self.buckets[hour] = (n + 1, k + click)
-        self.buckets = {h: v for h, v in self.buckets.items() if h >= hour - 24}
+    def record(self, hour: int, campaign: str, click: int = 0) -> None:
+        """Add one impression at `hour` (any arrival order)."""
         self.imps += 1
         self.clicks += click
-        total, last, in_last = self.campaigns.get(campaign, (0, -1, 0))
-        self.campaigns[campaign] = (total + 1, hour, in_last + 1 if last == hour else 1)
+        self.campaign_totals[campaign] = self.campaign_totals.get(campaign, 0) + 1
+        self.newest = hour if self.newest is None else max(self.newest, hour)
+        if hour < self.newest - WINDOW_HOURS:
+            self.pruned_last = hour if self.pruned_last is None else max(self.pruned_last, hour)
+            return
+        n, k = self.buckets.get(hour, (0, 0))
+        self.buckets[hour] = (n + 1, k + click)
+        per_hour = self.campaign_buckets.setdefault(campaign, {})
+        per_hour[hour] = per_hour.get(hour, 0) + 1
+        self._prune()
 
     def record_click(self, hour: int) -> None:
         """Attribute a click that arrived after its impression to the impression's hour."""
-        n, k = self.buckets.get(hour, (0, 0))
-        if n:
-            self.buckets[hour] = (n, k + 1)
         self.clicks += 1
+        if hour in self.buckets:
+            n, k = self.buckets[hour]
+            self.buckets[hour] = (n, k + 1)
+
+    def _prune(self) -> None:
+        assert self.newest is not None  # noqa: S101 - set by record() before pruning
+        cutoff = self.newest - WINDOW_HOURS
+        old = [h for h in self.buckets if h < cutoff]
+        if old:
+            self.pruned_last = max([*old, *([self.pruned_last] if self.pruned_last is not None else [])])
+            for h in old:
+                del self.buckets[h]
+        for campaign, per_hour in self.campaign_buckets.items():
+            self.campaign_buckets[campaign] = {h: n for h, n in per_hour.items() if h >= cutoff}
 
     def snapshot(self, hour: int, campaigns: list[str]) -> dict[str, npt.NDArray[np.float64]]:
         """Raw counters for an impression at `hour`, one row per candidate campaign."""
-        current_n, current_k = self.buckets.get(hour, (0, 0))
-        earlier = [(n, k) for h, (n, k) in self.buckets.items() if hour - 24 <= h < hour]
-        # Strictly earlier hours only; tolerant of out-of-order events (never a negative gap).
-        known = [h for h in (self.last_hour, self.prev_hour, *self.buckets) if h is not None and h < hour]
-        last = max(known) if known else None
+        later_n = sum(n for h, (n, _) in self.buckets.items() if h >= hour)
+        later_k = sum(k for h, (_, k) in self.buckets.items() if h >= hour)
+        window = [(n, k) for h, (n, k) in self.buckets.items() if hour - 24 <= h < hour]
+        earlier = [h for h in self.buckets if h < hour]
+        if earlier:
+            last: int | None = max(earlier)
+        else:
+            last = self.pruned_last if self.pruned_last is not None and self.pruned_last < hour else None
         size = len(campaigns)
 
         def before(campaign: str) -> int:
-            total, last_seen, in_last = self.campaigns.get(campaign, (0, -1, 0))
-            return total - (in_last if last_seen == hour else 0)
+            later = sum(n for h, n in self.campaign_buckets.get(campaign, {}).items() if h >= hour)
+            return self.campaign_totals.get(campaign, 0) - later
 
         return {
-            "user_imps": np.full(size, self.imps - current_n, dtype=np.float64),
-            "user_clicks": np.full(size, self.clicks - current_k, dtype=np.float64),
-            "user_imps_24h": np.full(size, sum(n for n, _ in earlier), dtype=np.float64),
-            "user_clicks_24h": np.full(size, sum(k for _, k in earlier), dtype=np.float64),
+            "user_imps": np.full(size, self.imps - later_n, dtype=np.float64),
+            "user_clicks": np.full(size, self.clicks - later_k, dtype=np.float64),
+            "user_imps_24h": np.full(size, sum(n for n, _ in window), dtype=np.float64),
+            "user_clicks_24h": np.full(size, sum(k for _, k in window), dtype=np.float64),
             "hours_since_last": np.full(size, np.nan if last is None else hour - last, dtype=np.float64),
             "user_campaign_imps": np.array([before(c) for c in campaigns], dtype=np.float64),
         }

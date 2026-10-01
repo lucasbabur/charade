@@ -30,8 +30,11 @@ class Ranker(FastHttpUser):
         if chosen and random.random() < 0.1:
             ad = next(c for c in body["candidates"] if c["candidate_id"] == chosen)
             event = {k: body[k] for k in ("hour", "device_id", "device_ip", "device_model")}
+            impression_id = f"{body['request_id']}-{random.getrandbits(32)}"
             self.client.post(
                 "/v1/events/impression",
-                json={**event, "campaign_id": ad["C17"], "clicked": random.random() < 0.18},
+                json={**event, "impression_id": impression_id, "campaign_id": ad["C17"]},
                 name="/v1/events/impression",
             )
+            if random.random() < 0.18:
+                self.client.post("/v1/events/click", json={"impression_id": impression_id}, name="/v1/events/click")

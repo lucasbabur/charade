@@ -18,7 +18,9 @@ from charade.serving.assemble import assemble, epoch_hour, unknown_character, us
 from charade.serving.logging import configure_logging
 from charade.serving.runtime import Runtime, load_runtime
 from charade.serving.schemas import (
+    ClickEvent,
     ColdStart,
+    EventResult,
     Health,
     ImpressionEvent,
     ModelInfo,
@@ -26,7 +28,7 @@ from charade.serving.schemas import (
     RankRequest,
     RankResponse,
 )
-from charade.serving.store import StoreUnavailableError
+from charade.serving.store import Impression, Outcome, StoreUnavailableError
 
 log = structlog.get_logger()
 
@@ -91,6 +93,7 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
             pctr=float(p),
             evidence=runtime.evidence.lookup(c.C17, genre),
             bid=c.bid,
+            # pacing / budget_exhausted keep their defaults: no budget feed exists (charade.ranking.pacing).
             prior_exposures=int(e),
             logit=float(z),
         )
@@ -161,18 +164,29 @@ def _observe(
         metrics.EXPLORED.inc()
 
 
-async def record_impression(event: ImpressionEvent, runtime: Annotated[Runtime, Depends(_runtime)]) -> Response:
-    """Update the user's counters after an impression (and click) is observed."""
+async def record_impression(event: ImpressionEvent, runtime: Annotated[Runtime, Depends(_runtime)]) -> EventResult:
+    """Count a served impression in its user's history (once per impression id)."""
+    impression = Impression(
+        user=user_key(event.device_id, event.device_ip, event.device_model),
+        hour=epoch_hour(event.hour),
+        campaign=event.campaign_id,
+    )
     try:
-        await runtime.store.record(
-            user_key(event.device_id, event.device_ip, event.device_model),
-            epoch_hour(event.hour),
-            event.campaign_id,
-            event.clicked,
-        )
+        outcome = await runtime.store.record_impression(event.impression_id, impression)
     except StoreUnavailableError as exc:
         raise HTTPException(status_code=503, detail="feature store unavailable") from exc
-    return Response(status_code=204)
+    return EventResult(outcome="recorded" if outcome is Outcome.RECORDED else "duplicate")
+
+
+async def record_click(event: ClickEvent, runtime: Annotated[Runtime, Depends(_runtime)]) -> EventResult:
+    """Attribute a click to its impression's user and hour (once per impression id)."""
+    try:
+        outcome = await runtime.store.record_click(event.impression_id)
+    except StoreUnavailableError as exc:
+        raise HTTPException(status_code=503, detail="feature store unavailable") from exc
+    if outcome is Outcome.UNKNOWN_IMPRESSION:
+        raise HTTPException(status_code=404, detail="unknown or expired impression_id")
+    return EventResult(outcome="recorded" if outcome is Outcome.RECORDED else "duplicate")
 
 
 async def health() -> Health:
@@ -238,9 +252,17 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
         "/v1/events/impression",
         record_impression,
         methods=["POST"],
-        status_code=204,
+        response_model=EventResult,
         tags=["events"],
-        summary="Record a served impression and its click",
+        summary="Record a served impression (idempotent on impression_id)",
+    )
+    api.add_api_route(
+        "/v1/events/click",
+        record_click,
+        methods=["POST"],
+        response_model=EventResult,
+        tags=["events"],
+        summary="Record a click on a served impression (idempotent; late clicks go to the impression hour)",
     )
     api.add_api_route("/v1/model", model_info, methods=["GET"], tags=["ops"], summary="Loaded model")
     api.add_api_route("/health", health, methods=["GET"], tags=["ops"], summary="Liveness probe")

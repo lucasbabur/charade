@@ -156,18 +156,32 @@ class RankResponse(BaseModel):
 
 
 class ImpressionEvent(BaseModel):
-    """Outcome of a served impression; updates the user's counters."""
+    """A served impression. Idempotent on `impression_id` (retries are no-ops)."""
 
     model_config = ConfigDict(extra="forbid")
 
+    impression_id: Token = Field(description="Unique per served ad; use the RankRequest request_id")
     hour: datetime
     device_id: Token
     device_ip: Token
     device_model: Token
     campaign_id: Token
-    clicked: bool = False
 
     _hour = field_validator("hour", mode="before")(parse_hour)
+
+
+class ClickEvent(BaseModel):
+    """A click on a served impression, possibly hours later. Idempotent on `impression_id`."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    impression_id: Token
+
+
+class EventResult(BaseModel):
+    """What the store did with the event."""
+
+    outcome: Literal["recorded", "duplicate"]
 
 
 class Health(BaseModel):

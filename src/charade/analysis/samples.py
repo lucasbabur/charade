@@ -17,6 +17,7 @@ from charade.analysis.requests import creative_pool, request_from_row
 from charade.config import get_settings
 from charade.models.dataset import build_frame
 from charade.serving.app import create_app
+from charade.serving.store import FeatureStore, Impression
 
 OUT = Path("reports/sample_rankings.json")
 
@@ -65,7 +66,7 @@ def run(out: Path = OUT) -> list[dict[str, object]]:
     return samples
 
 
-def _replay_history(store: object, frame: pl.DataFrame, row: dict[str, object]) -> None:
+def _replay_history(store: FeatureStore, frame: pl.DataFrame, row: dict[str, object]) -> None:
     import asyncio  # noqa: PLC0415
 
     from charade.serving.assemble import epoch_hour  # noqa: PLC0415
@@ -74,7 +75,11 @@ def _replay_history(store: object, frame: pl.DataFrame, row: dict[str, object]) 
 
     async def replay() -> None:
         for e in events.iter_rows(named=True):
-            await store.record(e["user"], epoch_hour(e["ts"]), e["C17"], bool(e["click"]))  # pyright: ignore[reportAttributeAccessIssue]
+            await store.record_impression(
+                e["id"], Impression(user=e["user"], hour=epoch_hour(e["ts"]), campaign=e["C17"])
+            )
+            if e["click"]:
+                await store.record_click(e["id"])
 
     asyncio.run(replay())
 
