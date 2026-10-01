@@ -10,3 +10,7 @@ __pycache__/
 htmlcov/
 .mlflow/
 mlruns/
+.terraform/
+*.tfstate
+*.tfstate.*
+.env
