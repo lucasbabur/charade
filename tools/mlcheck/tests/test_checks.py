@@ -73,6 +73,14 @@ def _overlap_splits_in_time(root: Path) -> None:
     ).write_parquet(path)
 
 
+def _many_configs_on_one_holdout(root: Path) -> None:
+    """Four other configurations already scored on the same holdout window (budget 3)."""
+    path = root / ART / "evaluation_ledger.jsonl"
+    base = json.loads(path.read_text())
+    others = [base | {"run_id": f"old-{i}", "config_hash": f"cfg-{i}"} for i in range(4)]
+    path.write_text("\n".join(json.dumps(e) for e in [*others, base]))
+
+
 def _vocab_fitted_on_test(manifest: dict[str, Any]) -> None:
     manifest["fitted_artifacts"][0]["fit_end"] = str(START + timedelta(days=5, hours=3))
 
@@ -160,9 +168,7 @@ BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLL003": _json("manifest.json", _vocab_fitted_on_test),
     "MLL004": _json("leakage.json", _set("shuffled_label_auc", 0.61)),
     "MLL005": _json("leakage.json", _set("feature_auc", {"clicked_before": 0.97})),
-    "MLL006": lambda root: (root / ART / "evaluation_ledger.jsonl").write_text(
-        "\n".join([(root / ART / "evaluation_ledger.jsonl").read_text()] * 2)
-    ),
+    "MLL006": _many_configs_on_one_holdout,
     "MLL007": _json("leakage.json", _set("adversarial_auc", 0.93)),
     "MLM001": _predictions(lambda f: f.filter(~((pl.col("model") == "prior") & (pl.int_range(pl.len()) % 7 == 0)))),
     "MLM002": _predictions(
@@ -255,3 +261,11 @@ def test_notebooks_are_allowed_only_in_configured_directories(project: Path, run
     assert run(project, "MLS006").status is Status.PASS
     (project / "scratch.ipynb").write_text("{}")
     assert run(project, "MLS006").status is Status.FAIL
+
+
+def test_rescoring_an_identical_configuration_does_not_spend_budget(project: Path, run: Runner) -> None:
+    path = project / ART / "evaluation_ledger.jsonl"
+    entry = json.loads(path.read_text())
+    reruns = [entry | {"run_id": f"rerun-{i}"} for i in range(10)]
+    path.write_text("\n".join(json.dumps(e) for e in [*reruns, entry]))
+    assert run(project, "MLL006").status is Status.PASS
