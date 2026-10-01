@@ -1,6 +1,6 @@
 # 05 — Candidate ranking
 
-**Bottom line:** for one ad opportunity with N candidates, the policy does four things. It removes candidates that must never be served (brand safety, frequency cap, exhausted budget). It ranks the rest by calibrated pCTR × bid × pacing. It serves the top one on 95 % of traffic and a Thompson sample on a hashed 5 % bucket. It logs the propensity of whatever it served. Off-policy evaluation on the test days, over reconstructed candidate sets, estimates **+1.3 pp CTR over the logging policy for greedy pCTR (DR, 95 % CI [+0.07, +2.50] pp)**, against an observed 17.2 %. For the shipped policy (gates + exploration) the estimate is +1.1 pp, with a DR CI of [−0.09, +2.21] pp that touches zero; SNIPS gives +2.1 pp [+0.90, +3.26]. Code: `charade.ranking.policy` (serving path, numpy only), `charade.analysis.policy_eval` (`uv run poe ope`). Numbers: [reports/policy/ope.md](../reports/policy/ope.md).
+**Bottom line:** for one ad opportunity with N candidates, the policy does four things. It removes candidates that must never be served (brand safety, frequency cap, exhausted budget). It ranks the rest by calibrated pCTR × bid × pacing. It serves the top one on 95 % of traffic and a Thompson sample on a hashed 5 % bucket. It logs the propensity of whatever it served. Off-policy evaluation on the test days, over reconstructed candidate sets, estimates **+1.3 pp CTR over the logging policy for greedy pCTR (DR, 95 % CI [+0.07, +2.50] pp)**, against an observed 17.2 %. For the shipped policy (gates + exploration) the estimate is +1.1 pp, with a DR CI of [−0.09, +2.20] pp that touches zero; SNIPS gives +2.1 pp [+0.90, +3.25]. Code: `charade.ranking.policy` (serving path, numpy only), `charade.analysis.policy_eval` (`uv run poe ope`). Numbers: [reports/policy/ope.md](../reports/policy/ope.md).
 
 ## Pipeline per request
 
@@ -31,15 +31,15 @@ The logs show one ad per impression. Candidate sets are reconstructed per publis
 | Policy | SNIPS lift vs logging | DR lift vs logging | ESS |
 |---|---|---|---|
 | Uniform random | +0.37 pp [−0.00, +0.71] | −0.19 pp [−0.53, +0.13] | 17,149 |
-| Greedy pCTR | +2.37 pp [+1.15, +3.62] | **+1.29 pp [+0.07, +2.50]** | 4,235 |
-| **Shipped (gates + 5 % Thompson)** | +2.13 pp [+0.90, +3.26] | **+1.13 pp [−0.09, +2.21]** | 4,515 |
+| Greedy pCTR | +2.37 pp [+1.14, +3.62] | **+1.28 pp [+0.07, +2.50]** | 4,236 |
+| **Shipped (gates + 5 % Thompson)** | +2.12 pp [+0.90, +3.25] | **+1.13 pp [−0.09, +2.20]** | 4,516 |
 
 Paired hour-block bootstrap (1,000 resamples, the same hours for policy and logging). The observed logging CTR is 17.23 %. Greedy policies break pCTR ties (isotonic plateaus) with the raw logit, as serving does.
 
 Reading it:
 - **Random is a sanity check.** It lands where the logger does, as it should when the logger is roughly frequency-proportional.
 - **The model's ranking adds about +1.3 pp (DR, about 7 % relative).** SNIPS says about +2.4 pp. DR is the more conservative estimate: it leans on the model for actions it rarely sees.
-- **Gates and exploration cost about 0.16 pp** of estimated CTR against pure greedy (DR 18.36 % vs 18.52 %). That is the price of brand safety, frequency caps and the 5 % learning budget, and the reason the shipped policy's DR interval touches zero while greedy's does not.
+- **Gates and exploration cost about 0.15 pp** of estimated CTR against pure greedy (DR 18.36 % vs 18.51 %). That is the price of brand safety, frequency caps and the 5 % learning budget, and the reason the shipped policy's DR interval touches zero while greedy's does not.
 
 Assumptions to keep in mind:
 1. The cell share is the logging propensity, i.e. no unobserved confounding within a publisher-hour.
