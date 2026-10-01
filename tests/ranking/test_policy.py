@@ -87,3 +87,13 @@ def test_policy_invariants(values: list[float], family: list[bool], request_id: 
     again = decide(candidates, "mature", request_id, CONFIG)
     assert again == decision
     assert np.isfinite([r.value for r in decision.ranked]).all()
+
+
+def test_calibration_ties_are_broken_by_the_raw_logit() -> None:
+    candidates = [
+        Candidate(candidate_id="a", advertiser_id="x", campaign_id="c", pctr=0.12, logit=-2.0, evidence=500),
+        Candidate(candidate_id="b", advertiser_id="x", campaign_id="c", pctr=0.12, logit=-1.9, evidence=500),
+    ]
+    decision = decide(candidates, "sfw", "r", PolicyConfig(exploration_rate=0.0))
+    assert decision.chosen_id == "b"
+    assert [r.candidate_id for r in decision.ranked] == ["b", "a"]

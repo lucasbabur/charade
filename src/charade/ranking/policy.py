@@ -58,6 +58,9 @@ class Candidate(BaseModel):
     pacing: float = Field(default=1.0, ge=0, le=1)
     prior_exposures: int = 0
     budget_exhausted: bool = False
+    logit: float = 0.0
+    """Raw model logit. Isotonic calibration is a step function, so equal pCTRs are common; the
+    logit (strictly monotone in the model's belief) breaks those ties before the candidate id does."""
 
 
 class Ranked(BaseModel):
@@ -121,17 +124,19 @@ def decide(candidates: list[Candidate], character_tier: str, request_id: str, co
     weight = np.array([c.bid * c.pacing for c in candidates], dtype=np.float64)
     value = pctr * weight
     a, b = _beta_params(pctr, np.array([c.evidence for c in candidates], dtype=np.float64), config)
-    rng = _rng(request_id)
-    low, high = _beta_quantiles(a, b, rng)
+    low, high = _beta_quantiles(a, b)
 
     chosen: int | None = None
     propensity: float | None = None
     explored = False
     if len(open_idx):
-        greedy = int(
-            open_idx[np.lexsort((np.array([candidates[i].candidate_id for i in open_idx]), -value[open_idx]))[0]]
+        logits = np.array([candidates[i].logit for i in open_idx])
+        ids = np.array([candidates[i].candidate_id for i in open_idx])
+        greedy = int(open_idx[np.lexsort((ids, -logits, -value[open_idx]))[0]])
+        draws = (
+            _rng(request_id).beta(a[open_idx], b[open_idx], size=(config.propensity_draws, len(open_idx)))
+            * weight[open_idx]
         )
-        draws = rng.beta(a[open_idx], b[open_idx], size=(config.propensity_draws, len(open_idx))) * weight[open_idx]
         winners = open_idx[draws.argmax(axis=1)]
         ts_share = np.array([(winners == i).mean() for i in open_idx])
         explored = explores(request_id, config.exploration_rate)
@@ -141,7 +146,10 @@ def decide(candidates: list[Candidate], character_tier: str, request_id: str, co
             (1 - config.exploration_rate) * (chosen == greedy) + config.exploration_rate * ts_share[position]
         )
 
-    order = sorted(range(len(candidates)), key=lambda i: (bool(reasons[i]), -value[i], candidates[i].candidate_id))
+    order = sorted(
+        range(len(candidates)),
+        key=lambda i: (bool(reasons[i]), -value[i], -candidates[i].logit, candidates[i].candidate_id),
+    )
     ranked = [
         Ranked(
             candidate_id=candidates[i].candidate_id,
@@ -164,12 +172,11 @@ def decide(candidates: list[Candidate], character_tier: str, request_id: str, co
     )
 
 
-def _beta_quantiles(a: Floats, b: Floats, rng: np.random.Generator, draws: int = 400) -> tuple[Floats, Floats]:
-    """5 % and 95 % quantiles of Beta(a, b) by sampling (no scipy in serving)."""
-    if len(a) == 0:
-        return a, a
-    samples = rng.beta(a, b, size=(draws, len(a)))
-    return np.quantile(samples, 0.05, axis=0), np.quantile(samples, 0.95, axis=0)
+def _beta_quantiles(a: Floats, b: Floats) -> tuple[Floats, Floats]:
+    """5 % and 95 % quantiles of Beta(a, b), normal approximation (a, b >= ~2 here, clipped to [0, 1])."""
+    mean = a / (a + b)
+    sd = np.sqrt(a * b / ((a + b) ** 2 * (a + b + 1)))
+    return np.clip(mean - 1.645 * sd, 0.0, 1.0), np.clip(mean + 1.645 * sd, 0.0, 1.0)
 
 
 def _confidence(ranked: list[Ranked]) -> str:

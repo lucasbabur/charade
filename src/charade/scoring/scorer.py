@@ -36,3 +36,8 @@ class Scorer:
     def pctr(self, data: Encoded) -> npt.NDArray[np.float64]:
         """Calibrated click probabilities."""
         return self.calibrator.apply(self.logits(data))
+
+    def score(self, data: Encoded) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+        """(raw logits, calibrated pCTR) from one forward pass."""
+        logits = self.logits(data)
+        return logits, self.calibrator.apply(logits)
