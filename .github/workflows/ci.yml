@@ -37,6 +37,10 @@ jobs:
         run: uv run poe test
       - name: Tests (mlcheck)
         run: uv run poe test-mlcheck
+      - name: Experiment notebooks execute (smoke mode)
+        run: uv run poe test-notebooks
+        env:
+          MPLBACKEND: Agg
       - name: ML static gates
         run: uv run poe mlcheck
       - name: OpenAPI contract is current
