@@ -1,64 +1,32 @@
 # 🎬 Cameo
 
-**Ads that know their scene.** Cameo picks which ad gets a moment in an AI companion chat. It predicts calibrated click probability for every candidate, removes the ones that don't belong, and returns an explained ranking in under 50 ms.
+Cameo ranks contextual ads inside AI companion chats. For each ad opportunity (character, conversation moment, publisher, device, hour) and a set of candidate ads, it predicts the click probability, filters out ads that don't fit (brand safety, frequency caps, budget), and returns a ranked list in under 50 ms.
 
-> The right ad makes a cameo. It never takes over the scene.
+Design and results live in [docs/](docs/index.md).
 
-A user flirting with an AI girlfriend mid-roleplay and a user two messages into a fresh chat with AI Superman are different audiences. Cameo scores each candidate against the character (genre, safety tier, persona), the moment (turn, hour), the surface, and the user's recent exposure. It then decides what to show, and how confident it is.
+## 🚀 Run it
 
----
-
-## ✨ What it does
-
-| | |
-|---|---|
-| 🎯 **CTR prediction** | DCN-v2 in PyTorch, judged against a LightGBM yardstick. Calibrated so `pCTR × bid` means something |
-| 🏆 **Candidate ranking** | Brand-safety gates → batched scoring → pacing and fatigue → Thompson exploration on 5 % of traffic, with every propensity logged |
-| 🧊 **Cold start** | New characters scored from genre, tier and persona text; beta-binomial priors; an evidence-based graduation rule |
-| 🌊 **Drift** | PSI, character churn, novelty decay, and an adaptation layer that holds CTR while spreading exposure |
-| ⚡ **Serving** | FastAPI + ONNX Runtime + Redis, under 50 ms p99, observable end to end |
-| 🛡️ **mlcheck** | 46 ML release gates: leakage, reproducibility, calibration with CIs, train/serve parity, latency, policy safety |
-
-## 🔍 What the data told us
-
-- 🎭 **Genre matters most.** Romance and horror characters run ~+4 pp CTR, mentors −4 pp. Mature tier adds +2–3 pp every day.
-- 👻 **Most "users" are ghosts.** One placeholder `device_id` covers 82 % of rows, and 81 % of IPs appear once, so cold start is the default case.
-- 🧩 **The anonymized C-columns hide an ad hierarchy:** creative (C14) → campaign (C17) → advertiser (C21). That hierarchy defines what a candidate is.
-- 📉 **Conversation turn barely moves CTR**, and the character descriptions are templated. Text helps cold start; it is not a big lift on its own.
-
-Full evidence: [docs/PLAN.md §0](docs/PLAN.md#0-data-findings-that-decide-the-design).
-
-## 🚀 Quickstart
+Requirements: [uv](https://docs.astral.sh/uv/) and Python 3.12 (uv installs it if missing).
 
 ```bash
-uv sync --all-packages                                # 📦 install the workspace
-cp /path/to/{impressions,characters}.csv .            # 🗂️ raw data (gitignored)
-uv run mlcheck . --stage data --stage static          # 🛡️ data contract + code gates
-uv run mlcheck --list                                 # 📋 all 46 gates and why each exists
+uv sync --all-packages                         # install the workspace
+cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
+uv run mlcheck . --stage data --stage static   # check the data and the code
 ```
 
-> 🚧 **Status:** design ✅ · ML gates ✅ · model, ranking and API in progress. Live status per doc: [docs/index.md](docs/index.md).
+> 🚧 Training, evaluation and the API are being built. Their commands will appear here as they land.
 
-## 🗺️ Repository map
+## ⚙️ Settings
 
-```
-src/cameo/        🧠 data · features · text · models · evaluation · ranking · coldstart · drift · serving
-tools/mlcheck/    🛡️ ML release gates
-configs/          ⚙️ experiments and policy as YAML
-reports/          📊 generated figures and tables
-infra/terraform/  ☁️ AWS: ECS Fargate, ElastiCache, S3, Firehose
-docs/             📚 everything explained
-```
+Every setting lives in `pyproject.toml`: tool settings under `[tool.<name>]`, project settings under `[tool.cameo]`. Environment variables override them. API keys come only from the environment.
 
-## 📚 Read next
+## 🤝 Contribute
 
-| | |
-|---|---|
-| 🧭 [docs/index.md](docs/index.md) | Every doc, its status, and the reading path for each task |
-| 🏗️ [docs/PLAN.md](docs/PLAN.md) | Full design: split, features, models, ranking, cold start, drift, serving, infrastructure |
-| 🛡️ [docs/mlcheck.md](docs/mlcheck.md) | The release gates, artifact contract and statistics |
-| 🤖 [AGENTS.md](AGENTS.md) | Rules and invariants for AI agents and contributors |
-
----
-
-<sub>Built as the Simula ML Engineer take-home · Python 3.12 · uv · PyTorch · ONNX · FastAPI · Terraform</sub>
+1. Read [AGENTS.md](AGENTS.md). It holds the rules, invariants and definition of done for humans and AI agents alike.
+2. Find the doc for your area in [docs/index.md](docs/index.md).
+3. Before committing, run lint, types, tests and the ML gates:
+   ```bash
+   cd tools/mlcheck && uv run ruff check . && uv run ruff format --check . && uv run pyright && uv run pytest
+   uv run mlcheck . --stage static
+   ```
+4. Use atomic [conventional commits](https://www.conventionalcommits.org/) (`feat(ranking): …`). Every commit must pass its own tests.

@@ -31,12 +31,15 @@ The code is organised by ML concern, not by clean-architecture layers ([ADR in P
 ```
 src/cameo/{data,features,text,models,evaluation,ranking,coldstart,drift,serving}/  cli.py, config.py
 tools/mlcheck/            ML release gates (own tests, own AGENTS.md)
-configs/                  experiments/*.yaml, policy/*.yaml — experiments are configs, not code edits
 artifacts/current/        run output in the mlcheck artifact contract (gitignored)
 reports/                  generated figures/tables, committed; never hand-edited
 docs/                     everything explained; index at docs/index.md
 infra/terraform/, docker/, .github/workflows/
 ```
+
+## Settings
+
+**All settings live in `pyproject.toml`** — no YAML, `.ini`, `setup.cfg`, `.ruff.toml` or stray config files. Tool settings go under `[tool.<name>]`. Project settings go under `[tool.cameo]`: paths, seeds, split dates, `experiments.<name>` and `policy` (safety matrix, fatigue, pacing, exploration). `cameo.config` loads them with pydantic-settings (`PyprojectTomlConfigSettingsSource`); environment variables override them, and secrets come only from the environment. An experiment is a new `[tool.cameo.experiments.<name>]` table, not a code edit.
 
 ## Invariants
 

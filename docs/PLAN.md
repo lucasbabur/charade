@@ -60,7 +60,7 @@ DuckDB profile of the provided CSVs, 2026-10-01.
 6. **Uncertainty in every number.** Block-bootstrap CIs (hour blocks), 3 seeds for neural models, effective sample size for off-policy estimates.
 7. **Slices before averages.** Cold/warm character, genre, tier, surface, day and new/seen user are reported for every model.
 8. **Reproducible from raw.** `make reproduce` goes from CSV to every table and figure in the docs. Seeds are fixed, torch deterministic flags are on, and each artifact has a manifest (data sha256, git sha, config hash, train window, metrics).
-9. **Experiments are configs, not notebooks.** `configs/experiments/*.yaml` → CLI → MLflow (local file store) and `reports/`. There are no notebooks in the repo.
+9. **Experiments are config tables, not notebooks.** `[tool.cameo.experiments.<name>]` in pyproject.toml → CLI → MLflow (local file store) and `reports/`. There are no notebooks in the repo.
 10. **Pure math, thin I/O.** Feature, ranking, evaluation and drift math are pure numpy/polars functions, unit-tested without I/O. Torch, ONNX, Redis and API clients stay in `models/`, `serving/` and `text/`. The serving import boundary is enforced by mlcheck MLS001.
 
 Code style: Python 3.12, full type hints, pyright strict on `app/`, Google docstrings on public functions, pydantic v2 at every boundary, structlog JSON logging (no f-strings in log calls), no bare `except`, domain exceptions in `shared/errors.py`.
@@ -74,7 +74,7 @@ Organised by ML concern, not by clean-architecture layer. Those layers protect a
 ```
 take_home_assigment/
 ├── src/cameo/
-│   ├── config.py            # pydantic-settings: paths, seeds, split dates, thresholds
+│   ├── config.py            # pydantic-settings reading [tool.cameo] from pyproject.toml; env overrides; secrets from env only
 │   ├── data/                # pandera contracts, polars loader (CSV → day-partitioned parquet), temporal split, backtest folds
 │   ├── features/            # THE transform: user proxy, causal counters, vocabularies, character features; used by training and serving
 │   ├── text/                # embedding clients (Gemini, Voyage, OpenAI, local Qwen), Claude attribute extraction, sha256 cache
@@ -86,7 +86,6 @@ take_home_assigment/
 │   ├── serving/             # FastAPI app, routes, schemas, Redis store, ONNX scorer, observability; imports features + ranking only
 │   └── cli.py               # typer: train | evaluate | drift | simulate | export | serve | sample
 ├── tools/mlcheck/           # ML release gates (workspace package, own tests) — docs/mlcheck.md
-├── configs/                 # base.yaml, experiments/*.yaml, policy/*.yaml
 ├── tests/                   # unit/<concern>/, integration/, api/, property/, load/, fixtures/ (20k-row sample)
 ├── artifacts/current/       # gitignored run output = mlcheck artifact contract
 ├── reports/                 # generated, committed: figures, tables, sample_rankings.json
@@ -95,7 +94,7 @@ take_home_assigment/
 ├── infra/terraform/         # modules/ + envs/{staging,prod}
 ├── .github/workflows/       # ci.yml, cd.yml
 ├── docs/
-└── pyproject.toml           # uv workspace root, [tool.mlcheck] config
+└── pyproject.toml           # the only settings file: workspace, [tool.cameo], [tool.mlcheck], ruff, pyright, pytest, coverage
 ```
 
 Import rules (enforced by mlcheck, not by convention):
@@ -257,7 +256,7 @@ Import rules (enforced by mlcheck, not by convention):
 Input: the opportunity context plus N candidates (`candidate_id`, `banner_pos`, C14 and derived C-fields, optional `bid`, `advertiser_id`=C21, `campaign_id`=C17).
 
 1. **Hard gates** (each rejection returns a `gate_reason`):
-   - **Brand safety:** matrix of advertiser allowed tiers × character `safety_tier` (`configs/policy/safety_matrix.yaml`; default: mature characters only receive advertisers allowlisted for mature; unknown advertiser → sfw-only). The LLM `nsfw_risk` disagreement upgrades the tier, conservatively.
+   - **Brand safety:** matrix of advertiser allowed tiers × character `safety_tier` (`[tool.cameo.policy.safety_matrix]`; default: mature characters only receive advertisers allowlisted for mature; unknown advertiser → sfw-only). The LLM `nsfw_risk` disagreement upgrades the tier, conservatively.
    - **Frequency cap:** ≤ K impressions of the same campaign to the same user proxy in 24 h (K = 3 default).
    - **Budget exhausted.**
 2. **Score:** one batched ONNX forward pass → calibrated pCTR.

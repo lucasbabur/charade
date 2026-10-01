@@ -34,7 +34,7 @@ Status: ✅ written · 🟡 partial · ⬜ planned. Update the status in the sam
 | Task | Read, in order |
 |---|---|
 | Change a feature | AGENTS.md invariants 2–4 → 02-features → PLAN §4–5 → `src/cameo/features/` |
-| Train or compare models | PLAN §1, §7–8 → 04-models-evaluation → mlcheck.md (model stage) → `configs/experiments/` |
+| Train or compare models | PLAN §1, §7–8 → 04-models-evaluation → mlcheck.md (model stage) → `[tool.cameo.experiments]` in pyproject.toml |
 | Touch the ranking policy | 05-ranking-policy → PLAN §9 → mlcheck MLP* |
 | Touch the API or latency | 08-serving-architecture → PLAN §12–13 → AGENTS.md invariant 5 |
 | Add an ML gate | tools/mlcheck/AGENTS.md → mlcheck.md |
