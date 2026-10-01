@@ -101,6 +101,8 @@ def run(trials_dcn: int = 60, trials_gbdt: int = 40, data_dir: Path | None = Non
     out.mkdir(parents=True, exist_ok=True)
     optuna.logging.set_verbosity(optuna.logging.WARNING)
     for name, objective, n in (("dcn", dcn_objective, trials_dcn), ("gbdt", gbdt_objective, trials_gbdt)):
+        if n == 0:
+            continue  # keep the committed search for this model
         study = optuna.create_study(direction="minimize", sampler=optuna.samplers.TPESampler(seed=settings.seed))
         study.optimize(objective, n_trials=n)
         rows = [
@@ -112,4 +114,8 @@ def run(trials_dcn: int = 60, trials_gbdt: int = 40, data_dir: Path | None = Non
 
 
 if __name__ == "__main__":
-    run()
+    import sys
+
+    # `python -m charade.models.tune [dcn_trials gbdt_trials]`; 60/60 gives both models equal search effort.
+    counts = [int(a) for a in sys.argv[1:3]] or [60, 60]
+    run(trials_dcn=counts[0], trials_gbdt=counts[1])

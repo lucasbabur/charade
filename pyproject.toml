@@ -122,13 +122,14 @@ character_id_dropout = 0.08
 seeds = [0, 1, 2]
 
 [tool.charade.model.gbdt]
-learning_rate = 0.0127
-num_leaves = 415
-min_data_in_leaf = 63
-cat_smooth = 47.5
-cat_l2 = 1.45
-feature_fraction = 0.41
-lambda_l2 = 0.0195
+# Best of 60 trials (equal search effort with DCN-v2), reports/tuning/gbdt.csv trial 51.
+learning_rate = 0.0144
+num_leaves = 254
+min_data_in_leaf = 323
+cat_smooth = 26.85
+cat_l2 = 1.39
+feature_fraction = 0.40
+lambda_l2 = 8.62
 
 [tool.poe.tasks]
 lint = { sequence = [{ shell = "ruff check . && ruff format --check ." }, { shell = "ruff check . && ruff format --check .", cwd = "tools/mlcheck" }], help = "Ruff lint and format check" }
@@ -141,6 +142,7 @@ eda = { cmd = "python -m charade.analysis.eda", help = "Write reports/eda/eda.md
 text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descriptions and write reports/text_bakeoff.csv (OPENAI_API_KEY optional)" }
 tune = { cmd = "python -m charade.models.tune", help = "Optuna search on the inner split; writes reports/tuning/" }
 train = { cmd = "python -m charade.models.pipeline", help = "Train, calibrate, evaluate once on test, export; writes artifacts and reports/models/metrics.json" }
+refit-study = { cmd = "python -m charade.models.refit", help = "Should the model also train on the validation day? Decided one day earlier; writes reports/models/refit_study.json" }
 ablate = { cmd = "python -m charade.models.ablate", help = "Feature-group ablations on validation; writes reports/models/ablations.csv" }
 ope = { cmd = "python -m charade.analysis.policy_eval", help = "Off-policy evaluation of ranking policies on test; writes ope.json, decisions.jsonl, reports/policy/ope.md" }
 parity = { cmd = "python -m charade.analysis.parity", help = "Train/serve feature parity on replayed test requests; writes parity.json" }
