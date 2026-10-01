@@ -45,7 +45,7 @@ def load_prepared(
     """Build the modelling table and encode it with the configured (or given) groups and text provider."""
     chosen = groups if groups is not None else {Group(g) for g in settings.model.groups}
     provider = Provider(text) if text else None
-    return prepare(build_frame(data_dir, provider), chosen, provider is not None)
+    return prepare(build_frame(settings, data_dir, provider), chosen, provider is not None)
 
 
 def _id_field(spec: FeatureSpec) -> int | None:

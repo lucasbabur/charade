@@ -23,7 +23,7 @@ N_CANDIDATES = 100
 def build_requests(out: Path = OUT, n_requests: int = N_REQUESTS, n_candidates: int = N_CANDIDATES) -> Path:
     """Write `requests.jsonl` (one RankRequest per line)."""
     settings = get_settings()
-    frame = build_frame(settings.data_dir, None)
+    frame = build_frame(settings, settings.data_dir)
     test = frame.filter(pl.col("split") == "test").sample(n_requests, seed=settings.seed)
     pool = creative_pool(frame.filter(pl.col("split") != "test")).head(1000)
     weights = pool["volume"].to_numpy().astype(np.float64)

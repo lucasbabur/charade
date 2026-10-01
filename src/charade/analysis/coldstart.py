@@ -171,7 +171,7 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, out: Pat
     """Write reports/coldstart/coldstart.md and return the tables."""
     settings = settings or get_settings()
     scorer = Scorer(settings.artifacts_dir)
-    frame = build_frame(data_dir or settings.data_dir, None)
+    frame = build_frame(settings, data_dir or settings.data_dir)
     train = frame.filter(pl.col("split") == "train")
     known = train["character_id"].unique().implode()
     test = frame.filter(pl.col("split") == "test")

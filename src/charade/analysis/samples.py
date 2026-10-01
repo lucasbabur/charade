@@ -25,7 +25,7 @@ OUT = Path("reports/sample_rankings.json")
 def run(out: Path = OUT) -> list[dict[str, object]]:
     """Call the real API in-process and save request + response pairs."""
     settings = get_settings()
-    frame = build_frame(settings.data_dir, None)
+    frame = build_frame(settings, settings.data_dir)
     test = frame.filter(pl.col("split") == "test")
     pool = creative_pool(frame.filter(pl.col("split") == "train"))
     candidates = pl.concat(

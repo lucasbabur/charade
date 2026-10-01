@@ -62,7 +62,7 @@ def run(trials_dcn: int = 60, trials_gbdt: int = 40, data_dir: Path | None = Non
     """Run both searches and write one CSV per model."""
     settings = get_settings()
     groups = {Group(g) for g in settings.model.groups}
-    frame = build_frame(data_dir or settings.data_dir, None)
+    frame = build_frame(settings, data_dir or settings.data_dir)
     inner_train, inner_val = _inner(frame)
     spec = fit_spec(inner_train, groups)
     x_train, x_val = encode(spec, inner_train), encode(spec, inner_val)

@@ -23,7 +23,7 @@ aws s3 cp --only-show-errors "${CHARADE_DATA_URI%/}/characters.csv" "$CHARADE_DA
 
 # Rolling split: last complete day = holdout, the day before = validation, the rest = training.
 eval "$(python -m charade.data.windows "$CHARADE_DATA_DIR/impressions.csv")"
-echo "windows: train <= $CHARADE_TRAIN_END < val <= $CHARADE_VAL_END < holdout"
+echo "windows: train <= $CHARADE_TRAIN_END < val <= $CHARADE_VAL_END < holdout <= $CHARADE_TEST_END"
 
 poe train
 poe ope

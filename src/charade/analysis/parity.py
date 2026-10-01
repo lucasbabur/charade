@@ -52,7 +52,7 @@ def run(settings: Settings | None = None, data_dir: Path | None = None) -> dict[
     settings = settings or get_settings()
     art = settings.artifacts_dir
     scorer = Scorer(art)
-    frame = build_frame(data_dir or settings.data_dir, None)
+    frame = build_frame(settings, data_dir or settings.data_dir)
     test = frame.filter(pl.col("split") == "test")
     sample = test.sample(min(SAMPLE, test.height), seed=settings.seed)
     users = frame.filter(pl.col("user").is_in(sample["user"].implode()))
