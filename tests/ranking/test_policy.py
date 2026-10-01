@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
@@ -98,3 +99,46 @@ def test_calibration_ties_are_broken_by_the_raw_logit() -> None:
     decision = decide(candidates, "sfw", "r", PolicyConfig(exploration_rate=0.0))
     assert decision.chosen_id == "b"
     assert [r.candidate_id for r in decision.ranked] == ["b", "a"]
+
+
+def _empirical(candidates: list[Candidate], config: PolicyConfig, requests: int) -> dict[str, float]:
+    counts: dict[str, int] = {}
+    for i in range(requests):
+        chosen = decide(candidates, "sfw", f"req-{i}", config).chosen_id
+        assert chosen is not None
+        counts[chosen] = counts.get(chosen, 0) + 1
+    return {k: v / requests for k, v in counts.items()}
+
+
+def test_logged_propensities_match_empirical_selection_frequencies() -> None:
+    """Recovery test: the logged probability of each candidate equals how often the policy serves it."""
+    config = PolicyConfig(exploration_rate=0.3, exploration_sharpness=2.0)
+    candidates = [
+        Candidate(candidate_id=f"c{i}", advertiser_id="a", campaign_id="x", pctr=p, evidence=e)
+        for i, (p, e) in enumerate([(0.30, 1000), (0.25, 20), (0.20, 200), (0.10, 50), (0.05, 1000)])
+    ]
+    logged = {r.candidate_id: r.propensity for r in decide(candidates, "sfw", "any", config).ranked}
+    assert sum(logged.values()) == pytest.approx(1.0)
+    empirical = _empirical(candidates, config, 40_000)
+    for cid, p in logged.items():
+        se = (p * (1 - p) / 40_000) ** 0.5
+        assert abs(empirical.get(cid, 0.0) - p) < 4 * se + 1e-9, (cid, p, empirical.get(cid))
+
+
+def test_identical_candidates_get_unbiased_propensities() -> None:
+    """The reviewer's reproduction: 100 identical candidates, full exploration -> exactly 1 % each."""
+    config = PolicyConfig(exploration_rate=1.0)
+    candidates = [
+        Candidate(candidate_id=f"c{i:03d}", advertiser_id="a", campaign_id="x", pctr=0.2, evidence=500)
+        for i in range(100)
+    ]
+    decisions = [decide(candidates, "sfw", f"r{i}", config) for i in range(200)]
+    assert all(d.propensity == pytest.approx(0.01) for d in decisions)
+    assert len({d.chosen_id for d in decisions}) > 50
+
+
+def test_gated_candidates_have_zero_propensity() -> None:
+    candidates = [*_candidates([0.9], advertiser_id="family"), *_candidates([0.1, 0.2])]
+    ranked = decide(candidates, "mature", "r", CONFIG).ranked
+    assert next(r for r in ranked if r.gated).propensity == 0.0
+    assert sum(r.propensity for r in ranked) == pytest.approx(1.0)

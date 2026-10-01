@@ -4,11 +4,14 @@ Order of operations (docs/05-ranking-policy.md):
 1. Hard gates: brand safety (advertiser x character tier), frequency cap, exhausted budget.
    Gated candidates are never served, whatever their score.
 2. Value: pCTR x bid x pacing multiplier. With bid = 1 and no pacing this is pure CTR ranking.
-3. Uncertainty: each candidate's pCTR becomes Beta(pCTR * n, (1 - pCTR) * n), where n is how much
-   evidence training had for its (campaign, genre) pair, capped at `max_evidence`.
-4. Decision: greedy on value for most traffic; Thompson sampling on an exploration bucket chosen
-   by hashing the request id (deterministic and auditable). The propensity of the served ad is
-   logged so every decision can feed off-policy evaluation and unbiased retraining.
+3. Uncertainty (a heuristic, not a calibrated posterior): each pCTR gets a Beta(pCTR * n, (1 - pCTR) * n)
+   interval, where n is how much evidence training had for the (campaign, genre) pair.
+4. Decision, with exact selection probabilities: on a hashed exploration bucket of rate eps the ad
+   is sampled from q_i proportional to (upper interval bound x bid x pacing)^k over eligible ads;
+   otherwise the greedy ad is served. Every eligible ad therefore has the closed-form probability
+       p_i = (1 - eps) * 1[i is greedy] + eps * q_i
+   which is logged for every candidate. (An earlier Thompson-sampling version estimated p_i from
+   the same draws that picked the ad, which biased it upward; a recovery test now guards this.)
 """
 
 import hashlib
@@ -62,6 +65,8 @@ class Ranked(BaseModel):
     value: float
     gated: bool
     gate_reasons: list[GateReason]
+    propensity: float
+    """Exact probability that this policy serves this candidate for this request (0 if gated)."""
 
 
 class Decision(BaseModel):
@@ -72,7 +77,8 @@ class Decision(BaseModel):
     propensity: float | None
     explored: bool
     confidence: str
-    """`high`, or `low` when the top two candidates' 90 % intervals overlap."""
+    """Heuristic: `low` when the top two candidates' evidence intervals overlap, else `high`. Not a
+    calibrated probability statement."""
 
 
 def gate_reasons(candidate: Candidate, character_tier: str, config: PolicyConfig) -> list[GateReason]:
@@ -94,8 +100,29 @@ def explores(request_id: str, rate: float) -> bool:
     return bucket < rate
 
 
-def _rng(request_id: str) -> np.random.Generator:
-    return np.random.default_rng(int.from_bytes(hashlib.sha256(b"ts:" + request_id.encode()).digest()[:8], "big"))
+def _uniform(request_id: str) -> float:
+    """Second hash, independent of the bucket hash: the exploration draw for this request."""
+    return int.from_bytes(hashlib.sha256(b"explore:" + request_id.encode()).digest()[:8], "big") / 2**64
+
+
+def selection_probabilities(
+    order: list[int], upper_value: Floats, eligible: npt.NDArray[np.bool_], config: PolicyConfig
+) -> tuple[Floats, int | None, Floats]:
+    """(p over all candidates, greedy index, exploration distribution q). Gated candidates get 0.
+
+    `order` is the full ranking (best first); greedy is its first eligible candidate.
+    """
+    n = len(upper_value)
+    p, q = np.zeros(n), np.zeros(n)
+    if not eligible.any():
+        return p, None, q
+    idx = np.flatnonzero(eligible)
+    greedy = next(i for i in order if eligible[i])
+    weights = np.clip(upper_value[idx], 1e-12, None) ** config.exploration_sharpness
+    q[idx] = weights / weights.sum()
+    p = config.exploration_rate * q
+    p[greedy] += 1 - config.exploration_rate
+    return p, greedy, q
 
 
 def _beta_params(pctr: Floats, evidence: Floats, config: PolicyConfig) -> tuple[Floats, Floats]:
@@ -107,37 +134,29 @@ def _beta_params(pctr: Floats, evidence: Floats, config: PolicyConfig) -> tuple[
 def decide(candidates: list[Candidate], character_tier: str, request_id: str, config: PolicyConfig) -> Decision:
     """Rank candidates and choose one (or none if every candidate is gated)."""
     reasons = [gate_reasons(c, character_tier, config) for c in candidates]
-    open_idx = np.array([i for i, r in enumerate(reasons) if not r], dtype=np.int64)
     pctr = np.array([c.pctr for c in candidates], dtype=np.float64)
     weight = np.array([c.bid * c.pacing for c in candidates], dtype=np.float64)
     value = pctr * weight
     a, b = _beta_params(pctr, np.array([c.evidence for c in candidates], dtype=np.float64), config)
     low, high = _beta_quantiles(a, b)
+    eligible = np.array([not r for r in reasons], dtype=bool)
+    # Rank key: value, then raw logit (isotonic calibration ties pCTRs), then candidate id.
+    order = sorted(range(len(candidates)), key=lambda i: (-value[i], -candidates[i].logit, candidates[i].candidate_id))
+    probabilities, greedy, q = selection_probabilities(order, high * weight, eligible, config)
 
     chosen: int | None = None
-    propensity: float | None = None
     explored = False
-    if len(open_idx):
-        logits = np.array([candidates[i].logit for i in open_idx])
-        ids = np.array([candidates[i].candidate_id for i in open_idx])
-        greedy = int(open_idx[np.lexsort((ids, -logits, -value[open_idx]))[0]])
-        draws = (
-            _rng(request_id).beta(a[open_idx], b[open_idx], size=(config.propensity_draws, len(open_idx)))
-            * weight[open_idx]
-        )
-        winners = open_idx[draws.argmax(axis=1)]
-        ts_share = np.array([(winners == i).mean() for i in open_idx])
+    if greedy is not None:
         explored = explores(request_id, config.exploration_rate)
-        chosen = int(winners[0]) if explored else greedy
-        position = int(np.flatnonzero(open_idx == chosen)[0])
-        propensity = float(
-            (1 - config.exploration_rate) * (chosen == greedy) + config.exploration_rate * ts_share[position]
-        )
+        if explored:
+            idx = np.flatnonzero(eligible)
+            cumulative = np.cumsum(q[idx])
+            position = int(np.searchsorted(cumulative, _uniform(request_id) * cumulative[-1], side="right"))
+            chosen = int(idx[min(position, len(idx) - 1)])
+        else:
+            chosen = greedy
 
-    order = sorted(
-        range(len(candidates)),
-        key=lambda i: (bool(reasons[i]), -value[i], -candidates[i].logit, candidates[i].candidate_id),
-    )
+    order = [i for i in order if not reasons[i]] + [i for i in order if reasons[i]]  # gated last
     ranked = [
         Ranked(
             candidate_id=candidates[i].candidate_id,
@@ -148,13 +167,14 @@ def decide(candidates: list[Candidate], character_tier: str, request_id: str, co
             value=float(value[i]),
             gated=bool(reasons[i]),
             gate_reasons=reasons[i],
+            propensity=float(probabilities[i]),
         )
         for rank, i in enumerate(order, start=1)
     ]
     return Decision(
         ranked=ranked,
         chosen_id=None if chosen is None else candidates[chosen].candidate_id,
-        propensity=propensity,
+        propensity=None if chosen is None else float(probabilities[chosen]),
         explored=explored,
         confidence=_confidence(ranked),
     )

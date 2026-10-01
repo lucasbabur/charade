@@ -106,7 +106,7 @@ exploration_rate = 0.05
 min_evidence = 20.0
 max_evidence = 1000.0
 frequency_cap = 8
-propensity_draws = 64
+exploration_sharpness = 2.0
 advertiser_max_tier = { "157" = "suggestive", "48" = "sfw" }
 
 [tool.charade.model.dcn]

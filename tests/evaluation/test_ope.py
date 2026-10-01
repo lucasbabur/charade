@@ -38,12 +38,14 @@ def test_lift_is_positive_when_target_beats_logging() -> None:
 def test_policy_evaluation_writes_ope_and_gate_respecting_decisions(bundle: Settings, tmp_path: Path) -> None:
     results = policy_eval.run(bundle, report=tmp_path / "ope.md")
     names = {r.name for r in results}
-    assert {"logging (observed)", "greedy pCTR", "shipped (gates + 5% Thompson)"} <= names
+    assert {"logging (observed)", "greedy pCTR (no gates)", "shipped policy (gates + 5% exploration)"} <= names
     decisions = [json.loads(line) for line in (bundle.artifacts_dir / "decisions.jsonl").read_text().splitlines()]
     assert decisions
     for d in decisions:
         gated = {c["candidate_id"] for c in d["candidates"] if c["gated"]}
         assert d["chosen_id"] not in gated
+        if d["chosen_id"] is not None:
+            assert abs(sum(c["propensity"] for c in d["candidates"]) - 1) < 1e-9
     assert "Lift over the logging policy" in (tmp_path / "ope.md").read_text()
 
 

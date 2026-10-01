@@ -8,9 +8,13 @@ impression keeps its own context and user, and every candidate is scored as if i
 there (including its own user x campaign exposure count). Rows whose logged ad is outside the
 cell's top-K, or in single-candidate cells, are excluded and the coverage is reported.
 
-Policies: logging (observed CTR), uniform random, greedy pCTR, and the shipped policy (gates +
-greedy with a 5 % Thompson bucket). Writes `ope.json` and `decisions.jsonl` (sampled decisions
-produced by the serving code path, `charade.ranking.policy.decide`).
+Policies: logging (observed CTR), uniform random, greedy pCTR without gates, and the shipped policy.
+The shipped policy's per-candidate probabilities, gates and ordering all come from the serving code
+(`charade.ranking.policy.decide`); nothing about the policy is reimplemented here. Writes `ope.json`
+and `decisions.jsonl` (a sample of those decisions, with exact propensities).
+
+These are estimates under two assumptions that the bootstrap does not cover: candidate sets equal
+what was served in a publisher x hour cell, and logging propensities equal impression shares.
 """
 
 import json
@@ -27,14 +31,13 @@ from charade.features.derive import derive
 from charade.features.spec import encode
 from charade.models.dataset import build_frame
 from charade.ranking.evidence import Evidence
-from charade.ranking.policy import TIER_ORDER, Candidate, decide
+from charade.ranking.policy import Candidate, Decision, decide, gate_reasons
 from charade.scoring.scorer import EVIDENCE_FILE, Scorer
 
 TOP_K = 10
 AD_FIELDS = ("C14", "banner_pos", "C15", "C16", "C17", "C18", "C19", "C21")
 CELL = ("site_id", "app_id", "ts")
 DECISION_SAMPLE = 3000
-TS_DRAWS = 256
 REPORT = Path("reports/policy/ope.md")
 
 
@@ -88,29 +91,57 @@ def _matrix(pairs: pl.DataFrame, column: str, n_rows: int, fill: float) -> np.nd
     return out
 
 
-def policies(
-    pctr: np.ndarray, logit: np.ndarray, mask: np.ndarray, evidence: np.ndarray, gated: np.ndarray, settings: Settings
-) -> dict[str, np.ndarray]:
-    """pi(slot | row) for every policy, shape [rows, TOP_K]."""
-    cfg = settings.policy
-    rows = np.arange(len(pctr))
-    uniform = mask / mask.sum(axis=1, keepdims=True)
-    greedy = np.zeros_like(pctr)
-    # Rank key = pCTR, ties (isotonic plateaus) broken by the raw logit, as in `decide`.
-    key = pctr + 1e-9 * np.tanh(logit)
-    greedy[rows, np.where(mask, key, -1).argmax(axis=1)] = 1.0
-    open_mask = mask & ~gated
-    has_open = open_mask.any(axis=1)
-    shipped_greedy = np.zeros_like(pctr)
-    shipped_greedy[rows, np.where(open_mask, key, -1).argmax(axis=1)] = 1.0
-    n = np.clip(evidence, cfg.min_evidence, cfg.max_evidence)
-    p = np.clip(pctr, 1e-4, 1 - 1e-4)
-    rng = np.random.default_rng(settings.seed)
-    draws = rng.beta(p * n, (1 - p) * n, size=(TS_DRAWS, *pctr.shape))
-    draws = np.where(open_mask, draws, -1.0).argmax(axis=2)
-    ts = np.stack([(draws == k).mean(axis=0) for k in range(TOP_K)], axis=1)
-    shipped = ((1 - cfg.exploration_rate) * shipped_greedy + cfg.exploration_rate * ts) * has_open[:, None]
-    return {"uniform random": uniform, "greedy pCTR": greedy, "shipped (gates + 5% Thompson)": shipped}
+def _row_candidates(pairs: pl.DataFrame) -> dict[int, list[tuple[int, Candidate, str]]]:
+    """Per evaluated row: (slot, Candidate, character tier), built exactly as the API builds them."""
+    out: dict[int, list[tuple[int, Candidate, str]]] = {}
+    columns = (
+        "row",
+        "slot",
+        "C14",
+        "banner_pos",
+        "C21",
+        "C17",
+        "pctr",
+        "logit",
+        "evidence",
+        "user_campaign_imps",
+        "safety_tier",
+    )
+    for row, slot, c14, pos, c21, c17, pctr, logit, evidence, exposures, tier in pairs.select(columns).iter_rows():
+        candidate = Candidate(
+            candidate_id=f"{c14}@{pos}",
+            advertiser_id=c21,
+            campaign_id=c17,
+            pctr=pctr,
+            logit=logit,
+            evidence=evidence,
+            prior_exposures=int(exposures),
+        )
+        out.setdefault(row, []).append((slot, candidate, tier))
+    return out
+
+
+def policies(rows: dict[int, list[tuple[int, Candidate, str]]], n: int, settings: Settings) -> dict[str, np.ndarray]:
+    """pi(slot | row) for every policy, shape [rows, TOP_K].
+
+    The shipped policy's probabilities come from `charade.ranking.policy.decide` itself (the
+    serving code), so gates, ordering and exploration cannot drift from production.
+    """
+    uniform, greedy, shipped = (np.zeros((n, TOP_K)) for _ in range(3))
+    for row, entries in rows.items():
+        slots = [slot for slot, _, _ in entries]
+        uniform[row, slots] = 1 / len(slots)
+        best = min(entries, key=lambda e: (-e[1].pctr, -e[1].logit, e[1].candidate_id))
+        greedy[row, best[0]] = 1.0
+        decision = decide([c for _, c, _ in entries], entries[0][2], f"ope-{row}", settings.policy)
+        by_id = {r.candidate_id: r.propensity for r in decision.ranked}
+        for slot, candidate, _ in entries:
+            shipped[row, slot] = by_id[candidate.candidate_id]
+    return {
+        "uniform random": uniform,
+        "greedy pCTR (no gates)": greedy,
+        "shipped policy (gates + 5% exploration)": shipped,
+    }
 
 
 @dataclass
@@ -121,6 +152,7 @@ class CandidateMatrices:
     pairs: pl.DataFrame
     test_rows: int
     served: pl.DataFrame
+    candidates: dict[int, list[tuple[int, Candidate, str]]]
     mask: np.ndarray
     pctr: np.ndarray
     logit: np.ndarray
@@ -149,7 +181,13 @@ def load_candidates(settings: Settings, data_dir: Path | None = None) -> Candida
         pl.struct("C17", "genre")
         .map_elements(lambda r: evidence.lookup(r["C17"], r["genre"]), return_dtype=pl.Float64)
         .alias("evidence"),
-        _gated_expr(settings).alias("gated"),
+    )
+    candidates = _row_candidates(pairs)
+    pairs = pairs.with_columns(
+        pl.Series(
+            "gated",
+            [bool(gate_reasons(c, tier, settings.policy)) for _, c, tier in _in_pair_order(candidates, pairs)],
+        )
     )
     n = rows.height
     ordered = rows.with_row_index("row").sort("row")
@@ -160,6 +198,7 @@ def load_candidates(settings: Settings, data_dir: Path | None = None) -> Candida
         pairs=pairs,
         test_rows=test.height,
         served=served,
+        candidates=candidates,
         mask=_matrix(pairs, "pctr", n, -1.0) >= 0,
         pctr=_matrix(pairs, "pctr", n, 0.0),
         logit=_matrix(pairs, "logit", n, 0.0),
@@ -181,13 +220,13 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, report: 
     q_logged = c.pctr[np.arange(n), c.logged]
     results: list[Estimate] = [_observed(c.y, c.blocks)]
     lifts: dict[str, dict[str, tuple[float, float, float]]] = {}
-    for name, pi in policies(c.pctr, c.logit, c.mask, c.evidence, c.gated, settings).items():
+    for name, pi in policies(c.candidates, n, settings).items():
         args = (pi[np.arange(n), c.logged], c.mu, c.y, q_logged, (pi * c.pctr).sum(axis=1), c.blocks)
         results += estimate(name, *args)
         lifts[name] = lift(*args)
     art = settings.artifacts_dir
     art.joinpath("ope.json").write_text(json.dumps({"policies": [r.model_dump() for r in results]}, indent=2))
-    _write_decisions(c.pairs, c.rows, settings, art / "decisions.jsonl")
+    _write_decisions(c.candidates, settings, art / "decisions.jsonl")
     _write_report(results, lifts, c.test_rows, n, c.served, report)
     return results
 
@@ -198,34 +237,22 @@ def _observed(y: np.ndarray, blocks: np.ndarray) -> Estimate:
     return est.model_copy(update={"estimator": "on-policy"})
 
 
-def _gated_expr(settings: Settings) -> pl.Expr:
-    cfg = settings.policy
-    tier = pl.col("safety_tier").replace_strict(TIER_ORDER, return_dtype=pl.Int64)
-    limit = pl.col("C21").replace_strict(
-        {k: TIER_ORDER[v] for k, v in cfg.advertiser_max_tier.items()}, default=2, return_dtype=pl.Int64
+def _in_pair_order(
+    candidates: dict[int, list[tuple[int, Candidate, str]]], pairs: pl.DataFrame
+) -> list[tuple[int, Candidate, str]]:
+    lookup = {(row, slot): (slot, c, tier) for row, entries in candidates.items() for slot, c, tier in entries}
+    return [lookup[(row, slot)] for row, slot in pairs.select("row", "slot").iter_rows()]
+
+
+def _write_decisions(candidates: dict[int, list[tuple[int, Candidate, str]]], settings: Settings, path: Path) -> None:
+    rows = sorted(candidates)
+    sample = sorted(
+        np.random.default_rng(settings.seed).choice(rows, size=min(DECISION_SAMPLE, len(rows)), replace=False)
     )
-    return (tier > limit) | (pl.col("user_campaign_imps") >= cfg.frequency_cap)
-
-
-def _write_decisions(pairs: pl.DataFrame, rows: pl.DataFrame, settings: Settings, path: Path) -> None:
-    sample = rows.sample(min(DECISION_SAMPLE, rows.height), seed=settings.seed)["row"].to_list()
-    by_row = pairs.filter(pl.col("row").is_in(sample)).partition_by("row", as_dict=True)
     with path.open("w") as out:
-        for (row,), cands in sorted(by_row.items()):
-            tier = cands["safety_tier"][0]
-            candidates = [
-                Candidate(
-                    candidate_id=f"{r['C14']}@{r['banner_pos']}",
-                    advertiser_id=r["C21"],
-                    campaign_id=r["C17"],
-                    pctr=r["pctr"],
-                    evidence=r["evidence"],
-                    prior_exposures=int(r["user_campaign_imps"]),
-                    logit=r["logit"],
-                )
-                for r in cands.iter_rows(named=True)
-            ]
-            decision = decide(candidates, tier, f"ope-{row}", settings.policy)
+        for row in sample:
+            entries = candidates[int(row)]
+            decision: Decision = decide([c for _, c, _ in entries], entries[0][2], f"ope-{row}", settings.policy)
             record = {
                 "request_id": f"ope-{row}",
                 "candidates": [
@@ -234,6 +261,7 @@ def _write_decisions(pairs: pl.DataFrame, rows: pl.DataFrame, settings: Settings
                         "pctr": r.pctr,
                         "gated": r.gated,
                         "gate_reasons": [str(g) for g in r.gate_reasons],
+                        "propensity": r.propensity,
                     }
                     for r in decision.ranked
                 ],
