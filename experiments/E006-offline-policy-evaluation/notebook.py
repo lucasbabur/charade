@@ -42,12 +42,13 @@ Markdown((ctx.reports / "policy" / "ope.md").read_text())
 # %% [markdown]
 # ## Reading
 # - Uniform random lands near the logging CTR, as it should when logging is frequency-proportional.
-# - Greedy pCTR's DR lift excludes zero; the shipped policy pays ~0.15 pp for brand safety, caps and
-#   exploration, which pushes its interval across zero.
+# - Both the ungated greedy and the shipped policy have DR lifts whose intervals exclude zero; the
+#   shipped policy pays ~0.16 pp for brand safety, caps and exploration.
+# - The intervals cover sampling noise under the reconstruction assumptions, not bias from them.
 # - H6 shows up as the frequency-cap gate and as `log_user_campaign_imps` in the model.
 
 # %% [markdown]
 # ## Conclusion
-# Greedy pCTR ranking beats the logging policy by +1.28 pp CTR (DR, [+0.07, +2.50]); the shipped policy with gates and 5 % exploration is +1.13 pp with a CI touching zero; ESS ~4 % of rows.
+# Under reconstructed candidate sets and frequency-share propensities, the shipped policy (gates + 5 % exploration with exact propensities) has an estimated DR lift of +1.21 pp CTR [+0.21, +2.17] over the logging policy (ungated greedy +1.37 pp); ESS ~4 % of rows; not a measured production lift.
 #
-# **Decision:** Ship greedy + gates + 5 % Thompson exploration and log real propensities and candidate sets so the next evaluation does not need reconstruction.
+# **Decision:** Ship greedy + gates + 5 % exploration from a closed-form distribution, and log every candidate's exact propensity so the next evaluation does not need reconstruction.
