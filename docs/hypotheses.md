@@ -1,0 +1,26 @@
+# Pre-registered hypotheses
+
+Written on 2026-10-01, **before any model was trained**. Each hypothesis has a prediction, the test that decides it, and the decision it drives. Results are filled in only from generated reports; a refuted hypothesis is reported as refuted, not reworded.
+
+The evidence column cites a first look at the full dataset. [reports/eda/eda.md](../reports/eda/eda.md) recomputes every number on the **training split only** (`uv run poe eda`); those are the figures the decisions rely on, and they agree in direction and size.
+
+| # | Hypothesis | Exploratory evidence | Prediction | Test | Decision it drives | Result |
+|---|---|---|---|---|---|---|
+| H1 | **Character × campaign interactions are real**: the best ad depends on the character, not only on additive effects | Genre × C17 interaction residual sd **2.7 pp** vs mean binomial SE 0.9 pp (300 cells, top-30 campaigns); tier × C17 sd 1.6 pp vs SE 0.6 pp | A model with learned crosses (DCN-v2) beats the additive logistic baseline on test NE, with a block-bootstrap CI excluding zero | MLM004 + ablation "no character features" | Use a cross network; rank per character, not with a global ad ranking | |
+| H2 | **Genre and safety tier carry most of the character signal** | Genre CTR spans 14.3 % (mentor) to 22.5 % (romance); mature +2–3 pp every day; per-character residual beyond genre sd ≈ 1.0 pp | Removing character ID costs less NE than removing genre + tier | Ablation table | Cold-start path relies on metadata; character ID is shrunk / dropped out | |
+| H3 | **Description text adds little beyond genre + tier** (templated; max within-genre word lift 0.44 pp) | Template structure; word-lift table | Best text representation improves val NE by < 0.3 %, and its CI may include zero | Ablation: none / template slots / Qwen3 / OpenAI embeddings | Ship text only if the CI excludes zero; keep the embedding path for real free text | |
+| H4 | **Users' prior behaviour is the strongest dynamic signal** | Users with prior impressions: 15 % vs 18.6 %; prior CTR quartiles 12 % → 59 % | Removing user counters costs more NE than any other single group | Ablation | Online counters in Redis are on the hot path; their latency matters | |
+| H5 | **Same-hour user counts are a leak, not a feature** | Same-hour impression count: 1 → 18.8 %, ≥ 2 → 11–14 % (the known Avazu trick) | Including them would improve offline NE; excluding them is still correct | Documented, not shipped: the total for the hour is unknown at serve time | Counters use strictly earlier hours | |
+| H6 | **Repeat exposure to a campaign lowers CTR (fatigue)** | First exposure user × campaign 19.0 %, repeats 13–15 % | Exposure-count feature has negative effect; fatigue penalty in ranking costs < 1 % estimated CTR while lowering repeat exposure | Feature effect + OPE of fatigue-aware policy | Frequency cap + fatigue term in ranking | |
+| H7 | **Conversation turn and session length carry no signal** | CTR 17.9–18.3 % across every turn and session-length bucket, no genre interaction | Ablating them changes val NE within noise | Ablation | Drop them from the shipped model if within noise | |
+| H8 | **Character novelty / age has little effect** | CTR by character age flat (16.8–18.2 %); > 1,000 impressions per character slightly lower (16.4 %) | Age features within noise | Ablation | Graduation is about evidence, not age | |
+| H9 | **Day-level CTR shifts break calibration across days** | Daily CTR 16.5–19.6 %; test days are low | Train-calibrated model over-predicts on test; val-fitted calibrator brings the predicted/observed ratio into [0.9, 1.1] | MLM005–006 | Calibrate on the most recent day; monitor the per-day ratio online | |
+| H10 | **Cold characters can be scored nearly as well as warm ones** | 300–1,500 first-seen characters per day | NE on characters unseen in training within 3 % of warm characters | Slice table `character_support` | Metadata path + ID dropout is enough; no separate cold model | |
+| H11 | **A learned ranking policy beats the logging policy offline** | Large per-campaign CTR spread within a context | DR/SNIPS estimate of the greedy and softmax policies above the logged CTR with CI excluding it | `ope.json` | Ship softmax-over-pCTR with logged propensities | |
+
+## Metrics (fixed before modelling)
+
+- **Primary:** normalized entropy (NE) on test = log loss / entropy of the test base rate. The auction consumes pCTR × bid, so probability quality is what matters.
+- **Secondary:** log loss, ROC-AUC, predicted/observed ratio (overall and per day), equal-mass ECE, group AUC within user × hour.
+- **Uncertainty:** paired hour-block bootstrap (1,000 resamples) for every model comparison.
+- **Decision rule:** a component ships only if its validation NE improvement has a CI excluding zero; the test set is evaluated once per model version (MLL006).
