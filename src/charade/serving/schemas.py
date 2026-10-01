@@ -162,20 +162,15 @@ class RankResponse(BaseModel):
 
 
 class ImpressionEvent(BaseModel):
-    """A served impression. Idempotent on `impression_id` (retries are no-ops)."""
+    """The ad a RankRequest chose was shown. Idempotent on `impression_id` (retries are no-ops).
+
+    User, campaign, candidate and hour come from the stored decision, never from the event.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     impression_id: Token = Field(description="Unique per served ad")
-    request_id: Token = Field(description="The RankRequest that chose this ad (joins to the decision log)")
-    candidate_id: Token = Field(description="The served candidate")
-    hour: datetime
-    device_id: Token
-    device_ip: Token
-    device_model: Token
-    campaign_id: Token
-
-    _hour = field_validator("hour", mode="before")(parse_hour)
+    request_id: Token = Field(description="The RankRequest whose chosen ad was shown")
 
 
 class ClickEvent(BaseModel):

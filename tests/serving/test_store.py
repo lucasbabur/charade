@@ -6,11 +6,17 @@ import pytest
 from fakeredis import FakeAsyncRedis
 
 from charade.serving.assemble import epoch_hour
-from charade.serving.store import Impression, MemoryStore, Outcome, RedisStore
+from charade.serving.store import MemoryStore, Outcome, RedisStore, Served
 
 
 def _stores() -> list[MemoryStore | RedisStore]:
     return [MemoryStore(), RedisStore("redis://unused", 1.0, client=FakeAsyncRedis())]
+
+
+async def _serve(store: MemoryStore | RedisStore, impression_id: str, hour: int = 100, campaign: str = "c") -> Outcome:
+    """Rank (store the decision, request id = impression id) then record its impression, for user "u"."""
+    await store.record_decision(impression_id, Served(user="u", hour=hour, candidate_id="a", campaign=campaign))
+    return (await store.record_impression(impression_id, impression_id))[0]
 
 
 @pytest.fixture
@@ -22,9 +28,8 @@ def anyio_backend() -> str:
 @pytest.mark.parametrize("make", [0, 1], ids=["memory", "redis"])
 async def test_impressions_and_clicks_are_idempotent(make: int) -> None:
     store = _stores()[make]
-    imp = Impression(user="u", hour=100, campaign="c")
-    assert await store.record_impression("i1", imp) is Outcome.RECORDED
-    assert await store.record_impression("i1", imp) is Outcome.DUPLICATE
+    assert await _serve(store, "i1") is Outcome.RECORDED
+    assert (await store.record_impression("i1", "i1"))[0] is Outcome.DUPLICATE
     assert await store.record_click("i1") is Outcome.RECORDED
     assert await store.record_click("i1") is Outcome.DUPLICATE
     assert await store.record_click("nope") is Outcome.UNKNOWN_IMPRESSION
@@ -37,8 +42,8 @@ async def test_impressions_and_clicks_are_idempotent(make: int) -> None:
 @pytest.mark.parametrize("make", [0, 1], ids=["memory", "redis"])
 async def test_late_click_counts_at_the_impression_hour(make: int) -> None:
     store = _stores()[make]
-    await store.record_impression("early", Impression(user="u", hour=100, campaign="c"))
-    await store.record_impression("later", Impression(user="u", hour=105, campaign="c"))
+    await _serve(store, "early", hour=100)
+    await _serve(store, "later", hour=105)
     await store.record_click("early")
     history = await store.get("u")
     assert history is not None
@@ -56,12 +61,13 @@ async def test_concurrent_redis_writes_lose_nothing() -> None:
         async with gate:
             return await write
 
-    first = [Impression(user="u", hour=100 + i % 5, campaign=f"c{i % 3}") for i in range(200)]
-    await asyncio.gather(*(bounded(store.record_impression(f"i{i}", imp)) for i, imp in enumerate(first)))
-    retried = Impression(user="u", hour=100, campaign="c0")
+    async def retry(impression_id: str) -> Outcome:
+        return (await store.record_impression(impression_id, impression_id))[0]
+
+    await asyncio.gather(*(bounded(_serve(store, f"i{i}", 100 + i % 5, f"c{i % 3}")) for i in range(200)))
     outcomes = await asyncio.gather(
         *(bounded(store.record_click(f"i{i}")) for i in range(0, 200, 2)),
-        *(bounded(store.record_impression(f"i{i}", retried)) for i in range(50)),
+        *(bounded(retry(f"i{i}")) for i in range(50)),
     )
     assert outcomes.count(Outcome.DUPLICATE) == 50
     history = await store.get("u")
@@ -76,9 +82,9 @@ async def test_cap_totals_survive_many_newer_campaigns(make: int) -> None:
     """Eight exposures of one campaign stay counted after 250 newer campaigns (trimming once reset them to 0)."""
     store = _stores()[make]
     for i in range(8):
-        await store.record_impression(f"old-{i}", Impression(user="u", hour=100, campaign="capped"))
+        await _serve(store, f"old-{i}", campaign="capped")
     for i in range(250):
-        await store.record_impression(f"new-{i}", Impression(user="u", hour=101, campaign=f"c{i}"))
+        await _serve(store, f"new-{i}", hour=101, campaign=f"c{i}")
     history = await store.get("u")
     assert history is not None
     assert history.exposures_so_far(["capped"]).tolist() == [8.0]
@@ -88,7 +94,7 @@ async def test_cap_totals_survive_many_newer_campaigns(make: int) -> None:
 async def test_a_click_after_the_user_key_expired_does_not_invent_a_history() -> None:
     client = FakeAsyncRedis()
     store = RedisStore("redis://unused", 1.0, client=client)
-    await store.record_impression("i1", Impression(user="u", hour=100, campaign="c"))
+    await _serve(store, "i1")
     await client.delete("charade:user:u")
     assert await store.record_click("i1") is Outcome.RECORDED
     assert await store.get("u") is None
@@ -98,3 +104,18 @@ async def test_a_click_after_the_user_key_expired_does_not_invent_a_history() ->
 def test_epoch_hour_treats_naive_datetimes_as_utc() -> None:
     naive, aware = datetime(2014, 10, 29, 10), datetime(2014, 10, 29, 10, tzinfo=UTC)
     assert epoch_hour(naive) == epoch_hour(aware) == int(aware.timestamp()) // 3600
+
+
+@pytest.mark.anyio
+@pytest.mark.parametrize("make", [0, 1], ids=["memory", "redis"])
+async def test_decisions_are_immutable_and_impressions_take_their_identity(make: int) -> None:
+    store = _stores()[make]
+    served = Served(user="u", hour=100, candidate_id="a", campaign="c")
+    assert await store.record_decision("r", served) is Outcome.RECORDED
+    assert await store.record_decision("r", served) is Outcome.DUPLICATE
+    assert await store.record_decision("r", served.model_copy(update={"user": "v"})) is Outcome.CONFLICT
+    assert (await store.record_impression("i", "unknown"))[0] is Outcome.UNKNOWN_DECISION
+    outcome, impression = await store.record_impression("i", "r")
+    assert (outcome, impression and impression.served) == (Outcome.RECORDED, served)
+    assert (await store.record_impression("i", "other"))[0] is Outcome.CONFLICT
+    assert await store.get("v") is None

@@ -20,7 +20,7 @@ from charade.features.spec import encode
 from charade.models.dataset import build_frame
 from charade.scoring.scorer import Scorer
 from charade.serving.assemble import AD_FIELDS, assemble, epoch_hour
-from charade.serving.store import Impression, MemoryStore
+from charade.serving.store import MemoryStore, Served
 
 SAMPLE = 2000
 
@@ -39,9 +39,9 @@ async def _compare(
             worst = max(worst, float(np.abs(online.dense - offline.dense).max(initial=0.0)))
             mismatches += int((online.categorical != offline.categorical).any())
             checked += 1
-        await store.record_impression(
-            row["id"], Impression(user=row["user"], hour=epoch_hour(row["ts"]), campaign=row["C17"])
-        )
+        served = Served(user=row["user"], hour=epoch_hour(row["ts"]), candidate_id=row["id"], campaign=row["C17"])
+        await store.record_decision(row["id"], served)
+        await store.record_impression(row["id"], row["id"])
         if row["click"]:
             await store.record_click(row["id"])
     return worst, mismatches, checked
