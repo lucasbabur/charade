@@ -24,17 +24,17 @@ provider "aws" {
 module "charade" {
   source = "../../modules/platform"
 
-  environment                 = "staging"
+  environment                 = "prod"
   vpc_cidr                    = var.vpc_cidr
-  single_nat_gateway          = true
+  single_nat_gateway          = false
   caller_cidrs                = var.caller_cidrs
   certificate_arn             = var.certificate_arn
   api_image_tag               = var.api_image_tag
   train_image_tag             = var.train_image_tag
-  api_min_tasks               = 2
-  api_max_tasks               = 4
-  redis_node_type             = "cache.t4g.medium"
-  redis_replicas              = 1
-  deletion_protection         = false
-  create_github_oidc_provider = true
+  api_min_tasks               = 3
+  api_max_tasks               = 30
+  redis_node_type             = "cache.r7g.large"
+  redis_replicas              = 2
+  deletion_protection         = true
+  create_github_oidc_provider = false
 }
