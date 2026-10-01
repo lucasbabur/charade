@@ -113,7 +113,18 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         chosen_id=decision.chosen_id,
         propensity=decision.propensity,
         explored=decision.explored,
-        candidates=len(candidates),
+        # Full candidate set: what off-policy evaluation and counterfactual training need later.
+        candidates=[
+            {
+                "candidate_id": r.candidate_id,
+                "pctr": r.pctr,
+                "value": r.value,
+                "gate_reasons": [str(g) for g in r.gate_reasons],
+            }
+            for r in decision.ranked
+        ],
+        character_id=body.character_id,
+        hour=body.hour.isoformat(),
         model_version=runtime.model_version,
         degraded=degraded,
     )

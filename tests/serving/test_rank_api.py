@@ -147,3 +147,5 @@ def test_decisions_are_logged_as_json_events(
     decision = next(r for r in records if r["event"] == "decision")
     assert decision["request_id"] == "req-1"
     assert "propensity" in decision
+    assert len(decision["candidates"]) == 6
+    assert {"candidate_id", "pctr", "value", "gate_reasons"} <= set(decision["candidates"][0])
