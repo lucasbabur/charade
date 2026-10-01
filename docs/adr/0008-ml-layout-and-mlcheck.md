@@ -1,6 +1,10 @@
-# ADR 0008: Code organised by ML concern, enforced by mlcheck instead of layered architecture
+---
+title: "ADR 0008: Code organised by ML concern, enforced by mlcheck instead of layered architecture"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
 
-Status: accepted (2026-10-01)
+# ADR 0008: Code organised by ML concern, enforced by mlcheck instead of layered architecture
 
 
 ## Context

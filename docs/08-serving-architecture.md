@@ -1,3 +1,9 @@
+---
+title: "Serving architecture (< 50 ms p99)"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 08 — Serving architecture (< 50 ms p99)
 
 **Bottom line:** 100 candidates ranked at **p50 8 / p99 26 ms, 400 rps, 0 errors** (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)).

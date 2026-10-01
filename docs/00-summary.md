@@ -1,3 +1,9 @@
+---
+title: "Summary"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 00 — Summary
 
 **Charade ranks ads inside AI-companion chats.** For an ad opportunity (character, chat moment, publisher, device, hour) and N candidate ads, it:

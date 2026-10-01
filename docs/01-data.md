@@ -1,3 +1,9 @@
+---
+title: "Data"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # 01 — Data
 
 **Bottom line:** a 1M-row Avazu sample (2014-10-21..30) plus a synthetic character layer that carries real signal (genre, tier) and a conversation layer that is noise. Most users are unidentifiable, and the C-columns hide the ad hierarchy that defines a candidate ([eda.md](../reports/eda/eda.md)).

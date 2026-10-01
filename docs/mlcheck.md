@@ -1,3 +1,9 @@
+---
+title: "mlcheck — ML release gates"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # mlcheck — ML release gates
 
 `tools/mlcheck` is a workspace package that answers one question before a model ships: **is this run leak-free, reproducible, better than the baseline with a CI, calibrated, identical between train and serve, fast enough, and safe to serve?** Exit code 1 on any blocking failure; CI runs it as a required job.

@@ -1,3 +1,9 @@
+---
+title: "Documentation index"
+created-at: 2026-10-01
+updated-at: 2026-10-01
+---
+
 # Documentation index
 
 Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatter (`updated-at`).
