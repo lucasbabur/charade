@@ -16,7 +16,7 @@ client ──POST /v1/rank──▶ FastAPI worker (1 of N, single-threaded libs
                            │ 2. character row ← in-memory table (5k rows); unknown → request metadata or strict defaults
                            │ 3. user history ← Redis GET (20 ms budget) ──timeout──▶ cold-user defaults, degraded=true
                            │ 4. assemble N rows → charade.features.derive + encode (the training code)
-                           │ 5. ONNX Runtime, one batched call → logits → isotonic calibration
+                           │ 5. ONNX Runtime, one batched call → logits → calibration map (identity for the shipped model)
                            │ 6. policy: gates → value → evidence intervals → greedy / 5 % exploration → exact propensities
                            │ 7. JSON decision log: context, every candidate's attributes, pCTR, gates, propensity; chosen id; versions
                            ▼

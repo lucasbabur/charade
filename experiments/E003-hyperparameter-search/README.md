@@ -3,7 +3,7 @@ id: E003
 title: "Hyperparameter search for DCN-v2 and LightGBM"
 hypotheses: []
 status: concluded
-conclusion: "Best inner-split NE: DCN-v2 0.8746 (24-dim embeddings, 2 cross layers, 256-128 MLP, dropout 0.3, lr 2.9e-3, batch 2048) vs LightGBM 0.8787; both configs ship in [tool.charade.model]."
+conclusion: "Equal effort (60 trials each). Best inner-split NE: DCN-v2 0.8746 (24-dim embeddings, 2 cross layers, 256-128 MLP, dropout 0.3, lr 2.9e-3, batch 2048) vs LightGBM 0.8741 (254 leaves, lr 0.014, feature fraction 0.40). Single tuned models are tied; both configs ship in [tool.charade.model]."
 created-at: 2026-10-01
 updated-at: 2026-10-01
 ---

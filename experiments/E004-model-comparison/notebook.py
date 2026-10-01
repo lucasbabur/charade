@@ -74,10 +74,12 @@ pl.DataFrame(metrics["slices_test"]).filter(pl.col("slice").is_in(["character_su
 # %% [markdown]
 # ## Reading
 # - H1: the cross network beats both baselines with CIs that exclude zero.
-# - H9: the per-day predicted/observed ratio stays within [0.9, 1.1] on both test days.
+# - H9 refuted as stated: early stopping on the low-CTR validation day anchors the level, no
+#   calibration map beats identity by more than noise, and per-day ratios stay in [0.9, 1.1].
+# - The single-seed comparison halves the DCN-LightGBM gap and its interval includes zero.
 
 # %% [markdown]
 # ## Conclusion
-# DCN-v2 (3-seed ensemble, isotonic) reaches test NE 0.8848 and beats LightGBM by -0.0040 [-0.0052, -0.0027] and logistic by -0.0120 [-0.0138, -0.0102] log loss; calibration holds on both test days.
+# DCN-v2 3-seed ensemble reaches test NE 0.8855 (pred/obs 1.002, no calibration map needed) and beats an equally tuned 3-seed LightGBM ensemble by -0.0040 [-0.0053, -0.0027] and logistic by -0.0117; single model vs single model DCN-LightGBM is -0.0020 [-0.0041, +0.0004], not established.
 #
-# **Decision:** Ship the DCN-v2 ensemble; keep LightGBM and logistic as yardsticks in every run.
+# **Decision:** Ship the DCN-v2 ensemble (ensemble result + single ONNX graph); keep LightGBM and logistic as yardsticks with equal tuning and seeds; do not claim an architecture advantage over trees.
