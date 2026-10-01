@@ -92,6 +92,7 @@ test-mlcheck = { cmd = "pytest", cwd = "tools/mlcheck", help = "mlcheck's own te
 mlcheck = { cmd = "mlcheck . --stage static --skip MLS002", help = "ML static gates" }
 mlcheck-data = { cmd = "mlcheck . --stage data", help = "Data contract on the raw CSVs (local only; data is not in git)" }
 eda = { cmd = "python -m charade.analysis.eda", help = "Write reports/eda/eda.md" }
+text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descriptions and write reports/text_bakeoff.csv (OPENAI_API_KEY optional)" }
 fixture = { cmd = "python -m charade.data.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
