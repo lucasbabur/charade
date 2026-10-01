@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Ship without character ID and conversation groups; reject text; keep metadata, device and user history.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E005-feature-group-ablations/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E005-feature-group-ablations/notebook.py`.

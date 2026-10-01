@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Ship greedy + gates + 5 % Thompson exploration and log real propensities and candidate sets so the next evaluation does not need reconstruction.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E006-offline-policy-evaluation/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E006-offline-policy-evaluation/notebook.py`.

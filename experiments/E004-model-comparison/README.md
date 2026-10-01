@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Ship the DCN-v2 ensemble; keep LightGBM and logistic as yardsticks in every run.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E004-model-comparison/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E004-model-comparison/notebook.py`.

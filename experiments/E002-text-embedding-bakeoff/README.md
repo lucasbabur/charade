@@ -16,4 +16,4 @@ updated-at: 2026-10-01
 
 **Decision:** Do not use text features (the extrinsic ablation in E005 agrees); keep the pipeline for free-text personas.
 
-The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run jupytext --execute experiments/E002-text-embedding-bakeoff/notebook.ipynb`.
+The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) holds the code, outputs and reading. Rerun with `uv run poe experiments experiments/E002-text-embedding-bakeoff/notebook.py`.
