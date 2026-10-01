@@ -9,7 +9,7 @@ Design and results live in [docs/](docs/index.md).
 Requirements: [uv](https://docs.astral.sh/uv/) (installs Python 3.12 if missing). Optional: Docker for `docker compose up` (API + Redis), Terraform ≥ 1.13 for the infrastructure checks.
 
 ```bash
-uv sync --all-packages                         # install the workspace
+uv sync --all-packages --extra train --extra gpu  # install (use --extra cpu without an NVIDIA GPU)
 cp .env.sample .env                            # optional: overrides and API keys
 cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
 uv run poe mlcheck-data                        # check the data contract
