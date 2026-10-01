@@ -1,3 +1,4 @@
+# Allowlist: only what the API and training images copy.
 *
 !pyproject.toml
 !uv.lock
@@ -5,4 +6,7 @@
 !src/
 !tools/mlcheck/pyproject.toml
 !tools/mlcheck/README.md
+!tools/mlcheck/src/
+!data/derived/
+!scripts/
 **/__pycache__

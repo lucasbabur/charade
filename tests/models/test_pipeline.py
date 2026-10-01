@@ -50,3 +50,8 @@ def test_ablations_compare_against_full_model(tmp_path: Path, monkeypatch: pytes
     table = ablate.run(variants, tmp_path, FIXTURES)
     assert table["variant"].to_list() == ["all features", "- user_history", "+ text (tfidf)"]
     assert table["delta_logloss"][0] == 0.0
+
+
+def test_baked_commit_is_used_inside_images(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CHARADE_GIT_SHA", "a" * 40)
+    assert pipeline._git() == ("a" * 40, False)  # pyright: ignore[reportPrivateUsage]
