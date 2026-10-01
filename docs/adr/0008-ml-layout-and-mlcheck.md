@@ -13,7 +13,7 @@ Clean-architecture layers protect against swapping databases and UIs. The risks 
 
 ## Decision
 
-`src/charade/{data,features,text,models,evaluation,ranking,scoring,serving,analysis}`. Build `tools/mlcheck` (46 gates) because no maintained library covers leakage, parity, latency, propensity and holdout discipline together; use pycheck only for its layout-independent checks.
+`src/charade/{data,features,text,models,evaluation,ranking,scoring,serving,analysis}`. Build `tools/mlcheck` (47 gates) because no maintained library covers leakage, parity, latency, propensity and holdout discipline together; use pycheck only for its layout-independent checks.
 
 ## Consequences
 

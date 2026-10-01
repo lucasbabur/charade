@@ -18,7 +18,7 @@ Talking points with the artifact to show on screen. Numbers are taken from `repo
 | 6 | 6:00–7:30 | **Ranking.** Gates first, then value, then Beta uncertainty, greedy plus 5 % Thompson, propensities logged. OPE: +1.28 pp DR for greedy. The shipped policy's CI touches zero; that is the cost of safety and learning, and I say so | docs/05, sample_rankings.json (romance vs new mentor) |
 | 7 | 7:30–8:30 | **Drift.** Ads rotate daily; a frozen model loses ~0.003 NE per day, so retrain daily. Online recalibration did nothing (negative result). The exposure penalty: −30 % concentration at no detectable CTR cost | docs/07 |
 | 8 | 8:30–10:00 | **Serving.** The request path, exact parity, p99 26 ms at 400 rps. Two bugs the load test found (NaN from out-of-order events; 24 polars threads per worker) | docs/08, latency.json |
-| 9 | 10:00–11:00 | **Engineering.** mlcheck (46 gates, recompute rather than trust), CI, Terraform (checkov clean), the daily retrain gate, every commit green | docs/mlcheck.md, GitHub PR list |
+| 9 | 10:00–11:00 | **Engineering.** mlcheck (47 gates, recompute rather than trust), CI, Terraform (checkov clean), the daily retrain gate, every commit green | docs/mlcheck.md, GitHub PR list |
 | 10 | 11:00–12:00 | **Trade-offs and next steps:** logged propensities, conversation content, creative embeddings, counterfactual training | docs/10 |
 
 **80/20 statement:** most of the time went into data understanding, evaluation discipline and the ranking and serving path. The model architecture itself was a small, tuned DCN, because the data's signal is low-dimensional.

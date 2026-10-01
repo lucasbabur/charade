@@ -156,6 +156,38 @@ def logged_propensities(ctx: Context) -> Outcome:
 
 
 @check(
+    "MLP005",
+    "propensities-form-a-distribution",
+    Stage.POLICY,
+    "A propensity in (0, 1] can still be wrong. When per-candidate propensities are logged they must form "
+    "the policy's distribution: gated candidates 0, eligible ones summing to 1, and the served ad's "
+    "propensity equal to its own entry.",
+)
+def propensities_form_a_distribution(ctx: Context) -> Outcome:
+    """Per-candidate propensities sum to 1 over eligible candidates, are 0 when gated, and match the served one."""
+    problems: list[str] = []
+    checked = 0
+    for decision in ctx.decisions:
+        if decision.chosen_id is None or any(c.propensity is None for c in decision.candidates):
+            continue
+        checked += 1
+        probs = {c.candidate_id: c.propensity or 0.0 for c in decision.candidates}
+        if any(c.gated and (c.propensity or 0.0) > 0 for c in decision.candidates):
+            problems.append(f"{decision.request_id}: gated candidate with positive propensity")
+        if abs(sum(probs.values()) - 1) > 1e-6:
+            problems.append(f"{decision.request_id}: propensities sum to {sum(probs.values()):.6f}")
+        if decision.propensity is None or abs(probs.get(decision.chosen_id, -1.0) - decision.propensity) > 1e-9:
+            problems.append(f"{decision.request_id}: served propensity differs from its candidate entry")
+    if checked == 0:
+        return failed("no decision logs per-candidate propensities")
+    return (
+        failed(f"{len(problems)} invalid distributions", problems[:20])
+        if problems
+        else passed(f"{checked:,} decisions")
+    )
+
+
+@check(
     "MLX001",
     "feature-drift-psi",
     Stage.DRIFT,

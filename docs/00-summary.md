@@ -39,7 +39,7 @@ It does this in **p99 26 ms at 400 rps** for 100 candidates.
 
 ## How it is built
 
-- **Code:** `src/charade/` is organised by ML concern. `tools/mlcheck` holds 46 release gates (leakage, reproducibility, recomputed model quality with CIs, parity, latency, policy invariants, drift).
+- **Code:** `src/charade/` is organised by ML concern. `tools/mlcheck` holds 47 release gates (leakage, reproducibility, recomputed model quality with CIs, parity, latency, policy invariants, drift).
 - **Settings:** all in `pyproject.toml`; tasks via `uv run poe`.
 - **Decisions:** nine short ADRs in [adr/](adr/).
 - **Delivery:**
