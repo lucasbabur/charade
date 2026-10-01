@@ -2,25 +2,25 @@
 
 DR uses an independent LightGBM reward model (trained before the last training day), not the evaluated policy's own pCTR.
 
-Evaluated impressions: 117,185 of 142,909 val rows (82.0%); cells: 5,003; mean candidates per cell: 4.30
+Evaluated impressions: 130,142 of 142,909 val rows (91.1%); cells: 5,003; mean candidates per cell: 4.30
 
 | Policy | Estimator | CTR | 95 % CI | ESS | Max weight |
 |---|---|---|---|---|---|
-| logging (observed) | on-policy | 0.1630 | [0.1559, 0.1718] | 117,185 | 1.0 |
-| uniform random | ips | 0.1874 | [0.1778, 0.1969] | 25,486 | 238.7 |
+| logging (observed) | on-policy | 0.1676 | [0.1608, 0.1756] | 130,142 | 1.0 |
+| uniform random | ips | 0.1688 | [0.1613, 0.1771] | 25,486 | 238.7 |
 | uniform random | snips | 0.1688 | [0.1613, 0.1771] | 25,486 | 238.7 |
-| uniform random | dr | 0.1656 | [0.1577, 0.1746] | 25,486 | 238.7 |
-| greedy pCTR (no gates) | ips | 0.2070 | [0.1872, 0.2279] | 4,403 | 345.5 |
+| uniform random | dr | 0.1684 | [0.1609, 0.1765] | 25,486 | 238.7 |
+| greedy pCTR (no gates) | ips | 0.1864 | [0.1703, 0.2034] | 4,403 | 345.5 |
 | greedy pCTR (no gates) | snips | 0.1950 | [0.1786, 0.2111] | 4,403 | 345.5 |
-| greedy pCTR (no gates) | dr | 0.1858 | [0.1701, 0.2020] | 4,403 | 345.5 |
-| shipped policy (gates + 5% exploration) | ips | 0.1998 | [0.1811, 0.2200] | 4,815 | 330.0 |
+| greedy pCTR (no gates) | dr | 0.1892 | [0.1752, 0.2035] | 4,403 | 345.5 |
+| shipped policy (gates + 5% exploration) | ips | 0.1799 | [0.1655, 0.1958] | 4,815 | 330.0 |
 | shipped policy (gates + 5% exploration) | snips | 0.1948 | [0.1802, 0.2102] | 4,815 | 330.0 |
-| shipped policy (gates + 5% exploration) | dr | 0.1838 | [0.1702, 0.1985] | 4,815 | 330.0 |
+| shipped policy (gates + 5% exploration) | dr | 0.1872 | [0.1746, 0.2000] | 4,815 | 330.0 |
 
 ## Lift over the logging policy (paired hour-block bootstrap)
 
 | Policy | SNIPS lift [95 % CI] | DR lift [95 % CI] |
 |---|---|---|
-| uniform random | +0.0058 [+0.0007, +0.0099] | +0.0026 [-0.0022, +0.0069] |
-| greedy pCTR (no gates) | +0.0320 [+0.0144, +0.0479] | +0.0228 [+0.0063, +0.0385] |
-| shipped policy (gates + 5% exploration) | +0.0318 [+0.0160, +0.0463] | +0.0208 [+0.0070, +0.0342] |
+| uniform random | +0.0011 [-0.0035, +0.0056] | +0.0007 [-0.0038, +0.0050] |
+| greedy pCTR (no gates) | +0.0273 [+0.0101, +0.0432] | +0.0215 [+0.0065, +0.0356] |
+| shipped policy (gates + 5% exploration) | +0.0271 [+0.0117, +0.0415] | +0.0196 [+0.0068, +0.0317] |
