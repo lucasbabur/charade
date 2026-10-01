@@ -23,6 +23,7 @@ jobs:
         with:
           enable-cache: true
       - name: Install
+        timeout-minutes: 8
         run: uv sync --all-packages --locked --extra train --extra cpu
       - name: Lint and format
         run: uv run poe lint
