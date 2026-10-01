@@ -47,7 +47,7 @@ def run(data_dir: Path | None = None, out: Path = OUT) -> dict[str, object]:
     """Compare early-stopped vs refit ensembles on the validation day; write the result."""
     settings = get_settings()
     cfg, groups = settings.model.dcn, {Group(g) for g in settings.model.groups}
-    frame = build_frame(data_dir or settings.data_dir, None)
+    frame = build_frame(settings, data_dir or settings.data_dir)
     upto_val = frame.filter(pl.col("ts") <= INNER_VAL_END)
     target = frame.filter((pl.col("ts") > INNER_VAL_END) & (pl.col("ts") <= settings.val_end))
     early = _prepared(upto_val, INNER_TRAIN_END, groups)

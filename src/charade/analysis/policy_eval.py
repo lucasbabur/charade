@@ -201,7 +201,7 @@ def load_candidates(settings: Settings, data_dir: Path | None = None, split: str
     art = settings.artifacts_dir
     scorer = Scorer(art)
     evidence = Evidence.model_validate_json((art / EVIDENCE_FILE).read_text())
-    frame = build_frame(data_dir or settings.data_dir, None)
+    frame = build_frame(settings, data_dir or settings.data_dir)
     history = _campaign_exposure(frame)
     test = frame.filter(pl.col("split") == split)
     served, rows = candidate_sets(test)

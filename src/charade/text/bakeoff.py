@@ -52,7 +52,7 @@ def run(
     """Embed with each provider, write reduced vectors and the bake-off table."""
     settings = get_settings()
     characters = load_characters(data_dir / "characters.csv").sort("character_id")
-    frame = assign_split(load_joined(data_dir), settings.train_end, settings.val_end)
+    frame = assign_split(load_joined(data_dir), settings.train_end, settings.val_end, settings.test_end)
     train_res, val_res = _residuals(frame, "train", min_impressions), _residuals(frame, "val", min_impressions)
     ids = characters["character_id"].to_list()
     index = {c: i for i, c in enumerate(ids)}

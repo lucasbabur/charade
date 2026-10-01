@@ -198,7 +198,7 @@ def run(
     """Write drift.json and reports/drift/drift.md."""
     settings = settings or get_settings()
     scorer = Scorer(settings.artifacts_dir)
-    frame = build_frame(data_dir or settings.data_dir, None)
+    frame = build_frame(settings, data_dir or settings.data_dir)
     categorical = [f.name for f in scorer.spec.categorical]
     psi = psi_table(frame, categorical, scorer.spec.dense)
     after = sorted(

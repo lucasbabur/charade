@@ -98,6 +98,8 @@ class Settings(BaseSettings):
     seed: int = 20141021
     train_end: datetime
     val_end: datetime
+    test_end: datetime | None = None
+    """Last holdout hour (inclusive). None: every hour after `val_end` (the take-home's fixed split)."""
     model: ModelConfig = Field(default_factory=ModelConfig)
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
     redis_url: str | None = None

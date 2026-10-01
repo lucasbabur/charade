@@ -72,7 +72,10 @@ def run(data_dir: Path, out: Path = OUT) -> None:
     """Write reports/eda/*.md."""
     settings = get_settings()
     frame = assign_split(
-        derive(offline_counters(load_joined(data_dir).with_columns(user_proxy()))), settings.train_end, settings.val_end
+        derive(offline_counters(load_joined(data_dir).with_columns(user_proxy()))),
+        settings.train_end,
+        settings.val_end,
+        settings.test_end,
     )
     train = frame.filter(pl.col("split") == "train")
     same_hour = train.with_columns(pl.len().over(["user", "ts"]).clip(1, 6).alias("same_hour_user_imps"))
