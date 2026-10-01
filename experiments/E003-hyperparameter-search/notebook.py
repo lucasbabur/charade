@@ -59,10 +59,12 @@ shipped = ctx.settings.model
 # ## Reading
 # - The top DCN trials agree on 24-dim embeddings, batch 2048 and lr ~2.5-2.9e-3; architecture choices
 #   beyond that move inner NE by < 0.0003.
-# - The best LightGBM trial is 0.004 NE behind the best DCN trial on the same inner split.
+# - With equal search effort (60 trials each), the best LightGBM trial (0.8741) matches the best DCN
+#   trial (0.8746) on the inner split: single tuned models are tied. An earlier 40-trial search had
+#   left LightGBM 0.004 behind, which overstated DCN's advantage.
 
 # %% [markdown]
 # ## Conclusion
-# Best inner-split NE: DCN-v2 0.8746 (24-dim embeddings, 2 cross layers, 256-128 MLP, dropout 0.3, lr 2.9e-3, batch 2048) vs LightGBM 0.8787; both configs ship in [tool.charade.model].
+# Equal effort (60 trials each). Best inner-split NE: DCN-v2 0.8746 (24-dim embeddings, 2 cross layers, 256-128 MLP, dropout 0.3, lr 2.9e-3, batch 2048) vs LightGBM 0.8741 (254 leaves, lr 0.014, feature fraction 0.40). Single tuned models are tied; both configs ship in [tool.charade.model].
 #
 # **Decision:** Copy the best trials into `[tool.charade.model]` (done by hand, citing the CSVs).

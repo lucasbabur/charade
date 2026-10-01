@@ -6,7 +6,7 @@ updated-at: 2026-10-01
 
 # 05 — Candidate ranking
 
-**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.21 pp CTR (DR, [+0.21, +2.17])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
+**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.23 pp CTR (DR, [+0.20, +2.20])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
 
 ## Pipeline per request (`charade.ranking.policy.decide`)
 
@@ -17,7 +17,7 @@ updated-at: 2026-10-01
 | 3. Score | Calibrated pCTR from one batched ONNX call | One forward pass for all N candidates |
 | 4. Value | pCTR × bid | Bid defaults to 1 (pure CTR ranking, as the brief asks) |
 | 5. Evidence interval | Beta(pCTR·n, (1−pCTR)·n), n = training impressions of (campaign, genre), clipped to [20, 1000] | A heuristic width, not a calibrated posterior over prediction error. Never-seen pairings get wide intervals |
-| 6. Decision | Greedy = best eligible by value, then raw logit (isotonic calibration ties pCTRs), then id. On the hashed 5 % exploration bucket, sample from q_i ∝ (upper bound_i × bid_i)² over eligible candidates | Exploration favours plausible winners and uncertain candidates, with a bounded, auditable budget |
+| 6. Decision | Greedy = best eligible by value, then raw logit (a step-shaped calibration map can tie pCTRs), then id. On the hashed 5 % exploration bucket, sample from q_i ∝ (upper bound_i × bid_i)² over eligible candidates | Exploration favours plausible winners and uncertain candidates, with a bounded, auditable budget |
 | 7. Propensity | **Exact:** p_i = 0.95 · 1[i = greedy] + 0.05 · q_i, 0 if gated; logged for every candidate | Makes every logged decision valid for off-policy evaluation and counterfactual training |
 
 **Response per candidate:** rank (null if gated), pCTR, interval, value, gate reasons, propensity. The decision also carries `confidence: low` when the top two intervals overlap. That is a heuristic flag for callers and monitoring, not a statistical guarantee.
@@ -42,11 +42,11 @@ The logs show one ad per impression, so candidate sets are reconstructed:
 
 | Policy | SNIPS lift vs logging | DR lift vs logging | ESS |
 |---|---|---|---|
-| Uniform random | +0.37 pp [−0.00, +0.71] | −0.19 pp [−0.53, +0.13] | 17,149 |
-| Greedy pCTR, no gates | +2.45 pp [+1.40, +3.59] | +1.37 pp [+0.28, +2.45] | 4,059 |
-| **Shipped policy (gates + 5 % exploration)** | +2.18 pp [+1.12, +3.25] | **+1.21 pp [+0.21, +2.17]** | 4,397 |
+| Uniform random | +0.37 pp [−0.00, +0.71] | −0.07 pp [−0.43, +0.24] | 17,149 |
+| Greedy pCTR, no gates | +2.45 pp [+1.40, +3.59] | +1.41 pp [+0.38, +2.53] | 4,059 |
+| **Shipped policy (gates + 5 % exploration)** | +2.18 pp [+1.12, +3.25] | **+1.23 pp [+0.20, +2.20]** | 4,395 |
 
-Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.23 %.
+Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.23 %. The DR direct-method term uses an **independent reward model**: a LightGBM trained on days before the last training day. Using the evaluated policy's own pCTR there would grade the model by its own beliefs (an earlier version did). On the validation day the same evaluation gives +2.08 pp [+0.70, +3.42] for the shipped policy ([ope_val.md](../reports/policy/ope_val.md)).
 
 **What the intervals do and do not cover.** They cover sampling noise given the assumptions. They do not cover bias from the assumptions themselves:
 1. Impression share within a publisher-hour is treated as the logging propensity, i.e. no unobserved targeting on character, user or device.
@@ -56,7 +56,7 @@ Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.23 
 Read the table as a demonstration of the evaluation machinery under these assumptions. It is not evidence of business impact and not grounds for a rollout: real candidate sets, logged propensities and outcomes (which the API now records) come first, then an online test.
 
 - **Random lands near the logging CTR,** as expected when logging is roughly frequency-proportional.
-- **Gates and exploration cost about 0.16 pp** against ungated greedy (DR 18.44 % vs 18.60 %): the price of brand safety, frequency caps and the learning budget.
+- **Gates and exploration cost about 0.18 pp** against ungated greedy (DR 18.46 % vs 18.64 %): the price of brand safety, frequency caps and the learning budget.
 - **Earlier numbers:** before this fix, the shipped policy's DR interval touched zero (+1.13 pp [−0.09, +2.20]). The new exploration distribution concentrates on plausible candidates, and the evaluation now uses the serving tie-break, which moved both rows.
 
 ## Sample rankings ([reports/sample_rankings.json](../reports/sample_rankings.json), `uv run poe samples`)

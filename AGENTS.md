@@ -21,7 +21,7 @@ Only commands that work today are listed. When you add a command, add it here in
 | Regenerate OpenAPI contract | `uv run poe openapi` (commit `docs/api/openapi.json`) |
 | Data contract on raw CSVs | `uv run poe mlcheck-data` |
 | Train + evaluate + export (GPU if available) | `uv run poe train` (then `uv run mlcheck .`) |
-| Ablations / tuning / EDA / text bake-off | `uv run poe ablate` / `tune` / `eda` / `text` |
+| Ablations / tuning / EDA / text bake-off / refit study | `uv run poe ablate` / `tune` / `eda` / `text` / `refit-study` |
 | Off-policy evaluation of ranking policies (after `train`) | `uv run poe ope` |
 | Train/serve parity, sample rankings | `uv run poe parity`, `uv run poe samples` |
 | Experiments: smoke-run all / rerun on full data | `uv run poe test-notebooks` / `uv run poe experiments` |

@@ -31,7 +31,7 @@ f"mode: {'smoke (fixture, tiny model)' if ctx.smoke else 'full data'}"
 
 # %%
 import matplotlib.pyplot as plt
-import polars as pl
+from IPython.display import Markdown
 
 from charade.analysis import adaptation, drift
 from charade.analysis.experiment import ensure_bundle
@@ -50,17 +50,18 @@ ax.legend(title="scored day", fontsize=7)
 plt.show()
 
 # %%
-adapt = adaptation.run(ctx.settings, ctx.data_dir, ctx.reports / "drift" / "adaptation.md")
-adapt.with_columns(pl.col(pl.Float64).round(4))
+adaptation.run(ctx.settings, ctx.data_dir, ctx.reports / "drift" / "adaptation.md")
+Markdown((ctx.reports / "drift" / "adaptation.md").read_text())
 
 # %% [markdown]
 # ## Reading
 # - The CTR level moves for every genre together; character preferences are stable.
 # - NE worsens with model age on every scored day, hence daily retraining.
-# - Higher lambda trades concentration for estimated CTR; at lambda = 4 the CTR change is within noise.
+# - lambda is chosen on the validation day by the pre-registered rule; the test days only confirm it.
+# - The replay uses logged exposure history, so it can show "no CTR loss" but never a fatigue benefit.
 
 # %% [markdown]
 # ## Conclusion
-# Ads rotate fast (13-37 % new creatives a day) and a frozen model loses ~0.003 NE per day, so retrain daily; online recalibration adds nothing; an exposure penalty (lambda = 4) cuts cohort concentration 30 % with no detectable CTR loss.
+# Ads rotate fast (13-37 % new creatives a day) and a frozen model loses ~0.003 NE per day, so retrain daily; online recalibration slightly worsens NE on the validation day; the exposure penalty selected on the validation day by a pre-registered rule (lambda = 8) cuts cohort HHI 38 % on test with CTR change +0.27 pp [-0.59, +1.08].
 #
-# **Decision:** Daily retraining with gated promotion; no online recalibration; exposure penalty recommended at lambda = 4 pending an online A/B test.
+# **Decision:** Daily retraining with gated promotion; no online recalibration; exposure penalty at lambda = 8 (chosen on validation) pending an online A/B test.

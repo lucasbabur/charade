@@ -3,7 +3,7 @@ id: E006
 title: "Offline evaluation of ranking policies"
 hypotheses: [H11, H6]
 status: concluded
-conclusion: "Under reconstructed candidate sets and frequency-share propensities, the shipped policy (gates + 5 % exploration with exact propensities) has an estimated DR lift of +1.21 pp CTR [+0.21, +2.17] over the logging policy (ungated greedy +1.37 pp); ESS ~4 % of rows; not a measured production lift."
+conclusion: "Under reconstructed candidate sets and frequency-share propensities, with DR using an independent LightGBM reward model, the shipped policy's estimated lift over logging is +1.23 pp CTR [+0.20, +2.20] (ungated greedy +1.41 pp; validation day +2.08 pp); ESS ~4 % of rows; a demonstration of the evaluation, not a measured production lift."
 created-at: 2026-10-01
 updated-at: 2026-10-01
 ---
