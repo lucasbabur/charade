@@ -71,26 +71,6 @@ Cold-character test rows: 1,478; new-user test rows: 97,843.
 | slice | sfw | 156 | 0.1720 | 0.0010 | 142416.4299 |
 | slice | suggestive | 61 | 0.1737 | 0.0038 | 10117.6372 |
 
-## Graduation, tau = 15,125,759: the pooled variance beyond genre x tier hit its floor, so this tau only means no detectable character variation, not a measured evidence requirement
-
-| earlier_impressions | rows | model_ne | corrected_ne | delta_logloss |
-|---|---|---|---|---|
-| <=5 | 28,228 | 0.8805 | 0.8805 | -0.0000 |
-| <=20 | 44,742 | 0.8781 | 0.8781 | -0.0000 |
-| <=50 | 58,662 | 0.8750 | 0.8750 | 0.0000 |
-| <=200 | 113,203 | 0.8772 | 0.8772 | -0.0000 |
-| <=1000 | 25,480 | 0.8862 | 0.8862 | 0.0000 |
-
-## Graduation sensitivity, tau = 100 (as if characters varied by ~4 pp)
-
-| earlier_impressions | rows | model_ne | corrected_ne | delta_logloss |
-|---|---|---|---|---|
-| <=5 | 28,228 | 0.8805 | 0.8805 | -0.0000 |
-| <=20 | 44,742 | 0.8781 | 0.8780 | -0.0000 |
-| <=50 | 58,662 | 0.8750 | 0.8750 | 0.0000 |
-| <=200 | 113,203 | 0.8772 | 0.8773 | 0.0000 |
-| <=1000 | 25,480 | 0.8862 | 0.8868 | 0.0003 |
-
 ## Cold ads (test): creatives and campaigns never seen in training
 
 | slice | rows | share | ne | pred_over_obs |
