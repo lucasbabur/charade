@@ -1,7 +1,7 @@
 ---
 title: "Data"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # 01 — Data
@@ -39,7 +39,7 @@ updated-at: 2026-10-01
 
 ## Split
 
-Train = 2014-10-21 → 10-27 (729,685 rows, every weekday once), validation = 10-28 (142,909), test = 10-29 → 10-30 05h (127,406). The split is temporal; random or k-fold splits leak future hours, shared users and repeated creatives into training (mlcheck MLS003, MLL001–002). Boundaries live in `[tool.charade]`.
+Train = 2014-10-21 → 10-27 (729,685 rows, every weekday once), validation = 10-28 (142,909), test = 10-29 → 10-30 05h (127,406). The split is temporal; random or k-fold splits leak future hours, shared users and repeated creatives into training (mlcheck MLL001–002). Boundaries live in `[tool.charade]`.
 
 ## Test fixture
 

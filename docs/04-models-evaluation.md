@@ -1,7 +1,7 @@
 ---
 title: "Models and evaluation"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # 04 — Models and evaluation
@@ -16,7 +16,7 @@ updated-at: 2026-10-01
 | Training + early stopping (4 validation passes per epoch, patience 4) | Train 10-21..27; stop on 10-28 | Production retrains on everything up to yesterday |
 | Calibration choice (identity / Platt / isotonic) | 10-28, 2-fold over even/odd hours | Fitting on the most recent day absorbs the daily CTR level shift (H9) |
 | Ablations | 10-28, raw logits | Group decisions never look at test |
-| **Test** | 10-29 + 10-30 05h | Every scoring logged with a configuration hash; at most 3 configurations per model family may look at this window (MLL006) |
+| **Test** | 10-29 + 10-30 05h | Read only to confirm choices made on validation; exceptions are listed under Honesty notes |
 
 **Primary metric: normalized entropy (NE)**, the log loss divided by the entropy of the evaluation set's base rate. The auction ranks by pCTR × bid, so the probabilities must be right, not just well ordered. AUC, calibration ratio and ECE are reported alongside. Any claim that one model beats another needs a paired bootstrap that resamples whole hours, because rows within an hour share traffic mix.
 
@@ -87,6 +87,6 @@ Reading it: the character layer is worth about 0.010 log loss, more than device 
 
 ## Honesty notes
 
-- The first end-to-end run used all feature groups and also scored test, before the ablations existed (ledger run `20261001T050637Z-02e0ea61`). The group decision was made from validation ablations only. That run's test NE (0.8855) equals the shipped run's (0.8855), so the holdout did not steer the choice. Since then every holdout scoring is logged with a configuration hash (MLL006).
+- The first end-to-end run used all feature groups and also scored test, before the ablations existed. The group decision was made from validation ablations only. That run's test NE (0.8855) equals the shipped run's (0.8855), so the holdout did not steer the choice.
 - **Choices made on test, then redone.** The adaptation penalty λ and the decision not to ship online recalibration were first assessed on the test days. λ is now selected on the validation day by a pre-registered rule, and test only confirms ([07](07-drift-adaptation.md)). The recalibration decision is supported by the validation day alone (NE 0.8712 frozen vs 0.8714 recalibrated).
 - Tuning picked configurations on 10-27, a high-CTR day (19.6 %). Validation and test are low-CTR days. Early stopping on 10-28 anchors the level (test pred/obs 1.002 uncalibrated); the ranking quality transferred (inner NE 0.8746 against validation 0.8712).
