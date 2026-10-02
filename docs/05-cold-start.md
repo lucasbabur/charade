@@ -4,7 +4,7 @@ created-at: 2026-10-01
 updated-at: 2026-10-02
 ---
 
-# 06 — Cold start
+# 05 — Cold start
 
 **Bottom line:** a character is its genre and safety tier (no measurable spread beyond them), so the shipped model has no character ID and scores new characters like old ones: test NE 0.908 cold vs 0.885 warm (n = 1,478, no CI computed; cold predictions run 6.6 % high, ECE 0.026, so the cold slice is less well calibrated than the whole) ([coldstart.md](../reports/coldstart/coldstart.md)).
 
@@ -36,7 +36,7 @@ For both kinds of cold entity, the publisher surface and the character's genre c
 ## When would a character earn its own parameters?
 
 - **Spread beyond genre × tier:** a beta-binomial prior per genre × tier, fitted by the method of moments with binomial noise removed. In 19 of 30 cells the spread between characters is indistinguishable from zero; the rest rest on only 27–161 characters each and are noise-dominated. Pooled, the variance beyond genre × tier is below the binomial noise.
-- **Decision:** this synthetic dataset shows no reliable gain from character-specific parameters, so the shipped model has none, and the character-ID ablation agrees ([04](04-models-evaluation.md)). That is narrower than "characters never matter": creator-written personas may carry real per-character signal.
+- **Decision:** this synthetic dataset shows no reliable gain from character-specific parameters, so the shipped model has none, and the character-ID ablation agrees ([03](03-models-evaluation.md)). That is narrower than "characters never matter": creator-written personas may carry real per-character signal.
 - **Rule for production:** re-run the same two checks on fresh data, the per-cell spread and the character-ID ablation on validation, and add a character embedding only if the ablation gain has a CI excluding zero. No formula for a graduation threshold is claimed; an earlier version derived one and it rested on a variance estimate that had hit its numerical floor.
 
 ## Users, by the same logic

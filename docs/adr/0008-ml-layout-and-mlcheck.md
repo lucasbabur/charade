@@ -1,7 +1,7 @@
 ---
 title: "ADR 0008: Code organised by ML concern, enforced by mlcheck instead of layered architecture"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # ADR 0008: Code organised by ML concern, enforced by mlcheck instead of layered architecture
@@ -13,7 +13,7 @@ Clean-architecture layers protect against swapping databases and UIs. The risks 
 
 ## Decision
 
-`src/charade/{data,features,text,models,evaluation,ranking,scoring,serving,analysis}`. Build `tools/mlcheck` (47 gates) because no maintained library covers leakage, parity, latency, propensity and holdout discipline together; use pycheck only for its layout-independent checks.
+`src/charade/{data,features,text,models,evaluation,ranking,scoring,serving,analysis}`. Build `tools/mlcheck` (44 gates) because no maintained library covers leakage, parity, latency, propensity and holdout discipline together; use pycheck only for its layout-independent checks.
 
 ## Consequences
 

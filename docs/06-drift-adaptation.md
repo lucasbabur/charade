@@ -1,10 +1,10 @@
 ---
 title: "Drift and adaptation"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
-# 07 — Drift and adaptation
+# 06 — Drift and adaptation
 
 **Bottom line:** the CTR level shifts daily and ads rotate fast (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. Online recalibration adds nothing. An exposure penalty selected on the validation day (λ = 2) cuts cohort concentration 24 % on the test days; test cannot rule out a CTR loss beyond the 0.2 pp margin, so it awaits an online test ([drift.md](../reports/drift/drift.md), [adaptation.md](../reports/drift/adaptation.md)).
 
@@ -43,7 +43,7 @@ Each model is trained on the days before day d, early-stopped on day d, and scor
 | 10-29 | 0.8912 | 0.8906 | 0.8934 | 0.8978 | 0.9031 | — |
 | 10-30 | 0.8879 | 0.8898 | 0.8924 | 0.8957 | 0.8978 | 0.9035 |
 
-Age counts from the last training day (age 2 = the day after the early-stopping day). NE worsens by about 0.003 per day, and the calibration ratio wanders up to 1.10 at age 7. Decision: **retrain daily**. Training takes under a minute on one GPU, so the cost is negligible. The early-stopping and calibration day should be the most recent complete day. Promotion is gated by mlcheck ([09-operations.md](09-operations.md)).
+Age counts from the last training day (age 2 = the day after the early-stopping day). NE worsens by about 0.003 per day, and the calibration ratio wanders up to 1.10 at age 7. Decision: **retrain daily**. Training takes under a minute on one GPU, so the cost is negligible. The early-stopping and calibration day should be the most recent complete day. Promotion is gated by mlcheck ([07-serving-operations.md](07-serving-operations.md)).
 
 ## Adaptation 1: online recalibration (tested, not shipped)
 
@@ -63,7 +63,7 @@ It nudges the level (10-28 ratio 0.990 → 0.997) and slightly worsens NE on eve
 
 Greedy pCTR ranking concentrates each genre on the few campaigns the model likes best. The users of the dominant cohorts then see the same campaigns repeatedly: ad fatigue. The layer multiplies each candidate's score by `exp(−λ · share)`, where `share` is the campaign's share of that genre's recent allocations (exponential decay, half-life 2,000 cohort impressions). The state depends only on the policy's own choices, never on outcomes, so the replay stays a valid off-policy evaluation.
 
-**Selection on the validation day, confirmation on test.** The rule was fixed before looking at the numbers: take the largest λ whose 95 % lower bound on the CTR change against greedy clears −0.2 pp (non-inferiority with a 0.2 pp margin). An earlier rule accepted any λ whose interval merely contained 0, which bounds no loss at all. DR uses the independent reward model from [05](05-ranking-policy.md).
+**Selection on the validation day, confirmation on test.** The rule was fixed before looking at the numbers: take the largest λ whose 95 % lower bound on the CTR change against greedy clears −0.2 pp (non-inferiority with a 0.2 pp margin). An earlier rule accepted any λ whose interval merely contained 0, which bounds no loss at all. DR uses the independent reward model from [04](04-ranking-policy.md).
 
 | λ | Validation Δ vs greedy [95 % CI] | Test Δ vs greedy [95 % CI] | Test top-campaign share per genre | Test cohort HHI | Test repeat exposure |
 |---|---|---|---|---|---|
@@ -74,7 +74,7 @@ Greedy pCTR ranking concentrates each genre on the few campaigns the model likes
 | 8 | +0.52 pp [−0.30, +1.34] | −0.23 pp [−0.85, +0.40] | 5.1 % | 0.017 | 9.1 % |
 | 16 | −0.34 pp [−1.37, +0.68] | −0.29 pp [−1.23, +0.81] | 4.4 % | 0.015 | 8.9 % |
 
-- **λ = 2 is chosen on the validation day,** before the test days are read: it is the largest λ whose lower bound (+0.28 pp) clears the margin. Under the old rule the chosen λ was 8; that changed because the OPE population fix (see [05](05-ranking-policy.md)) moved every row and the rule became a real non-inferiority test.
+- **λ = 2 is chosen on the validation day,** before the test days are read: it is the largest λ whose lower bound (+0.28 pp) clears the margin. Under the old rule the chosen λ was 8; that changed because the OPE population fix (see [04](04-ranking-policy.md)) moved every row and the rule became a real non-inferiority test.
 - **Test does not confirm non-inferiority.** On test, λ = 2 cuts each genre's top-campaign share from 8.3 % to 6.3 %, cohort HHI by 24 % and repeat exposure from 10.3 % to 9.7 %, at +0.06 pp CTR. But the lower bound, −0.60 pp, does not clear −0.2 pp: the data cannot rule out a loss of that size. Status: candidate for an online test, not a shipped change.
 - **The validation-day gain does not replicate** (+0.8 pp at λ = 1–2 on validation, ≈ 0 on test): noise or day-specific.
 - **The replay cannot show the benefit it targets.** Users' exposure counters come from the logged history, not from the simulated allocation, so less repetition never raises simulated CTR. The replay can only show "no loss"; whether lower fatigue raises CTR needs an online test.
