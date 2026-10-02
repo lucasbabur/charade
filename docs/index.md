@@ -33,7 +33,7 @@ Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatte
 | [03-text-enrichment.md](03-text-enrichment.md) | Description embedding bake-off |
 | [04-models-evaluation.md](04-models-evaluation.md) | Protocol, models, ablations, slices, leakage probes |
 | [05-ranking-policy.md](05-ranking-policy.md) | Gates, value, exploration, propensities, offline policy evaluation, sample rankings |
-| [06-cold-start.md](06-cold-start.md) | New characters and users, pre-click signal, graduation |
+| [06-cold-start.md](06-cold-start.md) | New characters, users and ads; pre-click signal |
 | [07-drift-adaptation.md](07-drift-adaptation.md) | Temporal shifts, staleness, recalibration, exposure re-balancing |
 | [08-serving-architecture.md](08-serving-architecture.md) | Request path, latency budget, failure modes |
 | [09-operations.md](09-operations.md) | AWS sketch, delivery scripts, alarms, runbooks |

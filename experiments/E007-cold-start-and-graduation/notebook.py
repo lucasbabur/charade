@@ -42,11 +42,11 @@ Markdown((ctx.reports / "coldstart" / "coldstart.md").read_text())
 # %% [markdown]
 # ## Reading
 # - Publisher surface and genre carry the pre-click signal for both cold characters and new users.
-# - The pooled prior strength is enormous (true sd ~0.0001): a character's own clicks never outweigh it.
-# - A weak prior (tau = 100) makes predictions slightly worse in the high-evidence bucket.
+# - Most genre x tier cells show no spread between characters beyond binomial noise.
+# - Unseen creatives rank like seen ones but are under-predicted; see the cold-ads table.
 
 # %% [markdown]
 # ## Conclusion
-# This synthetic dataset shows no reliable gain from character-specific parameters (the pooled spread beyond genre x tier hits the estimator's floor); unseen characters score NE 0.908 vs 0.885 for warm ones (n = 1,478, no CI), and unseen creatives (43 % of test) are under-predicted by about 5 %.
+# This synthetic dataset shows no reliable gain from character-specific parameters (no detectable spread beyond genre x tier); unseen characters score NE 0.908 vs 0.885 for warm ones (n = 1,478, no CI), and unseen creatives (43 % of test) are under-predicted by about 5 %.
 #
-# **Decision:** No character ID in the model; graduation is re-measured on fresh data instead of fixed as a constant.
+# **Decision:** No character ID in the model; on fresh data, re-run the per-cell spread and the character-ID ablation before adding one.
