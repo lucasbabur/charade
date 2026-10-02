@@ -24,11 +24,6 @@ variable "api_image_tag" {
   type        = string
 }
 
-variable "train_image_tag" {
-  description = "Training image tag."
-  type        = string
-}
-
 variable "bundle_run_id" {
   description = "Model bundle the API serves (immutable run id under bundles/). CD passes the last promoted one; empty serves no model (/ready 503)."
   type        = string

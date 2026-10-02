@@ -34,11 +34,6 @@ variable "api_image_tag" {
   type        = string
 }
 
-variable "train_image_tag" {
-  description = "Training image tag (immutable, set by CD)."
-  type        = string
-}
-
 variable "api_min_tasks" {
   description = "Minimum API tasks."
   type        = number
@@ -59,27 +54,9 @@ variable "redis_replicas" {
   type        = number
 }
 
-variable "data_retention_days" {
-  description = "Days to keep exports and decision logs."
-  type        = number
-  default     = 400
-}
-
 variable "deletion_protection" {
   description = "Protect stateful resources from deletion."
   type        = bool
-}
-
-variable "github_repository" {
-  description = "owner/name of the repository that deploys."
-  type        = string
-  default     = "lucasbabur/charade"
-}
-
-variable "create_github_oidc_provider" {
-  description = "Create the account-wide GitHub OIDC provider."
-  type        = bool
-  default     = false
 }
 
 variable "tags" {
@@ -89,7 +66,7 @@ variable "tags" {
 }
 
 variable "bundle_run_id" {
-  description = "Model bundle the API serves (immutable run id under bundles/). CD passes the last promoted one; empty serves no model (/ready 503)."
+  description = "Model bundle the API serves (immutable run id under bundles/). scripts/promote.sh moves it; empty serves no model (/ready 503)."
   type        = string
   default     = ""
 }

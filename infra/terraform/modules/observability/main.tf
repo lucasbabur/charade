@@ -1,5 +1,5 @@
-# Alarms that page (docs/09-operations.md): latency SLO, errors, degraded serving, no-fill, failed
-# retraining, plus a dashboard. Application metrics come from the structured decision log, so no
+# Alarms that page (docs/09-operations.md): latency SLO, errors, degraded serving and no-fill, plus a
+# dashboard. Application metrics come from the structured decision log, so no
 # metrics agent is needed for the alarms; /metrics stays available for Prometheus scraping.
 
 resource "aws_sns_topic" "alarms" {
@@ -101,34 +101,6 @@ resource "aws_cloudwatch_metric_alarm" "decision" {
   alarm_actions       = [aws_sns_topic.alarms.arn]
   tags                = var.tags
   depends_on          = [aws_cloudwatch_log_metric_filter.decision]
-}
-
-resource "aws_cloudwatch_log_metric_filter" "gate_failure" {
-  name           = "${var.name}-retrain-gate-failure"
-  log_group_name = var.train_log_group_name
-  pattern        = "\"checks:\" \"fail\" -\"0 fail\""
-
-  metric_transformation {
-    name      = "retrain_gate_failures"
-    namespace = "Charade"
-    value     = "1"
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "gate_failure" {
-  alarm_name          = "${var.name}-retrain-gate-failure"
-  alarm_description   = "Daily retrain failed an mlcheck gate; production keeps the previous bundle. Runbook: docs/09-operations.md#retraining"
-  namespace           = "Charade"
-  metric_name         = "retrain_gate_failures"
-  statistic           = "Sum"
-  period              = 86400
-  evaluation_periods  = 1
-  threshold           = 0
-  comparison_operator = "GreaterThanThreshold"
-  treat_missing_data  = "notBreaching"
-  alarm_actions       = [aws_sns_topic.alarms.arn]
-  tags                = var.tags
-  depends_on          = [aws_cloudwatch_log_metric_filter.gate_failure]
 }
 
 resource "aws_cloudwatch_dashboard" "this" {

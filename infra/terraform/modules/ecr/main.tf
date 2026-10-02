@@ -1,4 +1,4 @@
-# Container registries for the API and training images: immutable tags, scan on push, bounded history.
+# Container registry for the API image: immutable tags, scan on push, bounded history.
 
 resource "aws_ecr_repository" "this" {
   for_each             = toset(var.repositories)
