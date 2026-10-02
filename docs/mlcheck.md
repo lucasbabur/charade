@@ -112,7 +112,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 |---|---|---|
 | MLD006 period-volume | 2014-10-30 has 22,956 rows (partial day) | Kept in test, never read alone ([01](01-data.md)) |
 | MLD007 dominant-values | `device_id = a99f214a` on 82 %, plus four low-cardinality fields | User proxy and the `device_id_real` token ([01](01-data.md), [02](02-features.md)) |
-| MLL007 adversarial-validation | Train vs test AUC 0.96, driven by creative and campaign rotation | Daily retraining, hierarchy backoff ([07](07-drift-adaptation.md)) |
+| MLL007 adversarial-validation | Train vs test AUC 0.96, driven by creative and campaign rotation | Daily retraining, hierarchy backoff ([06](06-drift-adaptation.md)) |
 | MLX001 feature-drift-psi | PSI > 0.25 on ad ids, `app_id`, and `hour_of_day` (partial last day) | Same as above |
 
 Gates that pass with margin:
@@ -121,7 +121,7 @@ Gates that pass with margin:
 - calibration 1.012 and ECE 0.005;
 - exact train/serve parity, ONNX within 1.9e-6;
 - p99 25 ms at 400 rps over 90 s;
-- every evidence report (parity, OPE, latency) names the shipped bundle's digest;
+- every evidence report (parity, OPE, latency) names the shipped bundle's digest (model files only: serving code and policy settings are not part of it);
 - 3,000 decisions respecting gates, with per-candidate propensities that form the policy's exact distribution.
 
 ## Tests

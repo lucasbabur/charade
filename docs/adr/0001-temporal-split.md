@@ -17,4 +17,4 @@ Train 10-21..27, validation 10-28 (early stopping, calibration, ablations), test
 
 ## Consequences
 
-Validation and test are low-CTR days (16.5–17.3 %), so calibration on the most recent day matters (H9). Where a choice was first assessed on test and then redone on validation, docs/04 records it.
+Validation and test are low-CTR days (16.5–17.3 %), so calibration on the most recent day matters (H9). Where a choice was first assessed on test and then redone on validation, docs/03 records it.

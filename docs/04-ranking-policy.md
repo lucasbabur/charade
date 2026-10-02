@@ -1,10 +1,10 @@
 ---
 title: "Candidate ranking"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
-# 05 — Candidate ranking
+# 04 — Candidate ranking
 
 **Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.46 pp CTR (DR, [+0.50, +2.38])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
 

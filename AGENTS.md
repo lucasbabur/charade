@@ -17,7 +17,7 @@ Only commands that work today are listed. When you add a command, add it here in
 | Install everything | `uv sync --all-packages --extra train --extra gpu` (`--extra cpu` without CUDA) |
 | List tasks | `uv run poe` |
 | Everything CI runs on Python | `uv run poe check` (lint, types, import layers, tests, mlcheck tests, ML static gates) |
-| Terraform fmt + validate | `uv run poe tf` (CI also runs tflint and checkov; locally via their Docker images, see docs/09-operations.md) |
+| Terraform fmt + validate | `uv run poe tf` (CI also runs tflint and checkov; locally via their Docker images, see docs/07-serving-operations.md) |
 | Regenerate OpenAPI contract | `uv run poe openapi` (commit `docs/api/openapi.json`) |
 | Data contract on raw CSVs | `uv run poe mlcheck-data` |
 | Train + evaluate + export (GPU if available) | `uv run poe train` (then `uv run mlcheck .`) |

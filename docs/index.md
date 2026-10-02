@@ -30,15 +30,13 @@ Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatte
 | [hypotheses.md](hypotheses.md) | Pre-registered hypotheses, metrics, decision rules and outcomes |
 | [01-data.md](01-data.md) | Data contract, findings, split, fixture |
 | [02-features.md](02-features.md) | Shipped and rejected features, encoding rules |
-| [03-text-enrichment.md](03-text-enrichment.md) | Description embedding bake-off |
-| [04-models-evaluation.md](04-models-evaluation.md) | Protocol, models, ablations, slices, leakage probes |
-| [05-ranking-policy.md](05-ranking-policy.md) | Gates, value, exploration, propensities, offline policy evaluation, sample rankings |
-| [06-cold-start.md](06-cold-start.md) | New characters, users and ads; pre-click signal |
-| [07-drift-adaptation.md](07-drift-adaptation.md) | Temporal shifts, staleness, recalibration, exposure re-balancing |
-| [08-serving-architecture.md](08-serving-architecture.md) | Request path, latency budget, failure modes |
-| [09-operations.md](09-operations.md) | AWS sketch, delivery scripts, alarms, runbooks |
-| [10-next-steps.md](10-next-steps.md) | Data, models, scaling |
-| [mlcheck.md](mlcheck.md) | The 47 ML release gates and their artifact contract |
+| [03-models-evaluation.md](03-models-evaluation.md) | Protocol, models, ablations, slices, the rejected text features, leakage probes |
+| [04-ranking-policy.md](04-ranking-policy.md) | Gates, value, exploration, propensities, offline policy evaluation, sample rankings |
+| [05-cold-start.md](05-cold-start.md) | New characters, users and ads; pre-click signal |
+| [06-drift-adaptation.md](06-drift-adaptation.md) | Temporal shifts, staleness, recalibration, exposure re-balancing |
+| [07-serving-operations.md](07-serving-operations.md) | Request path, latency, failure modes; Terraform sketch, delivery, alarms, runbooks |
+| [08-next-steps.md](08-next-steps.md) | The three next investments |
+| [mlcheck.md](mlcheck.md) | The 44 ML release gates and their artifact contract |
 | [adr/](adr/) | One decision per file |
 | [api/openapi.json](api/openapi.json) | Generated API contract (CI fails if stale) |
 | [recording-outline.md](recording-outline.md) | Video walkthrough script |

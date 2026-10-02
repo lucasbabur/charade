@@ -1,12 +1,12 @@
 ---
 title: "Features"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # 02 — Features
 
-**Bottom line:** 25 embedded categoricals and 10 standardized dense inputs, all fitted on training rows (one exception below) and defined once in `charade.features` for training and serving; groups were kept or dropped by validation ablation ([04](04-models-evaluation.md)).
+**Bottom line:** 25 embedded categoricals and 10 standardized dense inputs, all fitted on training rows (one exception below) and defined once in `charade.features` for training and serving; groups were kept or dropped by validation ablation ([03](03-models-evaluation.md)).
 
 ## Shipped feature set
 
@@ -22,9 +22,9 @@ updated-at: 2026-10-01
 
 | Group | Fields | Ablation | Why rejected |
 |---|---|---|---|
-| Character ID | `character_id` embedding (min count 20, 8 % ID dropout) | −0.0000 [−0.0002, +0.0002] | No character-level signal beyond genre × tier ([06](06-cold-start.md)) |
+| Character ID | `character_id` embedding (min count 20, 8 % ID dropout) | −0.0000 [−0.0002, +0.0002] | No character-level signal beyond genre × tier ([05](05-cold-start.md)) |
 | Conversation | `turn_bucket`, `session_bucket`, `log_turn`, `turn_position` | +0.0001 [−0.0000, +0.0003] | CTR is flat across turns. `session_msg_count` ("total messages in session") may also not be known mid-session |
-| Text | 16-dim PCA of Qwen3 or TF-IDF description embeddings | +0.0008 [+0.0006, +0.0011] (worse) | Templated descriptions ([03](03-text-enrichment.md)) |
+| Text | 16-dim PCA of Qwen3 or TF-IDF description embeddings | +0.0008 [+0.0006, +0.0011] (worse) | Templated descriptions ([03](03-models-evaluation.md)) |
 
 ## Encoding rules
 
@@ -33,4 +33,4 @@ updated-at: 2026-10-01
 - Categorical encoding for ≤ 2,000 rows uses dictionary lookups (the serving path), larger frames use polars `replace_strict`. Both produce identical ids (MLV001).
 - `feature_spec.json` (in the bundle) stores the fields, vocabularies, scaling and groups. The API reads it; nothing is re-fitted at serve time.
 
-**The one transductive fit.** The text experiments' TF-IDF vocabulary, IDF weights and SVD were fitted on every character description, including characters first seen after training; only the final PCA was restricted to training. No labels are involved, so this is transductive preprocessing rather than label leakage, and text is not in the shipped model ([03](03-text-enrichment.md)). It is still an exception to the train-only rule, and would need to be fitted on training characters before any text feature shipped.
+**The one transductive fit.** The text experiments' TF-IDF vocabulary, IDF weights and SVD were fitted on every character description, including characters first seen after training; only the final PCA was restricted to training. No labels are involved, so this is transductive preprocessing rather than label leakage, and text is not in the shipped model ([03](03-models-evaluation.md)). It is still an exception to the train-only rule, and would need to be fitted on training characters before any text feature shipped.

@@ -18,12 +18,12 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 
 | | Result | Evidence |
 |---|---|---|
-| CTR model | DCN-v2 3-seed ensemble: **NE 0.8855**, AUC 0.737, pred/obs 1.002, ECE 0.005 (no calibration map: none beat identity by more than noise) | [04](04-models-evaluation.md) |
+| CTR model | DCN-v2 3-seed ensemble: **NE 0.8855**, AUC 0.737, pred/obs 1.002, ECE 0.005 (no calibration map: none beat identity by more than noise) | [03](03-models-evaluation.md) |
 | vs LightGBM / logistic | Equal tuning effort, 3-seed ensembles each: −0.0040 [−0.0053, −0.0027] vs LightGBM, −0.0117 [−0.0136, −0.0098] vs logistic. Single model vs single model: −0.0020 [−0.0041, +0.0004], not established | MLM004 |
-| Ranking | Exact propensities logged for every candidate. Offline policy evaluation runs end to end; under reconstructed candidate sets and inferred logging propensities it estimates +1.46 pp CTR [+0.50, +2.38] (DR with an independent reward model). That demonstrates the evaluation machinery, not business value | [05](05-ranking-policy.md) |
-| Cold start | The model has no character ID, so a new character is scored from metadata like any other. Unseen characters: NE 0.908 vs 0.885 warm (n = 1,478, known genres only); new users 0.894 vs 0.856 returning | [06](06-cold-start.md) |
-| Drift | Ads rotate (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. An exposure penalty chosen on the validation day by a non-inferiority rule (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss, so it awaits an online test | [07](07-drift-adaptation.md) |
-| Serving | p50 8 / p95 14 / p99 25 ms at 400 rps, 0.005 % errors (impression events over the 10 ms store budget; impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
+| Ranking | Exact propensities logged for every candidate. Offline policy evaluation runs end to end; under reconstructed candidate sets and inferred logging propensities it estimates +1.46 pp CTR [+0.50, +2.38] (DR with an independent reward model). That demonstrates the evaluation machinery, not business value | [04](04-ranking-policy.md) |
+| Cold start | The model has no character ID, so a new character is scored from metadata like any other. Unseen characters: NE 0.908 vs 0.885 warm (n = 1,478, known genres only); new users 0.894 vs 0.856 returning | [05](05-cold-start.md) |
+| Drift | Ads rotate (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. An exposure penalty chosen on the validation day by a non-inferiority rule (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss, so it awaits an online test | [06](06-drift-adaptation.md) |
+| Serving | p50 8 / p95 14 / p99 25 ms at 400 rps, 0.005 % errors (impression events over the 10 ms store budget; impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [07](07-serving-operations.md) |
 | Gates | mlcheck on the shipped bundle: 44 checks, 40 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
 
 ## What the data taught (and what it changed)
@@ -39,13 +39,13 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 
 ## How it is built
 
-- **Code:** `src/charade/` is organised by ML concern. `tools/mlcheck` holds 47 release gates (leakage, reproducibility, recomputed model quality with CIs, parity, latency, policy invariants, drift).
+- **Code:** `src/charade/` is organised by ML concern. `tools/mlcheck` holds 44 release gates (leakage, reproducibility, recomputed model quality with CIs, parity, latency, policy invariants, drift).
 - **Settings:** all in `pyproject.toml`; tasks via `uv run poe`.
 - **Decisions:** nine short ADRs in [adr/](adr/).
 - **Delivery:**
   - CI on every PR: lint, strict types, about 180 tests at ≥ 85 % coverage, mlcheck, OpenAPI drift, Terraform validate/tflint/checkov, hadolint/shellcheck, image build and smoke test.
   - Every change landed through a PR into `main`, with every commit passing on its own.
-  - A Terraform sketch of the AWS serving environment, validated not applied; retraining and promotion as scripts ([09](09-operations.md)).
+  - A Terraform sketch of the AWS serving environment, validated not applied; retraining and promotion as scripts ([07](07-serving-operations.md)).
 
 ## Limits, stated plainly
 
@@ -58,8 +58,10 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 - **Infrastructure is a sketch, not a platform.** Rolling windows, gated promotion and pinned-bundle rollback are scripted; the serving environment passes Terraform validation, tflint and checkov. None of it has run on AWS, and the scheduler, log export and CI deploy credentials were deliberately left out.
 - **`confidence` and the evidence intervals are heuristics** derived from training support, not calibrated posteriors.
 - **External reviews found three correctness bugs, all fixed with tests:** Thompson-sampling propensities biased upward; counters that let later-hour events leak into earlier snapshots; and a frequency cap that ignored the current hour, because it reused the causal model feature. The cap now counts every recorded exposure; the feature still excludes the current hour.
-- **Holdout discipline is not enforced by a gate.** Choices are made on validation and test only confirms; where that was violated and redone, docs/04 says so. An earlier ledger-based budget gate was removed because it did not track every analysis that read test.
+- **Historical click features assume clicks arrive before the next hour.** The 48 h label window keeps immature labels out of training rows, but the user counters still count an earlier impression's click as known at the next request, which live serving cannot guarantee. Measuring the gap needs real click delays.
+- **The bundle digest (MLR005) binds evidence to model files, not to serving code or policy settings.** A code or `[tool.charade.policy]` change after the evidence was produced is caught by code review and the commit in the manifest, not by that gate.
+- **Holdout discipline is not enforced by a gate.** Choices are made on validation and test only confirms; where that was violated and redone, docs/03 says so. An earlier ledger-based budget gate was removed because it did not track every analysis that read test.
 - **Feedback events are at-least-once.** The API re-emits an event when a retried write finds it already stored, and the row builder deduplicates; a transactional outbox (append to a Redis stream inside the same MULTI, delivered by a separate consumer) is the production version.
 - **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation procedure is what transfers.
 
-Next steps: [10-next-steps.md](10-next-steps.md).
+Next steps: [08-next-steps.md](08-next-steps.md).

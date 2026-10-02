@@ -7,7 +7,7 @@ flowchart LR
     subgraph offline["Offline (daily)"]
         raw[(impressions.csv<br/>characters.csv)] --> feat1[charade.features<br/>derive + encode]
         feat1 --> train[train DCN-v2<br/>calibrate]
-        train --> gates{{mlcheck<br/>47 gates}}
+        train --> gates{{mlcheck<br/>44 gates}}
         gates -- pass --> bundle[(model bundle<br/>ONNX + spec + calibrator)]
     end
     subgraph online["Online (per request, p99 < 50 ms)"]
@@ -33,7 +33,7 @@ cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
 uv run poe mlcheck-data                        # check the data contract
 uv run poe train                               # train + calibrate + evaluate + export (~1 min on a GTX 1660)
 uv run poe ope && uv run poe parity            # ranking-policy evaluation, train/serve parity
-uv run mlcheck .                               # all 47 ML release gates against the run
+uv run mlcheck .                               # all 44 ML release gates against the run
 uv run poe serve                               # API on http://127.0.0.1:8000 (docs at /docs)
 docker compose up --build                      # or: API (8 workers) + Redis, bundle mounted
 uv run poe loadtest                            # latency at 400 rps against the running API
@@ -42,7 +42,7 @@ uv run poe                                     # list every task
 
 The API contract is committed at [docs/api/openapi.json](docs/api/openapi.json) and regenerated with `uv run poe openapi`. CI fails if it is stale.
 
-The infrastructure sketch (AWS, Terraform, validated not applied) and delivery are described in [docs/09-operations.md](docs/09-operations.md).
+The infrastructure sketch (AWS, Terraform, validated not applied) and delivery are described in [docs/07-serving-operations.md](docs/07-serving-operations.md).
 
 ## ⚙️ Settings
 

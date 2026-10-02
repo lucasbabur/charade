@@ -4,7 +4,7 @@ created-at: 2026-10-01
 updated-at: 2026-10-02
 ---
 
-# 04 — Models and evaluation
+# 03 — Models and evaluation
 
 **Bottom line:** a 3-seed DCN-v2 ensemble reaches **test NE 0.8855** (AUC 0.737, pred/obs 1.002, ECE 0.005), beating an equally tuned 3-seed LightGBM ensemble by −0.0040 [−0.0053, −0.0027] and logistic by −0.0117 [−0.0136, −0.0098] log loss. Single model against single model, the gap halves to −0.0020 [−0.0041, +0.0004] and is not established. Ablations repeated with two independent seed sets dropped character ID and conversation features and rejected text ([metrics.json](../reports/models/metrics.json)).
 
@@ -76,17 +76,40 @@ Reading it: the character layer is worth about 0.010 log loss, more than device 
 | `banner_pos` 0 / 1 | 87,995 / 39,110 | 0.874 / 0.914 | 0.99 / 1.02 |
 | 2014-10-29 / 2014-10-30 (partial) | 104,450 / 22,956 | 0.885 / 0.886 | 1.00 / 1.01 |
 
-- **Cold characters:** NE is 2.5 % worse than for warm characters, on a small slice (n = 1,478, no interval) that is over-predicted (1.07). See [06-cold-start.md](06-cold-start.md).
+- **Cold characters:** NE is 2.5 % worse than for warm characters, on a small slice (n = 1,478, no interval) that is over-predicted (1.07). See [05-cold-start.md](05-cold-start.md).
 - **Romance and horror:** the highest-CTR genres have the weakest NE (0.901 and 0.907). Their CTR is closer to 0.5, so there is less entropy to remove relative to the base rate. No slice is worse than its own base rate (MLM009).
+
+## Tested and rejected: character text (E002)
+
+**Result:** descriptions are templates: embeddings recover genre perfectly but predict no CTR beyond genre × tier (ρ ≈ 0 ± 0.1), and adding them hurts validation log loss ([03](03-models-evaluation.md)). The pipeline stays for real free-text personas.
+
+### Bake-off ([reports/text_bakeoff.csv](../reports/text_bakeoff.csv), `uv run poe text`)
+
+| Provider | Dims | Genre 5-NN acc | Tier 5-NN acc | Residual ρ (95 % CI), 363 val characters |
+|---|---|---|---|---|
+| TF-IDF 1–2-grams → SVD | 128 | 1.00 | 0.50 | 0.017 (−0.086, 0.120) |
+| Qwen3-Embedding-0.6B (local, GTX 1660 SUPER) | 1024 | 1.00 | 0.50 | 0.001 (−0.102, 0.104) |
+
+The residual is each character's training CTR (≥ 100 impressions) minus its genre × tier rate. A ridge model on the embedding is trained on training characters and scored by Spearman ρ on validation characters.
+
+
+### Pipeline rules (if text ships later)
+
+- Raw embeddings are cached in `artifacts/cache/text/` (gitignored), keyed by provider and a hash of the texts.
+- Only 16-dim PCA reductions are committed, in `data/derived/text_<provider>.parquet` (~0.3 MB each), so results reproduce without keys or a GPU.
+- PCA is fitted only on characters created by the end of training. New characters are projected with the stored transform when they are published.
+- Embedding never runs in serving, tests or CI. Serving reads the character table with precomputed vectors.
+
+Paid embedding APIs (OpenAI, Gemini, Voyage) were not run (no usable keys); with ρ ≈ 0 for two very different embedders, a third would not change the decision.
 
 ## Leakage and shift probes (`artifacts/current/leakage.json`)
 
 - **Shuffled-label retrain:** validation AUC 0.472, inside the chance band. This shows the model cannot reach the label through the prepared features. It does not certify that every feature was available at serve time, nor any fitting done before features are prepared: labels are permuted after preparation. Availability is covered separately by the causal counters (property-tested) and the train-only fits in [02](02-features.md).
 - **Single features:** the strongest feature on its own is `site_id` at AUC 0.671. No near-perfect single feature exists.
-- **Adversarial validation: train vs test AUC 0.959 (WARN).** The separating features are C14, C17 and C19 (creatives and campaigns rotate: 45 % of test rows show a creative absent from training), then the character ID and the cumulative counters, which grow with time by construction. This is real ad rotation, not leakage. It is why the ad hierarchy (creative → campaign → advertiser) and daily retraining matter; see [07-drift-adaptation.md](07-drift-adaptation.md).
+- **Adversarial validation: train vs test AUC 0.959 (WARN).** The separating features are C14, C17 and C19 (creatives and campaigns rotate: 45 % of test rows show a creative absent from training), then the character ID and the cumulative counters, which grow with time by construction. This is real ad rotation, not leakage. It is why the ad hierarchy (creative → campaign → advertiser) and daily retraining matter; see [06-drift-adaptation.md](06-drift-adaptation.md).
 
 ## Honesty notes
 
 - The first end-to-end run used all feature groups and also scored test, before the ablations existed. The group decision was made from validation ablations only. That run's test NE (0.8855) equals the shipped run's (0.8855), so the holdout did not steer the choice.
-- **Choices made on test, then redone.** The adaptation penalty λ and the decision not to ship online recalibration were first assessed on the test days. λ is now selected on the validation day by a pre-registered rule, and test only confirms ([07](07-drift-adaptation.md)). The recalibration decision is supported by the validation day alone (NE 0.8712 frozen vs 0.8714 recalibrated).
+- **Choices made on test, then redone.** The adaptation penalty λ and the decision not to ship online recalibration were first assessed on the test days. λ is now selected on the validation day by a pre-registered rule, and test only confirms ([06](06-drift-adaptation.md)). The recalibration decision is supported by the validation day alone (NE 0.8712 frozen vs 0.8714 recalibrated).
 - Tuning picked configurations on 10-27, a high-CTR day (19.6 %). Validation and test are low-CTR days. Early stopping on 10-28 anchors the level (test pred/obs 1.002 uncalibrated); the ranking quality transferred (inner NE 0.8746 against validation 0.8712).

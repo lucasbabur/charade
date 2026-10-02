@@ -17,4 +17,4 @@ Drop the character-ID embedding and the conversation features; reject text featu
 
 ## Consequences
 
-New characters are scored exactly like old ones (no identity parameter to be missing). If production data shows character-level spread, the checks in docs/06 re-measure it and the ID group returns through the same ablation gate.
+New characters are scored exactly like old ones (no identity parameter to be missing). If production data shows character-level spread, the checks in docs/05 re-measure it and the ID group returns through the same ablation gate.
