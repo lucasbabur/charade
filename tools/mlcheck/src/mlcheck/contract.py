@@ -5,8 +5,7 @@ Tabular artifacts (parquet):
     predictions.parquet  id (str), split (str), model (str), label (int 0/1), pred (float), ts (datetime),
                          slice_<name> (str) for every required slice
 
-JSON artifacts are the pydantic models below. `evaluation_ledger.jsonl` and `decisions.jsonl`
-hold one model per line.
+JSON artifacts are the pydantic models below. `decisions.jsonl` holds one model per line.
 
 Evidence binding: the manifest and every evidence report (parity, latency, OPE) carry `bundle_sha256`,
 the digest of the configured `bundle_files` (`bundle_digest`), so a report measured on another model
@@ -126,20 +125,6 @@ class DriftReport(_Strict):
 
     reference: str
     psi: dict[str, dict[str, float]] = Field(min_length=1)
-
-
-class LedgerEntry(_Strict):
-    """One evaluation event (evaluation_ledger.jsonl)."""
-
-    timestamp: datetime
-    run_id: str
-    model_version: str
-    split: str
-    config_hash: str | None = None
-    """Identity of everything that can be chosen while looking at results (model config, feature groups,
-    policy, split windows). None only for entries written before this field existed."""
-    window: str | None = None
-    """The evaluated split's time window, e.g. "2014-10-29T00:00:00/2014-10-30T05:00:00"."""
 
 
 class DecisionCandidate(_Strict):

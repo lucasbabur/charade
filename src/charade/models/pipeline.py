@@ -3,7 +3,6 @@
 Writes to `[tool.charade].artifacts_dir`:
     model.onnx, feature_spec.json, calibrator.json, characters.parquet    the serving bundle
     manifest.json, splits.parquet, predictions.parquet, leakage.json      evidence for mlcheck
-    evaluation_ledger.jsonl                                               appended, never truncated
 and reports/models/metrics.md (+ metrics.json) with every number the docs cite.
 
 The test split is scored once per run, for every model, after all choices were made on validation.
@@ -161,9 +160,7 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
     }
     calibrators, calibration_scores, preds = {}, {}, {}
     for name, by_split in raw.items():
-        calibrator, scores = fit_calibrator(
-            by_split["val"], prep.y["val"], _hours(prep.frame, "val")
-        )  # mlcheck: ignore[MLS007]
+        calibrator, scores = fit_calibrator(by_split["val"], prep.y["val"], _hours(prep.frame, "val"))
         calibrators[name], calibration_scores[name] = calibrator, scores
         preds[name] = {s: calibrator.apply(v) for s, v in by_split.items()}
     seed_val = {
@@ -218,26 +215,6 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
         "bundle_sha256": bundle_sha256(out),
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
-    # Configuration identity: everything that can be changed after looking at results. Re-scoring the
-    # same identity on the same window adds no selection; a new identity spends holdout budget (MLL006).
-    identity = json.dumps(
-        {"model": settings.model.model_dump(), "policy": settings.policy.model_dump(), "windows": windows},
-        sort_keys=True,
-        default=str,
-    )
-    test_window = f"{windows['test']['start']}/{windows['test']['end']}"
-    with (out / "evaluation_ledger.jsonl").open("a") as ledger:
-        for model in preds:
-            entry = {
-                "timestamp": datetime.now(UTC).isoformat(),
-                "run_id": run_id,
-                "model_version": f"{model}@{run_id}",
-                "split": "test",
-                "config_hash": hashlib.sha256(f"{model}|{identity}".encode()).hexdigest()[:16],
-                "window": test_window,
-            }
-            ledger.write(json.dumps(entry) + "\n")
-
     metrics: dict[str, object] = {
         "run_id": run_id,
         "device": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "cpu",

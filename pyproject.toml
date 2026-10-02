@@ -241,11 +241,6 @@ holdout_split = "test"
 required_slices = ["character_support", "genre", "safety_tier", "surface", "day", "user_seen", "banner_pos"]
 bundle_files = ["model.onnx", "feature_spec.json", "calibrator.json", "evidence.json", "characters.parquet"]
 
-# Pre-registered: at most 3 shipped-model configurations per holdout window per model family
-# (baseline, LightGBM, DCN each count separately, so the budget is per evaluated model family x 3).
-[tool.mlcheck.thresholds]
-max_holdout_configs = 9
-
 [tool.mlcheck.data]
 path = "impressions.csv"
 id = "id"

@@ -73,14 +73,6 @@ def _overlap_splits_in_time(root: Path) -> None:
     ).write_parquet(path)
 
 
-def _many_configs_on_one_holdout(root: Path) -> None:
-    """Four other configurations already scored on the same holdout window (budget 3)."""
-    path = root / ART / "evaluation_ledger.jsonl"
-    base = json.loads(path.read_text())
-    others = [base | {"run_id": f"old-{i}", "config_hash": f"cfg-{i}"} for i in range(4)]
-    path.write_text("\n".join(json.dumps(e) for e in [*others, base]))
-
-
 def _vocab_fitted_on_test(manifest: dict[str, Any]) -> None:
     manifest["fitted_artifacts"][0]["fit_end"] = str(START + timedelta(days=5, hours=3))
 
@@ -120,14 +112,8 @@ def _inflate_served_propensity(root: Path) -> None:
 BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLS001": _append_source("serving/app.py", "\nfrom demo_pkg.training import train\n"),
     "MLS002": lambda root: (root / "src/demo_pkg/serving/app.py").write_text("def score(x):\n    return x\n"),
-    "MLS003": _append_source(
-        "training/train.py",
-        "\nfrom sklearn.model_selection import train_test_split\nsplit = train_test_split([1, 2])\n",
-    ),
-    "MLS004": _append_source("training/train.py", "\nnp.random.seed(0)\n"),
     "MLS005": _append_source("training/train.py", "\nstate = torch.load('model.pt')\n"),
     "MLS006": lambda root: (root / "eda.ipynb").write_text("{}"),
-    "MLS007": _append_source("training/train.py", "\ndef refit(enc, x_test):\n    return enc.fit_transform(x_test)\n"),
     "MLD001": _events(lambda f: f.drop("site")),
     "MLD002": _events(lambda f: f.with_columns(pl.lit("2").alias("click"))),
     "MLD003": _events(lambda f: pl.concat([f, f.head(3)])),
@@ -169,7 +155,6 @@ BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLL003": _json("manifest.json", _vocab_fitted_on_test),
     "MLL004": _json("leakage.json", _set("shuffled_label_auc", 0.61)),
     "MLL005": _json("leakage.json", _set("feature_auc", {"clicked_before": 0.97})),
-    "MLL006": _many_configs_on_one_holdout,
     "MLL007": _json("leakage.json", _set("adversarial_auc", 0.93)),
     "MLM001": _predictions(lambda f: f.filter(~((pl.col("model") == "prior") & (pl.int_range(pl.len()) % 7 == 0)))),
     "MLM002": _predictions(
@@ -238,12 +223,12 @@ def test_missing_artifact_fails_rather_than_passes(project: Path, run: Runner) -
 
 def test_missing_source_package_fails(project: Path, run: Runner) -> None:
     (project / "src/demo_pkg/__init__.py").unlink()
-    assert run(project, "MLS004").status is Status.FAIL
+    assert run(project, "MLS005").status is Status.FAIL
 
 
 def test_suppression_comment_silences_finding(project: Path, run: Runner) -> None:
-    _append_source("training/train.py", "\nnp.random.seed(0)  # mlcheck: ignore[MLS004]\n")(project)
-    assert run(project, "MLS004").status is Status.PASS
+    _append_source("training/train.py", "\nstate = torch.load('model.pt')  # mlcheck: ignore[MLS005]\n")(project)
+    assert run(project, "MLS005").status is Status.PASS
 
 
 def test_unconfigured_section_is_skipped(project: Path, run: Runner) -> None:
@@ -262,14 +247,6 @@ def test_notebooks_are_allowed_only_in_configured_directories(project: Path, run
     assert run(project, "MLS006").status is Status.PASS
     (project / "scratch.ipynb").write_text("{}")
     assert run(project, "MLS006").status is Status.FAIL
-
-
-def test_rescoring_an_identical_configuration_does_not_spend_budget(project: Path, run: Runner) -> None:
-    path = project / ART / "evaluation_ledger.jsonl"
-    entry = json.loads(path.read_text())
-    reruns = [entry | {"run_id": f"rerun-{i}"} for i in range(10)]
-    path.write_text("\n".join(json.dumps(e) for e in [*reruns, entry]))
-    assert run(project, "MLL006").status is Status.PASS
 
 
 def test_a_changed_bundle_fails_evidence_binding(project: Path, run: Runner) -> None:

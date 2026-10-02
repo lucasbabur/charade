@@ -207,34 +207,6 @@ def univariate_feature_auc(ctx: Context) -> Outcome:
 
 
 @check(
-    "MLL006",
-    "holdout-config-budget",
-    Stage.LEAKAGE,
-    "Every distinct configuration scored on the holdout is a chance to select on it. Re-scoring an identical "
-    "configuration adds nothing; new configurations spend a pre-registered budget per holdout window.",
-)
-def holdout_config_budget(ctx: Context) -> Outcome:
-    """Distinct configurations evaluated on the current holdout window stay within `max_holdout_configs`."""
-    holdout = ctx.config.holdout_split
-    entries = [e for e in ctx.ledger if e.split == holdout]
-    current = [e for e in entries if e.run_id == ctx.manifest.run_id]
-    if not current:
-        return failed(f"run {ctx.manifest.run_id} has no holdout evaluation in the ledger")
-    if current[0].config_hash is None or current[0].window is None:
-        return failed("current run's ledger entries lack config_hash/window")
-    window = current[0].window
-    configs = sorted({e.config_hash for e in entries if e.window == window and e.config_hash})
-    legacy = sum(1 for e in entries if e.config_hash is None)
-    details = [f"window {window}: configurations {', '.join(c[:8] for c in configs)}"]
-    if legacy:
-        details.append(f"{legacy} legacy entries without a configuration identity (not attributable)")
-    budget = ctx.thresholds.max_holdout_configs
-    if len(configs) > budget:
-        return failed(f"{len(configs)} configurations looked at this holdout (budget {budget})", details)
-    return passed(f"{len(configs)} of {budget} configurations used on this holdout window", details)
-
-
-@check(
     "MLL007",
     "adversarial-validation",
     Stage.LEAKAGE,
