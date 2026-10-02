@@ -1,12 +1,12 @@
 ---
 title: "Operations: infrastructure, delivery, monitoring, runbooks"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # 09 — Operations: infrastructure, delivery, monitoring, runbooks
 
-**Bottom line:** one Terraform module builds an AWS environment (VPC, ECS API behind an internal ALB, Redis, Firehose decision logs, daily gated retraining, alarms, GitHub OIDC); validated with tflint and checkov, never applied.
+**Bottom line:** a Terraform **sketch** of the serving environment (VPC, ECS API behind an internal ALB, Redis, alarms), validated with `terraform validate`, tflint and checkov, **never applied**. Retraining, promotion and the decision-log export are scripts, not managed jobs. A first deployment would surface what static checks cannot (networking, IAM); this page does not claim a working platform.
 
 ## Topology
 
@@ -14,33 +14,32 @@ updated-at: 2026-10-01
 ad servers ──HTTPS──▶ internal ALB (TLS 1.3, /ready health) ──▶ ECS Fargate API tasks (8 vCPU, 8 workers, 3–30 tasks, 3 AZs)
                                                                   │  init container: copy bundles/<run_id>/ (run id pinned in the task definition) → task volume (read-only)
                                                                   ├──▶ ElastiCache Redis 7 (multi-AZ, TLS + AUTH, user history)
-                                                                  └──▶ stdout JSON "decision" events ─▶ CloudWatch Logs ─▶ Firehose ─▶ S3 data/decisions/dt=/hour=
-EventBridge Scheduler 02:30 UTC ──▶ Fargate training task (16 vCPU): pull exports → rolling windows → train → ope → parity → drift → mlcheck → promote (register pinned revision, deploy, verify)
-GitHub Actions ──OIDC──▶ deploy role (ECR push, ECS update, PassRole on task roles only)
+                                                                  └──▶ stdout JSON decision / impression / click events ─▶ CloudWatch Logs
+scripts/retrain.sh (run by hand or any scheduler): pull exports → rolling windows → train → ope → parity → drift → mlcheck → scripts/promote.sh
 ```
 
 | Module | What it owns | Notable choices |
 |---|---|---|
 | `platform` | Composition, KMS CMK (rotation on), VPC via `terraform-aws-modules/vpc` (3 pinned AZ ids, NAT, flow logs) | AZs pinned by zone id so subnets never shift |
-| `bucket` | Private, versioned, encrypted buckets (artifacts, data, logs) | TLS-only policy, owner-enforced ACLs, lifecycle; SSE-S3 only for ALB logs (an AWS constraint) |
-| `ecr` | `api` and `train` repositories | Immutable tags, scan on push, KMS, keep 20 |
-| `ecs_api` | Cluster, ALB, target group, service, autoscaling, IAM | Circuit-breaker rollback; scales on CPU 50 % and on 400 rps per task (the load-tested point); read-only root filesystem; Redis URL injected from Secrets Manager |
+| `bucket` | Private, versioned, encrypted buckets (artifacts, logs) | TLS-only policy, owner-enforced ACLs, lifecycle; SSE-S3 only for ALB logs (an AWS constraint) |
+| `ecr` | `api` repository | Immutable tags, scan on push, KMS, keep 20 |
+| `ecs_api` | Cluster, ALB, target group, service, autoscaling, IAM | Bundle run id pinned in the task definition, so the circuit breaker's rollback also restores the previous model; scales on CPU 50 % and on 400 rps per task (the load-tested point); read-only root filesystem; Redis URL from Secrets Manager |
 | `redis` | Replication group, subnet group, security group, URL secret | Reachable only from API tasks; encrypted at rest and in transit |
-| `decision_logs` | Firehose stream, subscription filter on the `decision`, `impression` and `click` events | GZIP, hourly partitions, KMS; `charade.data.events` joins them into `impressions.csv`-shaped training rows: Firehose decompresses the CloudWatch subscription envelopes and extracts each message, so S3 holds gzipped JSON lines; the builder reads them, deduplicates and holds back labels younger than the 48 h click window (tested end to end against the API; the scheduled job that runs it on S3 is not built) |
-| `training_job` | Task definition, scheduler, roles | Uploads an immutable `bundles/<run_id>/`, then registers an API task definition revision pinned to that run id and deploys it (`scripts/promote.sh`); a failed rollout is rolled back, with its model, by the circuit breaker. `bundles/CURRENT` only records the last successful promotion, which CD passes to Terraform so a release never changes the model. All of it only after mlcheck passes |
 | `observability` | SNS topic, alarms, dashboard | Alarms come from ALB metrics and log metric filters, so no metrics agent is needed |
-| `ci_oidc` | GitHub OIDC provider and deploy role | Trust limited to `main` and `v*` tags of this repository |
+
+**Deliberately not built:** a scheduled training job, a log-export stream and CI deploy credentials. Earlier versions had all three; static review found real defects in them (security groups blocking AWS endpoints, OIDC trust not matching environment jobs, a deploy role without Terraform permissions) that only a real deployment would settle, so they were removed rather than shipped as if they worked.
 
 ## Delivery
 
-| Workflow | Trigger | Does |
+| What | Trigger | Does |
 |---|---|---|
 | `ci.yml` | Every PR and push to `main` | ruff, pyright strict, pytest (coverage ≥ 85 %), mlcheck tests and static gates, OpenAPI drift; terraform fmt/validate, tflint, checkov; actionlint; hadolint (both images), shellcheck, API image build + `/health` smoke |
-| `cd.yml` | Tag `v*` or manual | Build and push both images (commit baked in), then `terraform plan` + `apply` for staging and then prod behind GitHub environment approvals. Inert until the repository variable `AWS_DEPLOY_ROLE_ARN` exists |
-| Daily retrain | 02:30 UTC | `scripts/retrain.sh` in the training image: split windows derived from the export (`charade.data.windows`), gated promotion, redeploy. Verified locally: the image trains on CPU and passes the run gates; the AWS steps have never run |
+| `scripts/retrain.sh` | By hand (daily in production) | Split windows derived from the export (`charade.data.windows`), train, evaluate, mlcheck, then `scripts/promote.sh`. Verified locally: the training image trains on CPU and passes the run gates; the AWS steps have never run |
+| `scripts/promote.sh <run_id>` | After passing gates, or for rollback | Registers an API task definition revision pinned to that bundle, deploys it, waits for the rollout; a failed rollout is rolled back, with its model, by the circuit breaker |
+| `python -m charade.data.events` | Before retraining | Turns exported decision/impression/click logs (JSON lines, gzipped or not) into `impressions.csv` rows: deduplicated, conflicts dropped by reason, labels younger than the 48 h click window held back |
 | Dependabot | Weekly | Actions, uv, Docker base images (Python minor/major pinned), Terraform providers |
 
-**Model promotion is separate from code deploys.** A code release changes how bundles are served. Retraining changes which bundle is served, and only through the mlcheck gates (leakage, calibration, beats-baseline CI, parity, policy invariants). A failed gate pages, and production keeps yesterday's bundle.
+**Model promotion is separate from code deploys.** A code release changes how bundles are served. Retraining changes which bundle is served, and only through the mlcheck gates (leakage, calibration, beats-baseline CI, parity, policy invariants). A failed gate stops the script before promotion, and production keeps yesterday's bundle.
 
 ## Alarms (`modules/observability`)
 
@@ -50,7 +49,6 @@ GitHub Actions ──OIDC──▶ deploy role (ECR push, ECS update, PassRole o
 | `api-5xx-rate` | Target 5xx > 0.5 % for 5 min | See [Errors](#errors) |
 | `degraded` | > 50 decisions in 5 min served without the feature store | Redis health: failover, connections, CPU; serving continues with cold-user defaults |
 | `no_fill` | > 500 all-gated decisions in 5 min | A brand-safety matrix change or exhausted budgets; check `gate_reasons` in the decision logs |
-| `retrain-gate-failure` | The daily run reported a failing mlcheck gate | See [Retraining](#retraining) |
 
 **What else to watch** (Prometheus at `/metrics`, or the decision logs):
 - pCTR distribution against the training snapshot
@@ -71,10 +69,10 @@ GitHub Actions ──OIDC──▶ deploy role (ECR push, ECS update, PassRole o
 - **`no candidate could be scored`:** non-finite inputs. Inspect the request (the fixture test shows the guard). The API never returns 5xx for Redis outages.
 
 ### Retraining
-1. Open the run's `mlcheck` output in the training log group. Each failing code links to [mlcheck.md](mlcheck.md).
+1. Read the run's `mlcheck` output. Each failing code links to [mlcheck.md](mlcheck.md).
 2. Data gates (MLD*): an upstream export changed. Fix the export; do not relax the contract.
 3. Model gates (MLM*): compare `runs/<run_id>/` with the previous run's `metrics.json`. A real regression needs investigation, not a forced promotion.
-4. To promote or roll back manually: `scripts/promote.sh <run_id>` (with the training task's environment). It registers a revision pinned to that bundle, deploys and waits; rolling back the task definition alone also rolls back the model.
+4. To promote or roll back manually: `scripts/promote.sh <run_id>`. It registers a revision pinned to that bundle, deploys and waits; rolling back the task definition alone also rolls back the model.
 
 ### Redis
 Losing Redis loses user history for a few hours of degraded serving; it is not an outage. Rebuild from the last 24 h of decision logs and impression events if needed.
@@ -88,6 +86,6 @@ Losing Redis loses user history for a few hours of degraded serving; it is not a
 | NAT gateways (3) | ~$100 |
 | ALB | ~$25 |
 | Daily training (16 vCPU, about 30 min) | < $10 |
-| S3 and Firehose | Tens of dollars |
+| S3 and CloudWatch Logs | Tens of dollars |
 
 These are order-of-magnitude figures from public on-demand prices; verify before budgeting. Savings Plans and Graviton (`cpu_architecture = "ARM64"`, onnxruntime supports it) are the first levers.

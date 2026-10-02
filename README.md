@@ -42,7 +42,7 @@ uv run poe                                     # list every task
 
 The API contract is committed at [docs/api/openapi.json](docs/api/openapi.json) and regenerated with `uv run poe openapi`. CI fails if it is stale.
 
-Infrastructure (AWS, Terraform, validated not applied) and delivery are described in [docs/09-operations.md](docs/09-operations.md).
+The infrastructure sketch (AWS, Terraform, validated not applied) and delivery are described in [docs/09-operations.md](docs/09-operations.md).
 
 ## ⚙️ Settings
 
