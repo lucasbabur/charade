@@ -38,14 +38,14 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 
 | File | Content | Gates |
 |---|---|---|
-| `manifest.json` | run id, git sha + dirty flag, config hash, sha256 per data file, split windows, every fitted artifact with `fit_split`/`fit_end`, seeds per model, library versions | MLR*, MLL002–003 |
+| `manifest.json` | run id, git sha + dirty flag, config hash, sha256 per data file, split windows, every fitted artifact with `fit_split`/`fit_end`, seeds per model, library versions, bundle digest | MLR*, MLL002–003 |
 | `splits.parquet` | `id, split, ts` | MLL001–002 |
 | `predictions.parquet` | `id, split, model, label, pred, ts, slice_<name>…` for primary **and** baseline on val + test | MLM* |
 | `leakage.json` | shuffled-label AUC, per-feature univariate AUC, adversarial AUC | MLL004–005, MLL007 |
 | `evaluation_ledger.jsonl` | one line per evaluation: run, model version, split, configuration hash (model + features + policy + windows), window | MLL006 |
-| `parity.json` | offline vs serving features, torch vs ONNX outputs | MLV001–002 |
-| `latency.json` | load-test p50/p95/p99, error rate, N candidates | MLV003–004 |
-| `ope.json` | per policy and estimator: value, CI, ESS, max weight | MLP001–002 |
+| `parity.json` | offline vs serving features, torch vs ONNX outputs, bundle digest | MLV001–002, MLR005 |
+| `latency.json` | load-test p50/p95/p99, error rate, N candidates, duration, digest reported by the tested API | MLV003–004, MLR005 |
+| `ope.json` | per policy and estimator: value, CI, ESS, max weight; bundle digest | MLP001–002, MLR005 |
 | `decisions.jsonl` | sampled decision logs: candidates (with per-candidate propensity), gates, chosen id, propensity, exploration flag | MLP003–005 |
 | `drift.json` | PSI per feature per period vs reference | MLX001 |
 
@@ -94,6 +94,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLR002 | repro | error | data-hash-matches | Reported metrics are only meaningful for the exact bytes the model was trained on. |
 | MLR003 | repro | error | clean-git-tree | A model trained from uncommitted code cannot be traced to a reviewable commit. |
 | MLR004 | repro | error | seed-count | Neural nets vary across seeds by about as much as many feature changes; one seed cannot separate the two. |
+| MLR005 | repro | error | evidence-bound-to-bundle | Parity, latency and policy evidence only vouch for the model they measured; a stale report would pass gates for a model it never saw. |
 | MLS001 | static | error | serving-no-training-deps | The serving path must not import training frameworks, even transitively: they bloat the image, slow cold starts and invite fitting code into the request path. |
 | MLS002 | static | error | serving-uses-shared-features | Training and serving must build features with the same code; a serving path that re-implements features is the classic source of train/serve skew. |
 | MLS003 | static | error | no-shuffled-split | CTR data is time-ordered; random or k-fold splits leak future hours, shared users and repeated creatives into training and overstate offline metrics. |

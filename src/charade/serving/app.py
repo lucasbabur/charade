@@ -247,6 +247,7 @@ async def model_info(runtime: Annotated[Runtime, Depends(_ready_runtime)]) -> Mo
     assert runtime.scorer is not None  # noqa: S101
     return ModelInfo(
         model_version=runtime.model_version,
+        bundle_sha256=runtime.bundle_sha256,
         feature_groups=[str(g) for g in runtime.scorer.spec.groups],
         calibrator=str(runtime.scorer.calibrator.kind),
         characters=len(runtime.characters),

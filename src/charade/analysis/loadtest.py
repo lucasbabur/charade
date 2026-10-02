@@ -6,6 +6,7 @@ the creative pool, weighted by volume. `summarize` turns Locust's CSV stats into
 
 import json
 import sys
+import urllib.request
 from pathlib import Path
 
 import numpy as np
@@ -39,9 +40,12 @@ def build_requests(out: Path = OUT, n_requests: int = N_REQUESTS, n_candidates: 
     return path
 
 
-def summarize(stats_csv: Path, n_candidates: int = N_CANDIDATES) -> dict[str, object]:
-    """Locust `*_stats.csv` -> latency.json fields for the /v1/rank row."""
-    stats = pl.read_csv(stats_csv).filter(pl.col("Name") == "/v1/rank").row(0, named=True)
+def summarize(stats_csv: Path, host: str, n_candidates: int = N_CANDIDATES) -> dict[str, object]:
+    """Locust `*_stats.csv` -> latency.json fields for the /v1/rank row, naming the bundle `host` served."""
+    with urllib.request.urlopen(f"{host.rstrip('/')}/v1/model", timeout=5) as response:  # noqa: S310 - local host
+        served = json.loads(response.read())["bundle_sha256"]
+    table = pl.read_csv(stats_csv).filter(pl.col("Name") != "Aggregated")
+    stats = table.filter(pl.col("Name") == "/v1/rank").row(0, named=True)
     requests = int(stats["Request Count"])
     return {
         "source": "locust",
@@ -51,13 +55,15 @@ def summarize(stats_csv: Path, n_candidates: int = N_CANDIDATES) -> dict[str, ob
         "p50_ms": float(stats["50%"]),
         "p95_ms": float(stats["95%"]),
         "p99_ms": float(stats["99%"]),
-        "error_rate": int(stats["Failure Count"]) / max(requests, 1),
+        # Errors over every endpoint (ranking and the impression/click events), latency for ranking only.
+        "error_rate": int(table["Failure Count"].sum()) / max(int(table["Request Count"].sum()), 1),
+        "bundle_sha256": served,
     }
 
 
 if __name__ == "__main__":
     if sys.argv[1:2] == ["summarize"]:
-        summary = summarize(Path(sys.argv[2]))
+        summary = summarize(Path(sys.argv[2]), sys.argv[3])
         get_settings().artifacts_dir.joinpath("latency.json").write_text(json.dumps(summary, indent=2))
         Path("reports/serving").mkdir(parents=True, exist_ok=True)
         Path("reports/serving/latency.json").write_text(json.dumps(summary, indent=2))

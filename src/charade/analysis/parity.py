@@ -18,7 +18,7 @@ from charade.analysis.requests import request_from_row
 from charade.config import Settings, get_settings
 from charade.features.spec import encode
 from charade.models.dataset import build_frame
-from charade.scoring.scorer import Scorer
+from charade.scoring.scorer import Scorer, bundle_sha256
 from charade.serving.assemble import AD_FIELDS, assemble, epoch_hour
 from charade.serving.store import MemoryStore, Served
 
@@ -47,7 +47,7 @@ async def _compare(
     return worst, mismatches, checked
 
 
-def run(settings: Settings | None = None, data_dir: Path | None = None) -> dict[str, float]:
+def run(settings: Settings | None = None, data_dir: Path | None = None) -> dict[str, object]:
     """Write `parity.json` into the artifacts directory."""
     settings = settings or get_settings()
     art = settings.artifacts_dir
@@ -64,11 +64,12 @@ def run(settings: Settings | None = None, data_dir: Path | None = None) -> dict[
     }
     worst, mismatches, checked = asyncio.run(_compare(users, set(sample["id"].to_list()), scorer, characters))
     export = json.loads((art / "export.json").read_text())
-    report = {
+    report: dict[str, object] = {
         "n_rows": checked,
         "train_serve_max_abs_diff": worst,
         "categorical_mismatches": mismatches,
         "onnx_max_abs_diff": export["onnx_max_abs_diff"],
+        "bundle_sha256": bundle_sha256(art),
     }
     (art / "parity.json").write_text(json.dumps(report, indent=2))
     return report

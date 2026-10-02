@@ -146,7 +146,7 @@ refit-study = { cmd = "python -m charade.models.refit", help = "Should the model
 ablate = { cmd = "python -m charade.models.ablate", help = "Feature-group ablations on validation; writes reports/models/ablations.csv" }
 ope = { cmd = "python -m charade.analysis.policy_eval", help = "Off-policy evaluation of ranking policies on test; writes ope.json, decisions.jsonl, reports/policy/ope.md" }
 parity = { cmd = "python -m charade.analysis.parity", help = "Train/serve feature parity on replayed test requests; writes parity.json" }
-loadtest = { shell = "python -m charade.analysis.loadtest && locust -f tests/load/locustfile.py --headless -u ${USERS:-32} -r 32 -t ${DURATION:-90s} --host ${HOST:-http://127.0.0.1:8000} --csv artifacts/loadtest/locust --only-summary --exit-code-on-error 0 && python -m charade.analysis.loadtest summarize artifacts/loadtest/locust_stats.csv", help = "Load-test a running API (docker compose up) and write latency.json" }
+loadtest = { shell = "python -m charade.analysis.loadtest && locust -f tests/load/locustfile.py --headless -u ${USERS:-32} -r 32 -t ${DURATION:-90s} --host ${HOST:-http://127.0.0.1:8000} --csv artifacts/loadtest/locust --only-summary --exit-code-on-error 0 && python -m charade.analysis.loadtest summarize artifacts/loadtest/locust_stats.csv ${HOST:-http://127.0.0.1:8000}", help = "Load-test a running API (docker compose up) and write latency.json" }
 samples = { cmd = "python -m charade.analysis.samples", help = "Rank two example chat contexts through the API; writes reports/sample_rankings.json" }
 coldstart = { cmd = "python -m charade.analysis.coldstart", help = "Cold-start signal, priors and graduation analysis; writes reports/coldstart/" }
 drift = { cmd = "python -m charade.analysis.drift", help = "PSI, churn, staleness backtest, online recalibration; writes drift.json and reports/drift/" }
@@ -239,6 +239,7 @@ baseline_model = "logreg"
 split_order = ["train", "val", "test"]
 holdout_split = "test"
 required_slices = ["character_support", "genre", "safety_tier", "surface", "day", "user_seen", "banner_pos"]
+bundle_files = ["model.onnx", "feature_spec.json", "calibrator.json", "evidence.json", "characters.parquet"]
 
 # Pre-registered: at most 3 shipped-model configurations per holdout window per model family
 # (baseline, LightGBM, DCN each count separately, so the budget is per evaluated model family x 3).

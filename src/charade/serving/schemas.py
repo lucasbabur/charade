@@ -198,6 +198,7 @@ class ModelInfo(BaseModel):
     """What is loaded."""
 
     model_version: str
+    bundle_sha256: str = Field(description="Digest of the loaded bundle; load-test and parity reports must name it")
     feature_groups: list[str]
     calibrator: str
     characters: int

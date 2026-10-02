@@ -33,7 +33,7 @@ from charade.models.core import SPLITS, Prepared, load_prepared, logits, train_d
 from charade.models.export import export_onnx, torch_logits
 from charade.models.gbdt import predict_gbdt, train_gbdt
 from charade.ranking.evidence import build_evidence
-from charade.scoring.scorer import CALIBRATOR_FILE, EVIDENCE_FILE, MODEL_FILE, SPEC_FILE, Scorer
+from charade.scoring.scorer import CALIBRATOR_FILE, EVIDENCE_FILE, MODEL_FILE, SPEC_FILE, Scorer, bundle_sha256
 from charade.text.embed import Provider, derived_path
 
 REPORTS = Path("reports/models")
@@ -215,6 +215,7 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
         "fitted_artifacts": fitted,
         "model_seeds": {PRIMARY: cfg.dcn.seeds, BASELINE: [settings.seed], GBDT: cfg.dcn.seeds},
         "library_versions": {p: version(p) for p in ("torch", "lightgbm", "polars", "onnxruntime", "scikit-learn")},
+        "bundle_sha256": bundle_sha256(out),
     }
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2))
     # Configuration identity: everything that can be changed after looking at results. Re-scoring the

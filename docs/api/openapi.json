@@ -258,6 +258,11 @@
       "ModelInfo": {
         "description": "What is loaded.",
         "properties": {
+          "bundle_sha256": {
+            "description": "Digest of the loaded bundle; load-test and parity reports must name it",
+            "title": "Bundle Sha256",
+            "type": "string"
+          },
           "calibrator": {
             "title": "Calibrator",
             "type": "string"
@@ -280,6 +285,7 @@
         },
         "required": [
           "model_version",
+          "bundle_sha256",
           "feature_groups",
           "calibrator",
           "characters"

@@ -1,5 +1,6 @@
 """ONNX scorer: encoded features -> calibrated pCTR. Loads `model.onnx`, `feature_spec.json`, `calibrator.json`."""
 
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -14,6 +15,16 @@ SPEC_FILE = "feature_spec.json"
 CALIBRATOR_FILE = "calibrator.json"
 EVIDENCE_FILE = "evidence.json"
 CHARACTERS_FILE = "characters.parquet"
+BUNDLE_FILES = (MODEL_FILE, SPEC_FILE, CALIBRATOR_FILE, EVIDENCE_FILE, CHARACTERS_FILE)
+"""What serves traffic; every evidence report names their digest (mlcheck MLR005)."""
+
+
+def bundle_sha256(directory: Path) -> str:
+    """sha256 over `name NUL sha256(file) LF` per bundle file in sorted order (mlcheck's `bundle_digest`)."""
+    outer = hashlib.sha256()
+    for name in sorted(BUNDLE_FILES):
+        outer.update(f"{name}\0{hashlib.sha256((directory / name).read_bytes()).hexdigest()}\n".encode())
+    return outer.hexdigest()
 
 
 class Scorer:

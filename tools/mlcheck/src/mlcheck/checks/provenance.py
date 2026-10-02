@@ -6,7 +6,8 @@ from pathlib import Path
 
 import polars as pl
 
-from mlcheck.context import Context
+from mlcheck.context import Context, NotConfiguredError
+from mlcheck.contract import bundle_digest
 from mlcheck.registry import check
 from mlcheck.result import Outcome, Severity, Stage, failed, passed
 
@@ -82,6 +83,28 @@ def seed_count(ctx: Context) -> Outcome:
     if distinct < ctx.thresholds.min_seeds:
         return failed(f"{ctx.config.primary_model}: {distinct} distinct seeds, need {ctx.thresholds.min_seeds}")
     return passed(f"{ctx.config.primary_model}: {distinct} seeds")
+
+
+@check(
+    "MLR005",
+    "evidence-bound-to-bundle",
+    Stage.REPRO,
+    "Parity, latency and policy evidence only vouch for the model they measured; a stale report would pass gates "
+    "for a model it never saw.",
+)
+def evidence_bound_to_bundle(ctx: Context) -> Outcome:
+    """The bundle still hashes to the manifest's digest, and parity, OPE and (if present) latency name it."""
+    files = ctx.config.bundle_files
+    if not files:
+        raise NotConfiguredError("bundle_files not configured")
+    actual = bundle_digest(ctx.root / ctx.config.artifacts_dir, files)
+    reports = {"manifest": ctx.manifest.bundle_sha256, "parity": ctx.parity.bundle_sha256, "ope": ctx.ope.bundle_sha256}
+    if (ctx.root / ctx.config.artifacts_dir / "latency.json").is_file():
+        reports["latency"] = ctx.latency.bundle_sha256
+    stale = [f"{name}: {digest[:12]}" for name, digest in reports.items() if digest != actual]
+    if stale:
+        return failed(f"bundle {actual[:12]}; evidence from another bundle", stale)
+    return passed(f"bundle {actual[:12]}: {', '.join(reports)} match")
 
 
 @check("MLL001", "split-disjoint", Stage.LEAKAGE, "An event in two splits is evaluated on data it was trained on.")
