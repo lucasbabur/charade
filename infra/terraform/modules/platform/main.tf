@@ -1,5 +1,6 @@
-# One Charade environment: network, encryption, storage, registry, Redis, API, decision logs,
-# daily retraining, alarms and CI access. Environments differ only in sizing variables.
+# One Charade serving environment: network, encryption, storage, registry, Redis, API and alarms.
+# A sketch validated by terraform validate, tflint and checkov, never applied. Retraining and the
+# decision-log export run as scripts (scripts/retrain.sh, charade.data.events), not as managed jobs.
 
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
@@ -93,15 +94,6 @@ module "artifacts_bucket" {
   tags              = local.tags
 }
 
-module "data_bucket" {
-  source            = "../bucket"
-  bucket_name       = "${local.name}-data-${data.aws_caller_identity.current.account_id}"
-  kms_key_arn       = aws_kms_key.this.arn
-  access_log_bucket = module.logs_bucket.bucket_name
-  expire_days       = var.data_retention_days
-  tags              = local.tags
-}
-
 module "ecr" {
   source = "../ecr"
   name   = local.name
@@ -141,33 +133,6 @@ module "redis" {
   tags                      = local.tags
 }
 
-module "decision_logs" {
-  source             = "../decision_logs"
-  name               = local.name
-  bucket_arn         = module.data_bucket.bucket_arn
-  api_log_group_name = module.api.log_group_name
-  kms_key_arn        = aws_kms_key.this.arn
-  tags               = local.tags
-}
-
-module "training" {
-  source                = "../training_job"
-  name                  = local.name
-  cluster_arn           = module.api.cluster_arn
-  api_service_arn       = module.api.service_arn
-  api_role_arns         = module.api.task_role_arns
-  vpc_id                = module.vpc.vpc_id
-  vpc_cidr              = var.vpc_cidr
-  private_subnet_ids    = module.vpc.private_subnets
-  image                 = "${module.ecr.repository_urls["train"]}:${var.train_image_tag}"
-  data_uri              = "s3://${module.data_bucket.bucket_name}/exports/"
-  data_bucket_arn       = module.data_bucket.bucket_arn
-  artifacts_bucket_arn  = module.artifacts_bucket.bucket_arn
-  artifacts_bucket_name = module.artifacts_bucket.bucket_name
-  kms_key_arn           = aws_kms_key.this.arn
-  tags                  = local.tags
-}
-
 module "observability" {
   source                  = "../observability"
   name                    = local.name
@@ -175,17 +140,7 @@ module "observability" {
   alb_arn_suffix          = module.api.alb_arn_suffix
   target_group_arn_suffix = module.api.target_group_arn_suffix
   api_log_group_name      = module.api.log_group_name
-  train_log_group_name    = module.training.log_group_name
   kms_key_arn             = aws_kms_key.this.arn
   tags                    = local.tags
 }
 
-module "ci" {
-  source              = "../ci_oidc"
-  name                = local.name
-  repository          = var.github_repository
-  create_provider     = var.create_github_oidc_provider
-  ecr_repository_arns = values(module.ecr.repository_arns)
-  task_role_arns      = module.api.task_role_arns
-  tags                = local.tags
-}

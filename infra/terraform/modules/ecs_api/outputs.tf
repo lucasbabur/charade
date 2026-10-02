@@ -9,7 +9,7 @@ output "cluster_arn" {
 }
 
 output "service_arn" {
-  description = "ECS service ARN (the retrain job redeploys it)."
+  description = "ECS service ARN (scripts/promote.sh redeploys it)."
   value       = aws_ecs_service.api.id
 }
 

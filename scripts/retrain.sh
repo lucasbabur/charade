@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Daily retrain inside the training image (infra/terraform/modules/training_job):
+# Daily retrain inside the training image (docker/train.Dockerfile), run by hand or by any scheduler:
 # pull exports -> derive rolling windows -> train -> evaluate -> mlcheck -> promote (pinned revision).
 #
 # Promotion: the bundle is uploaded to an immutable prefix bundles/<run_id>/, then scripts/promote.sh

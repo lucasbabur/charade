@@ -23,11 +23,6 @@ variable "api_log_group_name" {
   type        = string
 }
 
-variable "train_log_group_name" {
-  description = "Training log group (mlcheck output)."
-  type        = string
-}
-
 variable "kms_key_arn" {
   description = "KMS key for the SNS topic."
   type        = string
