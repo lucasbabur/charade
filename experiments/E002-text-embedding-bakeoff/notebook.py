@@ -21,7 +21,7 @@
 #
 # **Question:** Does a character's description carry CTR signal beyond its genre and safety tier?
 #
-# **Method:** Embed every description (TF-IDF->SVD, Qwen3-Embedding-0.6B on the GPU; OpenAI when a key with quota exists), check 5-NN recovery of genre and tier, and probe the character CTR residual over genre x tier with ridge regression trained on training characters and scored on validation characters.
+# **Method:** Embed every description (TF-IDF->SVD, Qwen3-Embedding-0.6B on the GPU), check 5-NN recovery of genre and tier, and probe the character CTR residual over genre x tier with ridge regression trained on training characters and scored on validation characters.
 
 # %%
 from charade.analysis.experiment import setup
@@ -30,16 +30,10 @@ ctx = setup()
 f"mode: {'smoke (fixture, tiny model)' if ctx.smoke else 'full data'}"
 
 # %%
-import os
-
 from charade.text import bakeoff
 from charade.text.embed import DERIVED_DIR, Provider
 
-providers = (
-    [Provider.TFIDF]
-    if ctx.smoke
-    else [p for p in Provider if p is not Provider.OPENAI or os.environ.get("OPENAI_API_KEY")]
-)
+providers = [Provider.TFIDF] if ctx.smoke else list(Provider)
 derived = ctx.reports / "derived" if ctx.smoke else DERIVED_DIR
 table = bakeoff.run(
     providers, ctx.data_dir, derived, ctx.reports / "text_bakeoff.csv", min_impressions=5 if ctx.smoke else 100

@@ -19,11 +19,3 @@ def test_reads_tool_charade_table_from_pyproject() -> None:
 def test_environment_overrides_pyproject(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CHARADE_SEED", "7")
     assert get_settings().seed == 7
-
-
-def test_api_keys_come_from_unprefixed_env_and_stay_secret(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
-    settings = get_settings()
-    assert settings.anthropic_api_key is not None
-    assert settings.anthropic_api_key.get_secret_value() == "sk-test"
-    assert "sk-test" not in repr(settings)

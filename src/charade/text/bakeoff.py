@@ -11,7 +11,6 @@ The extrinsic, decisive test (DCN validation NE with and without text) runs in t
 """
 
 import math
-import os
 from pathlib import Path
 
 import numpy as np
@@ -88,5 +87,4 @@ def run(
 
 
 if __name__ == "__main__":
-    available = [p for p in Provider if p is not Provider.OPENAI or os.environ.get("OPENAI_API_KEY")]
-    print(run(available, get_settings().data_dir))
+    print(run(list(Provider), get_settings().data_dir))
