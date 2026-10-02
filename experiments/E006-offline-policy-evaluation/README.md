@@ -5,7 +5,7 @@ hypotheses: [H11, H6]
 status: concluded
 conclusion: "Under reconstructed candidate sets and frequency-share propensities, with DR using an independent LightGBM reward model, the shipped policy's estimated lift over logging is +1.46 pp CTR [+0.50, +2.38] (ungated greedy +1.65 pp; validation day +1.96 pp), on every impression of a multi-creative cell; ESS ~4 % of rows; a demonstration of the evaluation, not a measured production lift."
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # E006 — Offline evaluation of ranking policies
