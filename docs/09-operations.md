@@ -27,13 +27,14 @@ scripts/retrain.sh (run by hand or any scheduler): pull exports → rolling wind
 | `redis` | Replication group, subnet group, security group, URL secret | Reachable only from API tasks; encrypted at rest and in transit |
 | `observability` | SNS topic, alarms, dashboard | Alarms come from ALB metrics and log metric filters, so no metrics agent is needed |
 
-**Deliberately not built:** a scheduled training job, a log-export stream and CI deploy credentials. Earlier versions had all three; static review found real defects in them (security groups blocking AWS endpoints, OIDC trust not matching environment jobs, a deploy role without Terraform permissions) that only a real deployment would settle, so they were removed rather than shipped as if they worked.
+**Deliberately not built:** a scheduled training job, a log-export stream and CI deploy credentials to AWS. Earlier versions had all three; static review found real defects in them (security groups blocking AWS endpoints, OIDC trust not matching environment jobs, a deploy role without Terraform permissions) that only a real deployment would settle, so they were removed rather than shipped as if they worked.
 
 ## Delivery
 
 | What | Trigger | Does |
 |---|---|---|
 | `ci.yml` | Every PR and push to `main` | ruff, pyright strict, pytest (coverage ≥ 85 %), mlcheck tests and static gates, OpenAPI drift; terraform fmt/validate, tflint, checkov; actionlint; hadolint (both images), shellcheck, API image build + `/health` smoke |
+| `release.yml` | Tag `v*` | Builds the API image from the tagged commit and pushes it to GHCR as `charade-api:<version>` and `:sha-<commit>`. Delivery stops at this versioned artifact; nothing is deployed |
 | `scripts/retrain.sh` | By hand (daily in production) | Split windows derived from the export (`charade.data.windows`), train, evaluate, mlcheck, then `scripts/promote.sh`. Verified locally: the training image trains on CPU and passes the run gates; the AWS steps have never run |
 | `scripts/promote.sh <run_id>` | After passing gates, or for rollback | Registers an API task definition revision pinned to that bundle, deploys it, waits for the rollout; a failed rollout is rolled back, with its model, by the circuit breaker |
 | `python -m charade.data.events` | Before retraining | Turns exported decision/impression/click logs (JSON lines, gzipped or not) into `impressions.csv` rows: deduplicated, conflicts dropped by reason, labels younger than the 48 h click window held back |
