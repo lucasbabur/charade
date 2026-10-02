@@ -60,7 +60,7 @@ preds = pl.read_parquet(ctx.settings.artifacts_dir / "predictions.parquet").filt
 order = np.argsort(preds["pred"].to_numpy())
 bins = np.array_split(order, 15)
 p, y = preds["pred"].to_numpy(), preds["label"].to_numpy()
-fig, ax = plt.subplots(figsize=(4.5, 4.5))
+_, ax = plt.subplots(figsize=(4.5, 4.5))
 ax.plot([0, 0.6], [0, 0.6], color="grey", lw=1)
 ax.plot([p[b].mean() for b in bins], [y[b].mean() for b in bins], "o-")
 ax.set(xlabel="predicted CTR", ylabel="observed CTR", title="Reliability, test days")

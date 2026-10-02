@@ -40,7 +40,7 @@ table.with_columns(pl.col(pl.Float64).round(5))
 
 # %%
 rows = table.filter(pl.col("variant") != "all features")
-fig, ax = plt.subplots(figsize=(7, 4))
+_, ax = plt.subplots(figsize=(7, 4))
 ax.errorbar(
     rows["delta_logloss"],
     range(rows.height),

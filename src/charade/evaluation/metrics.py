@@ -32,19 +32,6 @@ def ece(y: Floats, p: Floats, bins: int = 15) -> float:
     return float(sum(len(c) / len(p) * abs(p[c].mean() - y[c].mean()) for c in np.array_split(order, bins) if len(c)))
 
 
-def group_auc(y: Floats, p: Floats, groups: npt.NDArray[np.int64]) -> float:
-    """Impression-weighted AUC within groups that contain both classes (ranking quality per user-hour)."""
-    order = np.argsort(groups, kind="stable")
-    y, p, groups = y[order], p[order], groups[order]
-    bounds = np.flatnonzero(np.diff(groups)) + 1
-    total, weight = 0.0, 0
-    for yy, pp in zip(np.split(y, bounds), np.split(p, bounds), strict=True):
-        if 0 < yy.sum() < len(yy):
-            total += roc_auc_score(yy, pp) * len(yy)
-            weight += len(yy)
-    return total / weight if weight else float("nan")
-
-
 def summary(y: Floats, p: Floats) -> dict[str, float]:
     """Headline metrics for one prediction set."""
     return {

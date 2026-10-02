@@ -6,7 +6,6 @@ passed through the same `derive` and `encode`. `charade.analysis.parity` checks 
 
 from datetime import UTC, datetime
 
-import numpy as np
 import polars as pl
 
 from charade.features.counters import RAW_COUNTER_COLUMNS, UserHistory
@@ -77,8 +76,3 @@ def assemble(
     )
     derived = derive(frame)
     return derived, encode(spec, derived)
-
-
-def nan_free(values: np.ndarray) -> bool:
-    """True when every score is finite."""
-    return bool(np.isfinite(values).all())
