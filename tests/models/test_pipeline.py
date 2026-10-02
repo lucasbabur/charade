@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from charade.analysis import importance
 from charade.config import Settings
 from charade.models import ablate, pipeline
 from charade.scoring.scorer import Scorer
@@ -40,6 +41,15 @@ def test_ablations_compare_against_full_model(tmp_path: Path, monkeypatch: pytes
     table = ablate.run(variants, tmp_path, FIXTURES)
     assert table["variant"].to_list() == ["all features", "- user_history", "+ text (tfidf)"]
     assert table["delta_logloss"][0] == 0.0
+
+
+def test_importance_covers_every_feature_with_intervals(tmp_path: Path) -> None:
+    table = importance.run(_settings(tmp_path), FIXTURES, tmp_path)
+    assert table.height == len(set(table["feature"]))
+    assert {"character_id", "genre", "log_turn"} <= set(table["feature"])
+    assert (table["ci_low"] <= table["permutation_delta"]).all()
+    assert (table["mean_abs_shap"] >= 0).all()
+    assert (tmp_path / "importance.csv").is_file()
 
 
 def test_baked_commit_is_used_inside_images(monkeypatch: pytest.MonkeyPatch) -> None:

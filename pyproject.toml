@@ -142,6 +142,7 @@ text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descrip
 tune = { cmd = "python -m charade.models.tune", help = "Optuna search on the inner split; writes reports/tuning/" }
 train = { cmd = "python -m charade.models.pipeline", help = "Train, calibrate, evaluate once on test, export; writes artifacts and reports/models/metrics.json" }
 refit-study = { cmd = "python -m charade.models.refit", help = "Should the model also train on the validation day? Decided one day earlier; writes reports/models/refit_study.json" }
+importance = { cmd = "python -m charade.analysis.importance", help = "Per-feature LightGBM SHAP and permutation importance on validation; writes reports/models/importance.csv" }
 ablate = { cmd = "python -m charade.models.ablate", help = "Feature-group ablations on validation; writes reports/models/ablations.csv" }
 ope = { cmd = "python -m charade.analysis.policy_eval", help = "Off-policy evaluation of ranking policies on test; writes ope.json, decisions.jsonl, reports/policy/ope.md" }
 parity = { cmd = "python -m charade.analysis.parity", help = "Train/serve feature parity on replayed test requests; writes parity.json" }
