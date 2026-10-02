@@ -33,6 +33,7 @@ import numpy as np
 import polars as pl
 
 from charade.config import Settings, get_settings
+from charade.evaluation.metrics import paired_bootstrap
 from charade.evaluation.ope import Estimate, estimate, lift
 from charade.features.derive import derive
 from charade.features.spec import Group, encode, fit_spec
@@ -43,6 +44,9 @@ from charade.ranking.policy import Candidate, Decision, decide, gate_reasons
 from charade.scoring.scorer import EVIDENCE_FILE, Scorer, bundle_sha256
 
 TOP_K = 10
+GREEDY = "greedy pCTR (no gates)"
+GATED = "greedy pCTR with gates (no exploration)"
+SHIPPED = "shipped policy (gates + 5% exploration)"
 AD_FIELDS = ("C14", "banner_pos", "C15", "C16", "C17", "C18", "C19", "C21")
 CELL = ("site_id", "app_id", "ts")
 DECISION_SAMPLE = 3000
@@ -134,20 +138,23 @@ def policies(rows: dict[int, list[tuple[int, Candidate, str]]], n: int, settings
     The shipped policy's probabilities come from `charade.ranking.policy.decide` itself (the
     serving code), so gates, ordering and exploration cannot drift from production.
     """
-    uniform, greedy, shipped = (np.zeros((n, TOP_K)) for _ in range(3))
+    uniform, greedy, gated, shipped = (np.zeros((n, TOP_K)) for _ in range(4))
+    no_exploration = settings.policy.model_copy(update={"exploration_rate": 0.0})
     for row, entries in rows.items():
         slots = [slot for slot, _, _ in entries]
         uniform[row, slots] = 1 / len(slots)
         best = min(entries, key=lambda e: (-e[1].pctr, -e[1].logit, e[1].candidate_id))
         greedy[row, best[0]] = 1.0
-        decision = decide([c for _, c, _ in entries], entries[0][2], f"ope-{row}", settings.policy)
-        by_id = {r.candidate_id: r.propensity for r in decision.ranked}
-        for slot, candidate, _ in entries:
-            shipped[row, slot] = by_id[candidate.candidate_id]
+        candidates, tier = [c for _, c, _ in entries], entries[0][2]
+        for target, config in ((gated, no_exploration), (shipped, settings.policy)):
+            by_id = {r.candidate_id: r.propensity for r in decide(candidates, tier, f"ope-{row}", config).ranked}
+            for slot, candidate, _ in entries:
+                target[row, slot] = by_id[candidate.candidate_id]
     return {
         "uniform random": uniform,
-        "greedy pCTR (no gates)": greedy,
-        "shipped policy (gates + 5% exploration)": shipped,
+        GREEDY: greedy,
+        GATED: gated,
+        SHIPPED: shipped,
     }
 
 
@@ -177,6 +184,23 @@ class CandidateMatrices:
         """Each row's entry for its logged ad; 0 when that ad is outside the candidate set."""
         inside = self.logged >= 0
         return np.where(inside, matrix[np.arange(len(self.y)), np.where(inside, self.logged, 0)], 0.0)
+
+
+def cost_split(c: CandidateMatrices, pis: dict[str, np.ndarray]) -> dict[str, tuple[float, float, float]]:
+    """DR CTR given up by the gates (greedy -> gated greedy) and by exploration (gated greedy -> shipped).
+
+    Paired per-row doubly robust values with an hour-block bootstrap, so each step has its own CI.
+    """
+
+    def dr_rows(pi: np.ndarray) -> np.ndarray:
+        return (pi * c.reward).sum(axis=1) + c.at_logged(pi) / c.mu * (c.y - c.at_logged(c.reward))
+
+    greedy, gated, shipped = (dr_rows(pis[k]) for k in (GREEDY, GATED, SHIPPED))
+    return {
+        "gates (brand safety, frequency cap)": paired_bootstrap(greedy - gated, c.blocks),
+        "exploration (5 %)": paired_bootstrap(gated - shipped, c.blocks),
+        "total": paired_bootstrap(greedy - shipped, c.blocks),
+    }
 
 
 def reward_model(frame: pl.DataFrame, settings: Settings) -> Callable[[pl.DataFrame], np.ndarray]:
@@ -266,7 +290,8 @@ def run(
     q_logged = c.at_logged(c.reward)
     results: list[Estimate] = [_observed(c.y, c.blocks)]
     lifts: dict[str, dict[str, tuple[float, float, float]]] = {}
-    for name, pi in policies(c.candidates, n, settings).items():
+    pis = policies(c.candidates, n, settings)
+    for name, pi in pis.items():
         args = (c.at_logged(pi), c.mu, c.y, q_logged, (pi * c.reward).sum(axis=1), c.blocks)
         results += estimate(name, *args)
         lifts[name] = lift(*args)
@@ -276,7 +301,7 @@ def run(
             json.dumps({"policies": [r.model_dump() for r in results], "bundle_sha256": bundle_sha256(art)}, indent=2)
         )
         _write_decisions(c.candidates, settings, art / "decisions.jsonl")
-    _write_report(results, lifts, c.test_rows, n, c.served, report, split)
+    _write_report(results, lifts, c.test_rows, n, c.served, report, split, cost_split(c, pis))
     return results
 
 
@@ -328,7 +353,8 @@ def _write_report(
     rows: int,
     served: pl.DataFrame,
     path: Path,
-    split: str = "test",
+    split: str,
+    costs: dict[str, tuple[float, float, float]],
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     cells = served.select(*CELL).n_unique()
@@ -359,6 +385,12 @@ def _write_report(
             for name, v in lifts.items()
             for s, d in [(v["snips"], v["dr"])]
         ],
+        "",
+        "## What the shipped policy gives up against ungated greedy (DR, paired hour-block bootstrap)",
+        "",
+        "| Step | CTR cost [95 % CI] |",
+        "|---|---|",
+        *[f"| {step} | {d:+.4f} [{lo:+.4f}, {hi:+.4f}] |" for step, (d, lo, hi) in costs.items()],
     ]
     path.write_text("\n".join(lines) + "\n")
 

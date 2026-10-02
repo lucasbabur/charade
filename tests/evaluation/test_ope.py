@@ -40,6 +40,8 @@ def test_policy_evaluation_writes_ope_and_gate_respecting_decisions(bundle: Sett
     results = policy_eval.run(bundle, report=tmp_path / "ope.md")
     names = {r.name for r in results}
     assert {"logging (observed)", "greedy pCTR (no gates)", "shipped policy (gates + 5% exploration)"} <= names
+    assert policy_eval.GATED in names
+    assert "What the shipped policy gives up" in (tmp_path / "ope.md").read_text()
     decisions = [json.loads(line) for line in (bundle.artifacts_dir / "decisions.jsonl").read_text().splitlines()]
     assert decisions
     for d in decisions:
