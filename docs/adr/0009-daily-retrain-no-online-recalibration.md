@@ -1,7 +1,7 @@
 ---
 title: "ADR 0009: Retrain daily; do not ship online recalibration"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # ADR 0009: Retrain daily; do not ship online recalibration
@@ -13,7 +13,7 @@ Staleness backtest: about +0.003 NE per day of model age. Online per-genre recal
 
 ## Decision
 
-Retrain every day at 02:30 UTC, early-stopping and calibrating on the most recent complete day; promote only through mlcheck. Monitor the calibration ratio and alarm outside [0.9, 1.1].
+Retrain every day (`scripts/retrain.sh`; scheduling it is a deployment concern), early-stopping and calibrating on the most recent complete day; promote only through mlcheck. Monitor the calibration ratio and alarm outside [0.9, 1.1].
 
 ## Consequences
 

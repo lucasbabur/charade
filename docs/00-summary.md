@@ -1,7 +1,7 @@
 ---
 title: "Summary"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # 00 — Summary
@@ -45,7 +45,7 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 - **Delivery:**
   - CI on every PR: lint, strict types, about 180 tests at ≥ 85 % coverage, mlcheck, OpenAPI drift, Terraform validate/tflint/checkov, hadolint/shellcheck, image build and smoke test.
   - Every change landed through a PR into `main`, with every commit passing on its own.
-  - AWS in Terraform, validated not applied; daily gated retraining ([09](09-operations.md)).
+  - A Terraform sketch of the AWS serving environment, validated not applied; retraining and promotion as scripts ([09](09-operations.md)).
 
 ## Limits, stated plainly
 
@@ -55,7 +55,7 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 - **Brand-safety preferences** are illustrative; the data has none.
 - **Budget pacing is not connected to the API.** The pacer and budget gate are tested library code, but there is no spend feed to drive them.
 - **The feedback loop is code, not a running job.** The API logs decisions, impressions and clicks durably, and `charade.data.events` turns them into training rows (tested end to end), but no scheduled job builds the S3 export yet.
-- **Daily retraining is validated, not operated.** Rolling windows, immutable bundle promotion and redeploy are scripted and covered by Terraform validation, but they have never run on AWS.
+- **Infrastructure is a sketch, not a platform.** Rolling windows, gated promotion and pinned-bundle rollback are scripted; the serving environment passes Terraform validation, tflint and checkov. None of it has run on AWS, and the scheduler, log export and CI deploy credentials were deliberately left out.
 - **`confidence` and the evidence intervals are heuristics** derived from training support, not calibrated posteriors.
 - **External reviews found three correctness bugs, all fixed with tests:** Thompson-sampling propensities biased upward; counters that let later-hour events leak into earlier snapshots; and a frequency cap that ignored the current hour, because it reused the causal model feature. The cap now counts every recorded exposure; the feature still excludes the current hour.
 - **MLL006 is a budget, not a proof.** It caps how many distinct configurations look at one holdout window; it cannot prove results were not used to choose among them.

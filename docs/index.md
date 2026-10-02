@@ -1,7 +1,7 @@
 ---
 title: "Documentation index"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # Documentation index
@@ -36,7 +36,7 @@ Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatte
 | [06-cold-start.md](06-cold-start.md) | New characters and users, pre-click signal, graduation |
 | [07-drift-adaptation.md](07-drift-adaptation.md) | Temporal shifts, staleness, recalibration, exposure re-balancing |
 | [08-serving-architecture.md](08-serving-architecture.md) | Request path, latency budget, failure modes |
-| [09-operations.md](09-operations.md) | AWS topology, delivery, alarms, runbooks |
+| [09-operations.md](09-operations.md) | AWS sketch, delivery scripts, alarms, runbooks |
 | [10-next-steps.md](10-next-steps.md) | Data, models, scaling |
 | [mlcheck.md](mlcheck.md) | The 47 ML release gates and their artifact contract |
 | [adr/](adr/) | One decision per file |
