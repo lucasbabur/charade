@@ -6,7 +6,7 @@ updated-at: 2026-10-02
 
 # 05 — Cold start
 
-**Bottom line:** a character is its genre and safety tier (no measurable spread beyond them), so the shipped model has no character ID and scores new characters like old ones: test NE 0.908 cold vs 0.885 warm (n = 1,478, no CI computed; cold predictions run 6.6 % high, ECE 0.026, so the cold slice is less well calibrated than the whole) ([coldstart.md](../reports/coldstart/coldstart.md)).
+**Bottom line:** on this data, character-ID features add nothing beyond genre and safety tier in the ablation, so the shipped model has no character ID and scores new characters like old ones: test NE 0.908 cold vs 0.885 warm (n = 1,478, no CI computed; cold predictions run 6.6 % high, ECE 0.026, so the cold slice is less well calibrated than the whole) ([coldstart.md](../reports/coldstart/coldstart.md)).
 
 ## A brand-new character
 
