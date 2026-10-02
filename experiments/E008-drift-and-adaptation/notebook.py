@@ -42,7 +42,7 @@ tables["Daily mix and churn"]
 
 # %%
 stale = tables["Staleness: frozen models scored on later days (1 seed each)"]
-fig, ax = plt.subplots(figsize=(6, 4))
+_, ax = plt.subplots(figsize=(6, 4))
 for (day,), part in stale.group_by("scored_day", maintain_order=True):
     ax.plot(part["age_days"], part["ne"], "o-", label=str(day))
 ax.set(xlabel="model age (days since last training day)", ylabel="NE", title="Staleness")

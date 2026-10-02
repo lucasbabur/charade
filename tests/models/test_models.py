@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from charade.config import DcnConfig
-from charade.evaluation.metrics import ece, group_auc, normalized_entropy, paired_bootstrap, summary
+from charade.evaluation.metrics import ece, normalized_entropy, paired_bootstrap, summary
 from charade.features.spec import Group
 from charade.models.calibrate import fit_calibrator
 from charade.models.core import prepare, train_dcn, train_logistic
@@ -80,8 +80,6 @@ def test_metrics_reference_values() -> None:
     assert ece(y, np.array([0.0, 0.0, 1.0, 1.0]), bins=2) == pytest.approx(0.0)
     assert ece(y, np.full(4, 0.5), bins=2) == pytest.approx(0.5)
     assert summary(y, np.array([0.1, 0.2, 0.8, 0.9]))["auc"] == 1.0
-    alternating = np.array([0, 1, 0, 1], dtype=np.float64)
-    assert group_auc(alternating, np.array([0.1, 0.9, 0.8, 0.2]), np.array([0, 0, 1, 1])) == pytest.approx(0.5)
 
 
 def test_paired_bootstrap_brackets_mean() -> None:

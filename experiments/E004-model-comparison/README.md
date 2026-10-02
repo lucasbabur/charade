@@ -5,7 +5,7 @@ hypotheses: [H1, H9]
 status: concluded
 conclusion: "DCN-v2 3-seed ensemble reaches test NE 0.8855 (pred/obs 1.002, no calibration map needed) and beats an equally tuned 3-seed LightGBM ensemble by -0.0040 [-0.0053, -0.0027] and logistic by -0.0117; single model vs single model DCN-LightGBM is -0.0020 [-0.0041, +0.0004], not established."
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # E004 — CTR model comparison on the test days
