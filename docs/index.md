@@ -56,6 +56,7 @@ One folder per experiment in [experiments/](../experiments/): `README.md` (front
 | [E007](../experiments/E007-cold-start-and-graduation/README.md) | Cold start and graduation |
 | [E008](../experiments/E008-drift-and-adaptation/README.md) | Drift, staleness and exposure re-balancing |
 | [E009](../experiments/E009-feature-importance/README.md) | Per-feature importance (SHAP, permutation) |
+| [E010](../experiments/E010-full-avazu-scale/README.md) | Same model family at 9x the data (full Avazu) |
 
 ## Generated reports
 
