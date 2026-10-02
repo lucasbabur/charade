@@ -6,7 +6,7 @@ updated-at: 2026-10-01
 
 # 08 — Serving architecture (< 50 ms p99)
 
-**Bottom line:** 100 candidates ranked at **p50 7 / p99 28 ms, 400 rps, 0 errors**, with impression and click events in the mix (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)).
+**Bottom line:** 100 candidates ranked at **p50 8 / p99 25 ms, 400 rps for 90 s**, with impression and click events in the mix (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)). Errors: 2 of 39,839 requests, both impression events answered 503 when Redis exceeded the 10 ms store budget (callers retry; the contract below); 7 of 35,611 rankings served `degraded` for the same reason. The report names the bundle digest the tested API served (mlcheck MLR005). **Scope:** 100 candidates, not the 500 the API accepts; impressions reported for 10 % of rankings; one desktop, not Fargate. A Fargate run with production event volume comes before promising an SLA.
 
 ## Request path
 
@@ -85,7 +85,7 @@ The contract is generated from the code into [docs/api/openapi.json](api/openapi
 ```bash
 uv run poe train && uv run poe parity          # bundle + parity.json
 docker compose up -d --build                   # API (8 workers) + Redis, bundle mounted read-only
-uv run poe loadtest                            # 16 users x 25 rps, 90 s -> latency.json
+USERS=16 uv run poe loadtest                   # 16 users x 25 rps, 90 s -> latency.json (default is 32 users)
 USERS=32 uv run poe loadtest                   # capacity probe
 ```
 
@@ -93,4 +93,4 @@ USERS=32 uv run poe loadtest                   # capacity probe
 
 - **Stateless workers:** scale horizontally behind the ALB (ECS Fargate, [09-operations.md](09-operations.md)). Autoscale on CPU at about 50 % and on request count per target.
 - **Redis:** ElastiCache with replicas. The per-user key design shards cleanly.
-- **Larger N or models:** the model is about 2 ms of the 28 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.
+- **Larger N or models:** the model is about 2 ms of the 25 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.
