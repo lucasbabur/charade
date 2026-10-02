@@ -81,7 +81,7 @@ Reading it: the character layer is worth about 0.010 log loss, more than device 
 
 ## Leakage and shift probes (`artifacts/current/leakage.json`)
 
-- **Shuffled-label retrain:** validation AUC 0.472, inside the chance band. Nothing in the pipeline leaks the label.
+- **Shuffled-label retrain:** validation AUC 0.472, inside the chance band. This shows the model cannot reach the label through the prepared features. It does not certify that every feature was available at serve time, nor any fitting done before features are prepared: labels are permuted after preparation. Availability is covered separately by the causal counters (property-tested) and the train-only fits in [02](02-features.md).
 - **Single features:** the strongest feature on its own is `site_id` at AUC 0.671. No near-perfect single feature exists.
 - **Adversarial validation: train vs test AUC 0.959 (WARN).** The separating features are C14, C17 and C19 (creatives and campaigns rotate: 45 % of test rows show a creative absent from training), then the character ID and the cumulative counters, which grow with time by construction. This is real ad rotation, not leakage. It is why the ad hierarchy (creative → campaign → advertiser) and daily retraining matter; see [07-drift-adaptation.md](07-drift-adaptation.md).
 

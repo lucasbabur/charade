@@ -3,7 +3,7 @@ id: E007
 title: "Cold start and graduation"
 hypotheses: [H10, H8]
 status: concluded
-conclusion: "Characters carry no measurable CTR spread beyond genre x tier, so no character ever graduates; unseen characters score NE 0.906 vs 0.885 for warm ones (n = 1,478, no CI)."
+conclusion: "This synthetic dataset shows no reliable gain from character-specific parameters (the pooled spread beyond genre x tier hits the estimator's floor); unseen characters score NE 0.908 vs 0.885 for warm ones (n = 1,478, no CI), and unseen creatives (43 % of test) are under-predicted by about 5 %."
 created-at: 2026-10-01
 updated-at: 2026-10-01
 ---

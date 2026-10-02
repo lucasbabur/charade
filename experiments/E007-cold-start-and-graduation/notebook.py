@@ -47,6 +47,6 @@ Markdown((ctx.reports / "coldstart" / "coldstart.md").read_text())
 
 # %% [markdown]
 # ## Conclusion
-# Characters carry no measurable CTR spread beyond genre x tier, so no character ever graduates; unseen characters score NE 0.906 vs 0.885 for warm ones (n = 1,478, no CI).
+# This synthetic dataset shows no reliable gain from character-specific parameters (the pooled spread beyond genre x tier hits the estimator's floor); unseen characters score NE 0.908 vs 0.885 for warm ones (n = 1,478, no CI), and unseen creatives (43 % of test) are under-predicted by about 5 %.
 #
 # **Decision:** No character ID in the model; graduation is re-measured on fresh data instead of fixed as a constant.

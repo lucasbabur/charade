@@ -6,7 +6,7 @@ updated-at: 2026-10-01
 
 # 02 — Features
 
-**Bottom line:** 25 embedded categoricals and 10 standardized dense inputs, all fitted on training rows and defined once in `charade.features` for training and serving; groups were kept or dropped by validation ablation ([04](04-models-evaluation.md)).
+**Bottom line:** 25 embedded categoricals and 10 standardized dense inputs, all fitted on training rows (one exception below) and defined once in `charade.features` for training and serving; groups were kept or dropped by validation ablation ([04](04-models-evaluation.md)).
 
 ## Shipped feature set
 
@@ -32,3 +32,5 @@ updated-at: 2026-10-01
 - Dense: nulls and non-finite values become 0 before standardization. That is a defensive guard, after the load test found an out-of-order-event bug that produced −∞.
 - Categorical encoding for ≤ 2,000 rows uses dictionary lookups (the serving path), larger frames use polars `replace_strict`. Both produce identical ids (MLV001).
 - `feature_spec.json` (in the bundle) stores the fields, vocabularies, scaling and groups. The API reads it; nothing is re-fitted at serve time.
+
+**The one transductive fit.** The text experiments' TF-IDF vocabulary, IDF weights and SVD were fitted on every character description, including characters first seen after training; only the final PCA was restricted to training. No labels are involved, so this is transductive preprocessing rather than label leakage, and text is not in the shipped model ([03](03-text-enrichment.md)). It is still an exception to the train-only rule, and would need to be fitted on training characters before any text feature shipped.
