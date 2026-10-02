@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from charade.analysis import importance
+from charade.analysis import fullscale, importance
 from charade.config import Settings
 from charade.models import ablate, pipeline
 from charade.scoring.scorer import Scorer
@@ -50,6 +50,15 @@ def test_importance_covers_every_feature_with_intervals(tmp_path: Path) -> None:
     assert (table["ci_low"] <= table["permutation_delta"]).all()
     assert (table["mean_abs_shap"] >= 0).all()
     assert (tmp_path / "importance.csv").is_file()
+
+
+def test_fullscale_compares_both_models_on_both_datasets(tmp_path: Path) -> None:
+    """The fixture stands in for the full file: extra columns are ignored, the split and groups apply."""
+    report = fullscale.run(FIXTURES / "impressions.csv", _settings(tmp_path), tmp_path / "fullscale.json", user_share=2)
+    sample, larger = report["results"]  # pyright: ignore[reportGeneralTypeIssues]
+    assert larger["rows"]["train"] < sample["rows"]["train"]  # half the users
+    assert {"dcn_v2", "lightgbm"} <= set(sample)
+    assert (tmp_path / "fullscale.json").is_file()
 
 
 def test_baked_commit_is_used_inside_images(monkeypatch: pytest.MonkeyPatch) -> None:
