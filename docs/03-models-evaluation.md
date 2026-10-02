@@ -12,7 +12,7 @@ updated-at: 2026-10-02
 
 | Step | Data | Rationale |
 |---|---|---|
-| Hyperparameter search (Optuna TPE, 60 DCN + 40 LightGBM trials) | Train 10-21..26, select on 10-27 | Keeps 10-28 clean for early stopping, calibration and comparisons |
+| Hyperparameter search (Optuna TPE, 60 DCN + 60 LightGBM trials) | Train 10-21..26, select on 10-27 | Keeps 10-28 clean for early stopping, calibration and comparisons |
 | Training + early stopping (4 validation passes per epoch, patience 4) | Train 10-21..27; stop on 10-28 | Production retrains on everything up to yesterday |
 | Calibration choice (identity / Platt / isotonic) | 10-28, 2-fold over even/odd hours | Fitting on the most recent day absorbs the daily CTR level shift (H9) |
 | Ablations | 10-28, raw logits | Group decisions never look at test |
@@ -36,7 +36,7 @@ updated-at: 2026-10-02
 
 DCN-v2 configuration (tuned): 24-dim field embeddings → 2 low-rank cross layers (rank 64) → MLP 256-128 (dropout 0.3) → logit. AdamW, lr 2.9e-3, batch 2048, weight decay 1.3e-5. Single-seed validation NE (uncalibrated) is 0.8761, 0.8758 and 0.8776. Training everything takes about 76 s on the GTX 1660 SUPER.
 
-**Fairness of the comparison.** Both models get the same tuning effort (60 trials each on the inner split) and the same 3 seeds. Ensembling helps DCN-v2 more than LightGBM: the single-model gap is about half the ensemble gap, and its interval includes zero. What is established: the shipped DCN-v2 ensemble beats the LightGBM ensemble. What is not: that the architecture alone beats boosted trees on this data. H1 (interactions are real) rests on the EDA residuals and on both models beating the additive logistic baseline by a wide margin. DCN-v2 ships for the ensemble result and because it exports to one ONNX graph (|Δ logit| ≤ 1.9e-6 against PyTorch).
+**Fairness of the comparison.** Both models get the same tuning effort (60 trials each on the inner split) and the same 3 seeds. Ensembling helps DCN-v2 more than LightGBM: the single-model gap is about half the ensemble gap, and its interval includes zero. What is established: the shipped DCN-v2 ensemble beats the LightGBM ensemble. What is not: that the architecture alone beats boosted trees on this data. LightGBM also gets DCN's inputs (the same encoded ids, as native categoricals); with feature engineering of its own (target encodings, count features, explicit crosses) it might narrow the gap. H1 (interactions are real) rests on the EDA residuals and on both models beating the additive logistic baseline by a wide margin. DCN-v2 ships for the ensemble result and because it exports to one ONNX graph (|Δ logit| ≤ 1.9e-6 against PyTorch).
 
 **Calibration.** Candidates are scored by 2-fold CV over validation hours. A more flexible map must beat a simpler one by more than 1e-4 log loss per row, or the simpler one wins. For DCN-v2 the margins are about 4e-5 (isotonic) and 1e-5 (Platt), both noise, so it ships uncalibrated (identity). Test pred/obs is 1.002. An earlier version took isotonic for its 0.00003 win; that bought nothing on test and created calibration plateaus that tied candidates' pCTRs.
 

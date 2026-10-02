@@ -94,6 +94,7 @@ USERS=32 uv run poe loadtest                   # capacity probe
 - **Stateless workers:** scale horizontally behind the ALB (ECS Fargate, [07-serving-operations.md](07-serving-operations.md)). Autoscale on CPU at about 50 % and on request count per target.
 - **Redis:** ElastiCache with replicas. The per-user key design shards cleanly.
 - **Larger N or models:** the model is about 2 ms of the 25 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.
+- **Decision logs at Simula's volume (~1.2 B ads served):** logging every candidate of every request (≈ 10 KB for N = 100) is ≈ 12 TB of mostly redundant data. Log the served ad, its propensity and the context on every request (a few hundred bytes); log full candidate sets only for the exploration bucket plus a small random sample of greedy requests, which is all off-policy evaluation and counterfactual training need. Write asynchronously (stdout → log agent → object storage, never in the request path) in a compact columnar format (Parquet or protobuf), not JSON.
 
 ## Infrastructure (Terraform sketch)
 
