@@ -1,10 +1,11 @@
 {
   "source": "locust",
   "n_candidates": 100,
-  "requests": 47578,
-  "duration_s": 119.07557106018066,
-  "p50_ms": 7.0,
-  "p95_ms": 15.0,
-  "p99_ms": 28.0,
-  "error_rate": 0.0
+  "requests": 35611,
+  "duration_s": 89.06318998336792,
+  "p50_ms": 8.0,
+  "p95_ms": 14.0,
+  "p99_ms": 25.0,
+  "error_rate": 5.020206330480183e-05,
+  "bundle_sha256": "7a96ed8cb95dfbce96fa80078c30ef8b5862ba347746604b3905568b2a5352be"
 }
