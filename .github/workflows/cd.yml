@@ -82,10 +82,14 @@ jobs:
           -backend-config="key=charade/${{ matrix.environment }}.tfstate"
           -backend-config="region=${{ vars.AWS_REGION || 'us-east-1' }}"
       - name: Plan
-        run: >-
-          terraform plan -input=false -out=tfplan
-          -var-file="${{ matrix.environment }}.tfvars"
-          -var="api_image_tag=${{ needs.images.outputs.tag }}"
-          -var="train_image_tag=${{ needs.images.outputs.tag }}"
+        # Keep serving the last promoted bundle: a release changes images, never the model (retraining does).
+        run: |
+          bucket=$(terraform output -raw artifacts_bucket 2>/dev/null || true)
+          bundle=$( [ -n "$bucket" ] && aws s3 cp "s3://$bucket/bundles/CURRENT" - 2>/dev/null | tr -d '[:space:]' || true)
+          terraform plan -input=false -out=tfplan \
+            -var-file="${{ matrix.environment }}.tfvars" \
+            -var="api_image_tag=${{ needs.images.outputs.tag }}" \
+            -var="train_image_tag=${{ needs.images.outputs.tag }}" \
+            -var="bundle_run_id=$bundle"
       - name: Apply
         run: terraform apply -input=false tfplan

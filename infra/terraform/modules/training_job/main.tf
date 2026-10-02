@@ -1,8 +1,8 @@
 # Daily retraining (docs/07: a frozen model loses ~0.003 NE per day). EventBridge Scheduler starts a
 # Fargate task from the training image that runs: train -> ope -> parity -> drift ->
-# mlcheck -> promote -> redeploy (scripts/retrain.sh). Promotion uploads an immutable bundles/<run_id>/
-# and overwrites the one-line bundles/CURRENT pointer only if every blocking gate passes, then forces
-# a new deployment of the API service; a failed gate leaves production untouched.
+# mlcheck -> promote (scripts/retrain.sh, scripts/promote.sh). Only if every blocking gate passes, it
+# uploads an immutable bundles/<run_id>/, registers an API task definition revision pinned to that run
+# and deploys it; a failed gate or rollout leaves production on the previous revision and bundle.
 
 data "aws_region" "current" {}
 
@@ -55,6 +55,16 @@ data "aws_iam_policy_document" "task" {
     sid       = "RedeployApi"
     actions   = ["ecs:UpdateService", "ecs:DescribeServices"]
     resources = [var.api_service_arn]
+  }
+  statement {
+    sid       = "PinBundleRevision"
+    actions   = ["ecs:DescribeTaskDefinition", "ecs:RegisterTaskDefinition"]
+    resources = ["*"] # neither action supports resource-level permissions
+  }
+  statement {
+    sid       = "PassApiRoles"
+    actions   = ["iam:PassRole"]
+    resources = var.api_role_arns
   }
   statement {
     actions   = ["kms:Decrypt", "kms:GenerateDataKey"]

@@ -118,6 +118,7 @@ module "api" {
   certificate_arn      = var.certificate_arn
   image                = "${module.ecr.repository_urls["api"]}:${var.api_image_tag}"
   bundles_uri          = "s3://${module.artifacts_bucket.bucket_name}/bundles/"
+  bundle_run_id        = var.bundle_run_id
   artifacts_bucket_arn = module.artifacts_bucket.bucket_arn
   access_logs_bucket   = module.logs_bucket.bucket_name
   redis_url_secret_arn = module.redis.url_secret_arn
@@ -154,6 +155,7 @@ module "training" {
   name                  = local.name
   cluster_arn           = module.api.cluster_arn
   api_service_arn       = module.api.service_arn
+  api_role_arns         = module.api.task_role_arns
   vpc_id                = module.vpc.vpc_id
   vpc_cidr              = var.vpc_cidr
   private_subnet_ids    = module.vpc.private_subnets

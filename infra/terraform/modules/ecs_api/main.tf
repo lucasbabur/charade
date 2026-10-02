@@ -198,20 +198,20 @@ resource "aws_ecs_task_definition" "api" {
     cpu_architecture        = "X86_64"
   }
 
-  # An init container copies the promoted bundle from S3 into a task-local volume; the API container
-  # starts only after it succeeds and mounts the bundle read-only. No S3 code in the application.
+  # An init container copies the bundle from S3 into a task-local volume; the API container starts only
+  # after it succeeds and mounts the bundle read-only. No S3 code in the application. The bundle's run id
+  # is part of the task definition, so a revision names exactly one model: the circuit breaker's rollback
+  # to the previous revision also restores the previous model (scripts/promote.sh registers revisions).
   container_definitions = jsonencode([
     {
       name                   = "fetch-bundle"
       image                  = var.bundle_fetch_image
       essential              = false
       readonlyRootFilesystem = true
-      # Resolve the immutable bundle named by the one-line pointer, then copy that prefix only.
-      entryPoint = ["sh", "-c"]
-      command = [
-        "run=$(aws s3 cp ${var.bundles_uri}CURRENT - | tr -d '[:space:]') && aws s3 cp --recursive --only-show-errors ${var.bundles_uri}$run/ /bundle/current/",
-      ]
-      mountPoints = [{ sourceVolume = "bundle", containerPath = "/bundle", readOnly = false }]
+      entryPoint             = ["sh", "-c"]
+      command                = ["[ -z \"$BUNDLE_RUN_ID\" ] || aws s3 cp --recursive --only-show-errors ${var.bundles_uri}$BUNDLE_RUN_ID/ /bundle/current/"]
+      environment            = [{ name = "BUNDLE_RUN_ID", value = var.bundle_run_id }]
+      mountPoints            = [{ sourceVolume = "bundle", containerPath = "/bundle", readOnly = false }]
       logConfiguration = {
         logDriver = "awslogs"
         options = {

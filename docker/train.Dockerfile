@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 COPY src ./src
 COPY tools/mlcheck/src ./tools/mlcheck/src
 COPY data/derived ./data/derived
-COPY scripts/retrain.sh ./scripts/retrain.sh
+COPY scripts/retrain.sh scripts/promote.sh ./scripts/
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --locked --all-packages --extra train --extra cpu \
     && uv pip install --no-cache "awscli==1.46.1"
