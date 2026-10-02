@@ -50,6 +50,7 @@ dev = [
     "pytest>=8.4",
     "pytest-cov>=6.2",
     "ruff>=0.13",
+    "vulture>=2.14",
 ]
 
 [build-system]
@@ -155,8 +156,9 @@ serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API 
 tf = { shell = "terraform fmt -check -recursive infra/terraform && for env in infra/terraform/envs/*/; do terraform -chdir=$env init -backend=false -input=false >/dev/null && terraform -chdir=$env validate || exit 1; done", help = "Terraform fmt and validate" }
 experiments = { cmd = "python -m charade.analysis.notebooks", help = "Execute experiment notebooks on the full data (all, or the given notebook.py paths; E004 retrains)" }
 test-notebooks = { cmd = "pytest -m notebooks --no-cov", help = "Execute every experiment notebook in smoke mode (fixture data, tiny model)" }
+deadcode = { cmd = "vulture", help = "Dead-code check (vulture, configured in [tool.vulture])" }
 imports = { cmd = "lint-imports", help = "Import-layer contracts (no cycles, serving stays light)" }
-check = { sequence = ["lint", "types", "imports", "test", "test-mlcheck", "mlcheck"], help = "Everything CI runs on Python" }
+check = { sequence = ["lint", "types", "imports", "deadcode", "test", "test-mlcheck", "mlcheck"], help = "Everything CI runs on Python" }
 
 [tool.ruff]
 line-length = 120
@@ -177,6 +179,16 @@ convention = "google"
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.vulture]
+# Dead-code check (CI). Data contracts are excluded: their fields are read through serialization, which
+# vulture cannot see. The ignored names are framework hooks, runtime knobs, and `Pacer`, which is kept on
+# purpose (budget pacing is built and tested but has no budget feed to connect to).
+paths = ["src", "tools/mlcheck/src", "experiments"]
+exclude = ["src/charade/serving/schemas.py", "tools/mlcheck/src/mlcheck/contract.py"]
+min_confidence = 60
+ignore_decorators = ["@check", "@api.middleware", "@asynccontextmanager", "@field_validator", "@cached_property", "@property", "@classmethod"]
+ignore_names = ["forward", "model_config", "settings_customise_sources", "cls", "file_secret_settings", "*_num_threads", "graph_optimization_level", "best_val_logloss", "Pacer"]
 
 [tool.pyright]
 include = ["src", "tests"]

@@ -33,6 +33,8 @@ jobs:
         run: uv run poe types
       - name: Import layers (no cycles)
         run: uv run poe imports
+      - name: Dead code
+        run: uv run poe deadcode
       - name: Tests (charade)
         run: uv run poe test
       - name: Tests (mlcheck)
