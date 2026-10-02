@@ -7,11 +7,30 @@ Tabular artifacts (parquet):
 
 JSON artifacts are the pydantic models below. `evaluation_ledger.jsonl` and `decisions.jsonl`
 hold one model per line.
+
+Evidence binding: the manifest and every evidence report (parity, latency, OPE) carry `bundle_sha256`,
+the digest of the configured `bundle_files` (`bundle_digest`), so a report measured on another model
+fails MLR005 instead of passing quietly.
 """
 
+import hashlib
+from collections.abc import Iterable
 from datetime import datetime
+from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+def bundle_digest(directory: Path, files: Iterable[str]) -> str:
+    """sha256 over `name NUL sha256(file) LF` for each bundle file in sorted name order."""
+    outer = hashlib.sha256()
+    for name in sorted(files):
+        inner = hashlib.sha256()
+        with (directory / name).open("rb") as handle:
+            while chunk := handle.read(1 << 20):
+                inner.update(chunk)
+        outer.update(f"{name}\0{inner.hexdigest()}\n".encode())
+    return outer.hexdigest()
 
 
 class _Strict(BaseModel):
@@ -46,6 +65,7 @@ class RunManifest(_Strict):
     fitted_artifacts: list[FittedArtifact] = Field(min_length=1)
     model_seeds: dict[str, list[int]]
     library_versions: dict[str, str] = Field(min_length=1)
+    bundle_sha256: str = Field(min_length=64)
 
 
 class LeakageReport(_Strict):
@@ -63,6 +83,7 @@ class ParityReport(_Strict):
     train_serve_max_abs_diff: float
     categorical_mismatches: int
     onnx_max_abs_diff: float
+    bundle_sha256: str
 
 
 class LatencyReport(_Strict):
@@ -76,6 +97,8 @@ class LatencyReport(_Strict):
     p95_ms: float
     p99_ms: float
     error_rate: float
+    bundle_sha256: str
+    """Digest the load-tested API reported at `GET /v1/model`."""
 
 
 class PolicyEstimate(_Strict):
@@ -95,6 +118,7 @@ class OpeReport(_Strict):
     """Off-policy evaluation (ope.json)."""
 
     policies: list[PolicyEstimate] = Field(min_length=1)
+    bundle_sha256: str
 
 
 class DriftReport(_Strict):

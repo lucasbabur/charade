@@ -8,7 +8,7 @@ import polars as pl
 
 from charade.config import PolicyConfig, Settings
 from charade.ranking.evidence import Evidence
-from charade.scoring.scorer import CHARACTERS_FILE, EVIDENCE_FILE, Scorer
+from charade.scoring.scorer import CHARACTERS_FILE, EVIDENCE_FILE, Scorer, bundle_sha256
 from charade.serving.store import FeatureStore, MemoryStore, RedisStore
 
 
@@ -22,6 +22,8 @@ class Runtime:
     policy: PolicyConfig
     store: FeatureStore
     model_version: str
+    bundle_sha256: str = ""
+    """Digest of the loaded bundle files (empty when none is loaded); evidence reports name it."""
 
 
 def load_runtime(settings: Settings, store: FeatureStore | None = None) -> Runtime:
@@ -49,4 +51,5 @@ def load_runtime(settings: Settings, store: FeatureStore | None = None) -> Runti
         policy=settings.policy,
         store=store,
         model_version=version,
+        bundle_sha256=bundle_sha256(directory),
     )

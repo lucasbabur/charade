@@ -47,12 +47,15 @@ def onnx_parity(ctx: Context) -> Outcome:
     "The ad slot waits for the ranker; p99 over budget means blank slots or a timed-out auction.",
 )
 def latency_p99(ctx: Context) -> Outcome:
-    """Load-test p99 at most `max_p99_ms`."""
+    """Load-test p99 at most `max_p99_ms`, from a run of at least `min_load_duration_s`."""
     report = ctx.latency
     message = (
         f"p50 {report.p50_ms:.1f} / p95 {report.p95_ms:.1f} / p99 {report.p99_ms:.1f} ms, "
-        f"{report.requests / report.duration_s:.0f} rps, N={report.n_candidates} ({report.source})"
+        f"{report.requests / report.duration_s:.0f} rps for {report.duration_s:.0f} s, N={report.n_candidates} "
+        f"({report.source})"
     )
+    if report.duration_s < ctx.thresholds.min_load_duration_s:
+        return failed(f"{message}: shorter than {ctx.thresholds.min_load_duration_s:.0f} s, p99 is not settled")
     return passed(message) if report.p99_ms <= ctx.thresholds.max_p99_ms else failed(message)
 
 

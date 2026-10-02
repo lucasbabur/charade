@@ -15,6 +15,7 @@ import pytest
 import mlcheck.checks  # noqa: F401
 from mlcheck.config import load_config
 from mlcheck.context import Context
+from mlcheck.contract import bundle_digest
 from mlcheck.registry import CHECKS, run_check
 from mlcheck.result import CheckResult
 
@@ -34,6 +35,7 @@ artifacts_dir = "artifacts/current"
 primary_model = "dcn"
 baseline_model = "prior"
 required_slices = ["genre", "day"]
+bundle_files = ["model.bin", "spec.json"]
 
 [tool.mlcheck.thresholds]
 min_ess = 100
@@ -141,14 +143,26 @@ def _write_sources(root: Path) -> None:
         path.write_text(body)
 
 
+BUNDLE_FILES = ("model.bin", "spec.json")
+
+
 def _write_reports(art: Path) -> None:
+    for name in BUNDLE_FILES:
+        (art / name).write_text(f"{name} contents")
+    digest = bundle_digest(art, BUNDLE_FILES)
     _write_json(
         art / "leakage.json",
         {"shuffled_label_auc": 0.501, "feature_auc": {"site": 0.52, "x": 0.71}, "adversarial_auc": 0.55},
     )
     _write_json(
         art / "parity.json",
-        {"n_rows": 1000, "train_serve_max_abs_diff": 0.0, "categorical_mismatches": 0, "onnx_max_abs_diff": 2e-7},
+        {
+            "n_rows": 1000,
+            "train_serve_max_abs_diff": 0.0,
+            "categorical_mismatches": 0,
+            "onnx_max_abs_diff": 2e-7,
+            "bundle_sha256": digest,
+        },
     )
     _write_json(
         art / "latency.json",
@@ -161,6 +175,7 @@ def _write_reports(art: Path) -> None:
             "p95_ms": 14.2,
             "p99_ms": 21.5,
             "error_rate": 0.0,
+            "bundle_sha256": digest,
         },
     )
     _write_json(
@@ -177,7 +192,8 @@ def _write_reports(art: Path) -> None:
                     "n": 9600,
                     "max_weight": 8.0,
                 }
-            ]
+            ],
+            "bundle_sha256": digest,
         },
     )
     _write_json(
@@ -247,6 +263,7 @@ def build_project(root: Path) -> None:
             ],
             "model_seeds": {"dcn": [0, 1, 2]},
             "library_versions": {"torch": "2.8.0"},
+            "bundle_sha256": "0" * 64,
         },
     )
     (art / "evaluation_ledger.jsonl").write_text(
@@ -262,6 +279,7 @@ def build_project(root: Path) -> None:
         )
     )
     _write_reports(art)
+    edit_json(art / "manifest.json", lambda m: m.update(bundle_sha256=bundle_digest(art, BUNDLE_FILES)))
 
 
 @pytest.fixture(scope="session")

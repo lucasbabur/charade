@@ -60,6 +60,7 @@ class Thresholds(BaseModel):
     parity_tolerance: float = 1e-6
     onnx_tolerance: float = 1e-5
     max_p99_ms: float = 50.0
+    min_load_duration_s: float = 60.0
     max_error_rate: float = 0.001
     min_ess: float = 1000.0
     max_psi: float = 0.25
@@ -85,6 +86,8 @@ class MlcheckConfig(BaseModel):
     split_order: list[str] = Field(default_factory=lambda: ["train", "val", "test"])
     holdout_split: str = "test"
     required_slices: list[str] = Field(default_factory=list[str])
+    bundle_files: list[str] = Field(default_factory=list[str])
+    """Files in `artifacts_dir` that make up the served model; their digest binds evidence to it (MLR005)."""
     data: DataConfig | None = None
     thresholds: Thresholds = Field(default_factory=Thresholds)
 

@@ -163,6 +163,7 @@ BREAKAGES: dict[str, Callable[[Path], object]] = {
     "MLR002": lambda root: (root / "events.csv").write_text((root / "events.csv").read_text() + "\n"),
     "MLR003": _json("manifest.json", _set("git_dirty", True)),
     "MLR004": _json("manifest.json", _set("model_seeds", {"dcn": [0]})),
+    "MLR005": _json("parity.json", _set("bundle_sha256", "f" * 64)),
     "MLL001": _move_test_row_into_train,
     "MLL002": _overlap_splits_in_time,
     "MLL003": _json("manifest.json", _vocab_fitted_on_test),
@@ -269,3 +270,14 @@ def test_rescoring_an_identical_configuration_does_not_spend_budget(project: Pat
     reruns = [entry | {"run_id": f"rerun-{i}"} for i in range(10)]
     path.write_text("\n".join(json.dumps(e) for e in [*reruns, entry]))
     assert run(project, "MLL006").status is Status.PASS
+
+
+def test_a_changed_bundle_fails_evidence_binding(project: Path, run: Runner) -> None:
+    """Retraining in place leaves every report naming the old model."""
+    (project / ART / "model.bin").write_text("retrained")
+    assert run(project, "MLR005").status is Status.FAIL
+
+
+def test_a_short_load_test_does_not_settle_p99(project: Path, run: Runner) -> None:
+    edit_json(project / ART / "latency.json", lambda r: r.update(duration_s=20, requests=4000))
+    assert run(project, "MLV003").status is Status.FAIL

@@ -40,7 +40,7 @@ from charade.models.dataset import build_frame
 from charade.models.gbdt import predict_gbdt, train_gbdt
 from charade.ranking.evidence import Evidence
 from charade.ranking.policy import Candidate, Decision, decide, gate_reasons
-from charade.scoring.scorer import EVIDENCE_FILE, Scorer
+from charade.scoring.scorer import EVIDENCE_FILE, Scorer, bundle_sha256
 
 TOP_K = 10
 AD_FIELDS = ("C14", "banner_pos", "C15", "C16", "C17", "C18", "C19", "C21")
@@ -272,7 +272,9 @@ def run(
         lifts[name] = lift(*args)
     if split == "test":
         art = settings.artifacts_dir
-        art.joinpath("ope.json").write_text(json.dumps({"policies": [r.model_dump() for r in results]}, indent=2))
+        art.joinpath("ope.json").write_text(
+            json.dumps({"policies": [r.model_dump() for r in results], "bundle_sha256": bundle_sha256(art)}, indent=2)
+        )
         _write_decisions(c.candidates, settings, art / "decisions.jsonl")
     _write_report(results, lifts, c.test_rows, n, c.served, report, split)
     return results
