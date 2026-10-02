@@ -17,7 +17,7 @@ Talking points with the artifact to show on screen. Numbers are taken from `repo
 | 5 | 5:00–6:00 | **The surprising result:** character ID and description text add nothing. The character *is* its genre and tier, so cold start is solved by construction. A per-character prior would make things worse | ablations.csv, docs/06 |
 | 6 | 6:00–7:30 | **Ranking.** Gates first, then value, then greedy plus 5 % exploration from a known distribution, exact propensities for every candidate. The bias the external review found in the first (Thompson) version and the recovery test that now guards it. OPE: +1.21 pp DR, under stated assumptions | docs/05, sample_rankings.json |
 | 7 | 7:30–8:30 | **Drift.** Ads rotate daily; a frozen model loses ~0.003 NE per day, so retrain daily. Online recalibration did nothing (negative result). The exposure penalty: −30 % concentration at no detectable CTR cost | docs/07 |
-| 8 | 8:30–10:00 | **Serving.** The request path, exact parity, p99 28 ms at 400 rps. Two bugs the load test found (NaN from out-of-order events; 24 polars threads per worker) | docs/08, latency.json |
+| 8 | 8:30–10:00 | **Serving.** The request path, exact parity, p99 25 ms at 400 rps. Two bugs the load test found (NaN from out-of-order events; 24 polars threads per worker) | docs/08, latency.json |
 | 9 | 10:00–11:00 | **Engineering.** mlcheck (47 gates, recompute rather than trust), CI, Terraform (checkov clean), the daily retrain gate, every commit green | docs/mlcheck.md, GitHub PR list |
 | 10 | 11:00–12:00 | **Trade-offs and next steps:** logged propensities, conversation content, creative embeddings, counterfactual training | docs/10 |
 

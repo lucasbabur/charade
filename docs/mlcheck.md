@@ -111,7 +111,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 
 ## Result on the shipped run (`uv run mlcheck .`)
 
-**47 checks: 42 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
+**48 checks: 44 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
 
 | Warning | Finding | Where it is handled |
 |---|---|---|
@@ -125,9 +125,10 @@ Gates that pass with margin:
 - beats baseline, CI excluding zero;
 - calibration 1.012 and ECE 0.005;
 - exact train/serve parity, ONNX within 1.9e-6;
-- p99 28 ms at 400 rps;
+- p99 25 ms at 400 rps over 90 s;
+- every evidence report (parity, OPE, latency) names the shipped bundle's digest;
 - 3,000 decisions respecting gates, with per-candidate propensities that form the policy's exact distribution.
 
 ## Tests
 
-`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 47 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 111 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.
+`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 48 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 119 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.

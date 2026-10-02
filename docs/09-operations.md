@@ -12,10 +12,10 @@ updated-at: 2026-10-01
 
 ```
 ad servers ──HTTPS──▶ internal ALB (TLS 1.3, /ready health) ──▶ ECS Fargate API tasks (8 vCPU, 8 workers, 3–30 tasks, 3 AZs)
-                                                                  │  init container: read bundles/CURRENT → copy bundles/<run_id>/ → task volume (read-only)
+                                                                  │  init container: copy bundles/<run_id>/ (run id pinned in the task definition) → task volume (read-only)
                                                                   ├──▶ ElastiCache Redis 7 (multi-AZ, TLS + AUTH, user history)
                                                                   └──▶ stdout JSON "decision" events ─▶ CloudWatch Logs ─▶ Firehose ─▶ S3 data/decisions/dt=/hour=
-EventBridge Scheduler 02:30 UTC ──▶ Fargate training task (16 vCPU): pull exports → rolling windows → train → ope → parity → drift → mlcheck → promote → redeploy
+EventBridge Scheduler 02:30 UTC ──▶ Fargate training task (16 vCPU): pull exports → rolling windows → train → ope → parity → drift → mlcheck → promote (register pinned revision, deploy, verify)
 GitHub Actions ──OIDC──▶ deploy role (ECR push, ECS update, PassRole on task roles only)
 ```
 
@@ -27,7 +27,7 @@ GitHub Actions ──OIDC──▶ deploy role (ECR push, ECS update, PassRole o
 | `ecs_api` | Cluster, ALB, target group, service, autoscaling, IAM | Circuit-breaker rollback; scales on CPU 50 % and on 400 rps per task (the load-tested point); read-only root filesystem; Redis URL injected from Secrets Manager |
 | `redis` | Replication group, subnet group, security group, URL secret | Reachable only from API tasks; encrypted at rest and in transit |
 | `decision_logs` | Firehose stream, subscription filter on the `decision`, `impression` and `click` events | GZIP, hourly partitions, KMS; `charade.data.events` joins them into `impressions.csv`-shaped training rows: Firehose decompresses the CloudWatch subscription envelopes and extracts each message, so S3 holds gzipped JSON lines; the builder reads them, deduplicates and holds back labels younger than the 48 h click window (tested end to end against the API; the scheduled job that runs it on S3 is not built) |
-| `training_job` | Task definition, scheduler, roles | Uploads an immutable `bundles/<run_id>/`, then flips the one-line `bundles/CURRENT` pointer and forces a rolling redeploy, only after mlcheck passes |
+| `training_job` | Task definition, scheduler, roles | Uploads an immutable `bundles/<run_id>/`, then registers an API task definition revision pinned to that run id and deploys it (`scripts/promote.sh`); a failed rollout is rolled back, with its model, by the circuit breaker. `bundles/CURRENT` only records the last successful promotion, which CD passes to Terraform so a release never changes the model. All of it only after mlcheck passes |
 | `observability` | SNS topic, alarms, dashboard | Alarms come from ALB metrics and log metric filters, so no metrics agent is needed |
 | `ci_oidc` | GitHub OIDC provider and deploy role | Trust limited to `main` and `v*` tags of this repository |
 
@@ -67,14 +67,14 @@ GitHub Actions ──OIDC──▶ deploy role (ECR push, ECS update, PassRole o
 4. If a new release coincides, roll back (the circuit breaker does this for failed health checks).
 
 ### Errors
-- **5xx with `model bundle not loaded`:** the init container could not resolve `bundles/CURRENT` or copy the bundle it names. Check S3 permissions and that the pointer names an existing prefix.
+- **5xx with `model bundle not loaded`:** the init container could not copy the bundle the revision pins (`BUNDLE_RUN_ID`). Check S3 permissions and that `bundles/<run_id>/` exists.
 - **`no candidate could be scored`:** non-finite inputs. Inspect the request (the fixture test shows the guard). The API never returns 5xx for Redis outages.
 
 ### Retraining
 1. Open the run's `mlcheck` output in the training log group. Each failing code links to [mlcheck.md](mlcheck.md).
 2. Data gates (MLD*): an upstream export changed. Fix the export; do not relax the contract.
 3. Model gates (MLM*): compare `runs/<run_id>/` with the previous run's `metrics.json`. A real regression needs investigation, not a forced promotion.
-4. To promote or roll back manually: `echo <run_id> | aws s3 cp - s3://<artifacts>/bundles/CURRENT`, then force a new ECS deployment.
+4. To promote or roll back manually: `scripts/promote.sh <run_id>` (with the training task's environment). It registers a revision pinned to that bundle, deploys and waits; rolling back the task definition alone also rolls back the model.
 
 ### Redis
 Losing Redis loses user history for a few hours of degraded serving; it is not an outage. Rebuild from the last 24 h of decision logs and impression events if needed.

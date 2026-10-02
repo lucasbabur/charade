@@ -32,7 +32,7 @@ Ordered by expected value per week of work.
 ## Scaling and productionisation
 
 - **Feature store:** move user counters to a streaming job (Kinesis/Flink) writing Redis, so the API never does read-modify-write. Add Feast if more online features arrive.
-- **Serving:** Graviton tasks (ONNX Runtime on ARM64) and int8 quantisation if candidate counts grow. Shadow and canary through the existing bundle pointer: `bundles/current` becomes `bundles/{control,candidate}` with a hashed traffic split.
+- **Serving:** Graviton tasks (ONNX Runtime on ARM64) and int8 quantisation if candidate counts grow. Shadow and canary as two pinned task definition revisions behind a hashed traffic split.
 - **Online experimentation:** an A/B framework with CUPED and guardrail metrics (latency, no-fill, brand-safety incidents). The adaptation λ and the exploration rate are the first experiments.
 - **Monitoring:** daily PSI and calibration-ratio jobs feeding the existing alarms; a slice dashboard (genre × surface × new or returning).
 - **Governance:** model cards generated from `metrics.json` and the ADRs; a data-retention policy for decision logs (privacy: no raw IPs downstream of the proxy hash).

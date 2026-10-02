@@ -12,7 +12,7 @@ updated-at: 2026-10-01
 3. ranks the rest;
 4. serves one, explores on a bounded 5 % of traffic with a known distribution, and logs every candidate's exact selection probability.
 
-It does this in **p99 28 ms at 400 rps** for 100 candidates.
+It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one desktop.
 
 ## Headline results (test days 10-29/30; Avazu sample + synthetic character layer, 30-hour test window)
 
@@ -23,8 +23,8 @@ It does this in **p99 28 ms at 400 rps** for 100 candidates.
 | Ranking | Exact propensities logged for every candidate. Offline policy evaluation runs end to end; under reconstructed candidate sets and inferred logging propensities it estimates +1.46 pp CTR [+0.50, +2.38] (DR with an independent reward model). That demonstrates the evaluation machinery, not business value | [05](05-ranking-policy.md) |
 | Cold start | The model has no character ID, so a new character is scored from metadata like any other. Unseen characters: NE 0.906 vs 0.885 warm (n = 1,478, known genres only); new users 0.894 vs 0.856 returning | [06](06-cold-start.md) |
 | Drift | Ads rotate (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. An exposure penalty chosen on the validation day by a non-inferiority rule (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss, so it awaits an online test | [07](07-drift-adaptation.md) |
-| Serving | p50 7 / p95 15 / p99 28 ms at 400 rps, 0 errors (impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
-| Gates | mlcheck on the shipped bundle: 47 checks, 43 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
+| Serving | p50 8 / p95 14 / p99 25 ms at 400 rps, 0.005 % errors (impression events over the 10 ms store budget; impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
+| Gates | mlcheck on the shipped bundle: 48 checks, 44 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
 
 ## What the data taught (and what it changed)
 
