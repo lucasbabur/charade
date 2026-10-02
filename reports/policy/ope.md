@@ -13,6 +13,9 @@ Evaluated impressions: 111,368 of 127,406 test rows (87.4%); cells: 5,484; mean 
 | greedy pCTR (no gates) | ips | 0.1869 | [0.1732, 0.1991] | 4,059 | 445.0 |
 | greedy pCTR (no gates) | snips | 0.1968 | [0.1832, 0.2099] | 4,059 | 445.0 |
 | greedy pCTR (no gates) | dr | 0.1916 | [0.1793, 0.2033] | 4,059 | 445.0 |
+| greedy pCTR with gates (no exploration) | ips | 0.1798 | [0.1674, 0.1908] | 4,018 | 445.0 |
+| greedy pCTR with gates (no exploration) | snips | 0.1948 | [0.1813, 0.2075] | 4,018 | 445.0 |
+| greedy pCTR with gates (no exploration) | dr | 0.1903 | [0.1780, 0.2019] | 4,018 | 445.0 |
 | shipped policy (gates + 5% exploration) | ips | 0.1796 | [0.1676, 0.1902] | 4,395 | 425.7 |
 | shipped policy (gates + 5% exploration) | snips | 0.1941 | [0.1809, 0.2063] | 4,395 | 425.7 |
 | shipped policy (gates + 5% exploration) | dr | 0.1897 | [0.1780, 0.2007] | 4,395 | 425.7 |
@@ -23,4 +26,13 @@ Evaluated impressions: 111,368 of 127,406 test rows (87.4%); cells: 5,484; mean 
 |---|---|---|
 | uniform random | +0.0009 [-0.0025, +0.0041] | -0.0003 [-0.0036, +0.0026] |
 | greedy pCTR (no gates) | +0.0217 [+0.0108, +0.0333] | +0.0165 [+0.0072, +0.0273] |
+| greedy pCTR with gates (no exploration) | +0.0197 [+0.0085, +0.0309] | +0.0152 [+0.0052, +0.0250] |
 | shipped policy (gates + 5% exploration) | +0.0190 [+0.0084, +0.0297] | +0.0146 [+0.0050, +0.0238] |
+
+## What the shipped policy gives up against ungated greedy (DR, paired hour-block bootstrap)
+
+| Step | CTR cost [95 % CI] |
+|---|---|
+| gates (brand safety, frequency cap) | +0.0013 [-0.0012, +0.0037] |
+| exploration (5 %) | +0.0006 [+0.0001, +0.0011] |
+| total | +0.0019 [-0.0006, +0.0045] |
