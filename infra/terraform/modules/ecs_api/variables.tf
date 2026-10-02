@@ -34,8 +34,14 @@ variable "image" {
 }
 
 variable "bundles_uri" {
-  description = "s3:// prefix holding immutable bundles/<run_id>/ and the CURRENT pointer (trailing slash)."
+  description = "s3:// prefix holding immutable bundles/<run_id>/ and the CURRENT record (trailing slash)."
   type        = string
+}
+
+variable "bundle_run_id" {
+  description = "Bundle pinned into the task definition; empty starts tasks without a model (not ready)."
+  type        = string
+  default     = ""
 }
 
 variable "bundle_fetch_image" {

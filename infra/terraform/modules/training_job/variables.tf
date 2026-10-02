@@ -8,6 +8,11 @@ variable "cluster_arn" {
   type        = string
 }
 
+variable "api_role_arns" {
+  description = "API execution and task roles; promotion registers task definition revisions that use them."
+  type        = list(string)
+}
+
 variable "api_service_arn" {
   description = "API service the job redeploys after promoting a bundle."
   type        = string

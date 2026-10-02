@@ -30,6 +30,7 @@ module "charade" {
   caller_cidrs                = var.caller_cidrs
   certificate_arn             = var.certificate_arn
   api_image_tag               = var.api_image_tag
+  bundle_run_id               = var.bundle_run_id
   train_image_tag             = var.train_image_tag
   api_min_tasks               = 2
   api_max_tasks               = 4

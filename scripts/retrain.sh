@@ -1,12 +1,11 @@
 #!/usr/bin/env bash
 # Daily retrain inside the training image (infra/terraform/modules/training_job):
-# pull exports -> derive rolling windows -> train -> evaluate -> mlcheck -> promote -> redeploy.
+# pull exports -> derive rolling windows -> train -> evaluate -> mlcheck -> promote (pinned revision).
 #
-# Promotion is atomic: the bundle is uploaded to an immutable prefix bundles/<run_id>/, then the
-# one-line pointer bundles/CURRENT is overwritten (a single S3 PUT). API tasks read the pointer at
-# start, so a task never sees a mix of two bundles. The script then forces a new ECS deployment so
-# running tasks pick up the new bundle (the deployment circuit breaker rolls back if /ready fails).
-# Production keeps the previous bundle unless every blocking gate passes; WARN gates are reported.
+# Promotion: the bundle is uploaded to an immutable prefix bundles/<run_id>/, then scripts/promote.sh
+# deploys an API task definition revision pinned to that run id and waits for the rollout; a failed
+# rollout is rolled back, with its bundle, by the ECS circuit breaker. Production keeps the previous
+# revision and bundle unless every blocking gate passes; WARN gates are reported.
 set -euo pipefail
 
 : "${CHARADE_DATA_URI:?s3:// prefix of impressions.csv and characters.csv}"
@@ -33,9 +32,5 @@ mlcheck . --artifacts-dir "$CHARADE_ARTIFACTS_DIR" --data-dir "$CHARADE_DATA_DIR
   --skip MLV003 --skip MLV004 # latency is gated by the load test before release, not per retrain
 
 run_id=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['run_id'])" "$CHARADE_ARTIFACTS_DIR/manifest.json")
-bucket="${CHARADE_ARTIFACTS_URI%/}"
-aws s3 cp --recursive --only-show-errors "$CHARADE_ARTIFACTS_DIR" "$bucket/bundles/$run_id/"
-printf '%s\n' "$run_id" | aws s3 cp - "$bucket/bundles/CURRENT"
-aws ecs update-service --cluster "$CHARADE_ECS_CLUSTER" --service "$CHARADE_ECS_SERVICE" \
-  --force-new-deployment --no-cli-pager >/dev/null
-echo "promoted $run_id and started a rolling deployment of $CHARADE_ECS_SERVICE"
+aws s3 cp --recursive --only-show-errors "$CHARADE_ARTIFACTS_DIR" "${CHARADE_ARTIFACTS_URI%/}/bundles/$run_id/"
+"$(dirname "$0")/promote.sh" "$run_id"
