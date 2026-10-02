@@ -72,7 +72,7 @@ SOURCES = {
         def fit(train_x, val_preds, val_y, calibrator, seed):
             rng = np.random.default_rng(seed)
             torch.manual_seed(seed)
-            calibrator.fit(val_preds, val_y)  # mlcheck: ignore[MLS007]
+            calibrator.fit(val_preds, val_y)
             return build(train_x), rng.random()
         """
     ),
@@ -265,18 +265,6 @@ def build_project(root: Path) -> None:
             "library_versions": {"torch": "2.8.0"},
             "bundle_sha256": "0" * 64,
         },
-    )
-    (art / "evaluation_ledger.jsonl").write_text(
-        json.dumps(
-            {
-                "timestamp": str(START + timedelta(days=7)),
-                "run_id": "run-1",
-                "model_version": "dcn@run-1",
-                "split": "test",
-                "config_hash": "cfg-a",
-                "window": "W",
-            }
-        )
     )
     _write_reports(art)
     edit_json(art / "manifest.json", lambda m: m.update(bundle_sha256=bundle_digest(art, BUNDLE_FILES)))

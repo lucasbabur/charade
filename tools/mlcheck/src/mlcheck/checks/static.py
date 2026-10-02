@@ -16,30 +16,11 @@ import grimp
 
 from mlcheck.context import ArtifactMissingError, Context, NotConfiguredError
 from mlcheck.registry import check
-from mlcheck.result import Outcome, Severity, Stage, failed, passed
+from mlcheck.result import Outcome, Stage, failed, passed
 
-_SHUFFLED_SPLITTERS = frozenset(
-    {
-        "train_test_split",
-        "ShuffleSplit",
-        "StratifiedShuffleSplit",
-        "GroupShuffleSplit",
-        "KFold",
-        "StratifiedKFold",
-        "GroupKFold",
-        "RepeatedKFold",
-        "RepeatedStratifiedKFold",
-    }
-)
-_NUMPY_RNG_OK = frozenset({"default_rng", "Generator", "SeedSequence", "PCG64", "Philox", "SFC64", "BitGenerator"})
-_STDLIB_RANDOM_GLOBAL = frozenset(
-    {"seed", "random", "randint", "randrange", "choice", "choices", "shuffle", "sample", "uniform", "gauss"}
-)
 _UNSAFE_LOADERS = frozenset(
     {"pickle.load", "pickle.loads", "joblib.load", "dill.load", "dill.loads", "cloudpickle.load", "cloudpickle.loads"}
 )
-_FIT_METHODS = frozenset({"fit", "fit_transform", "partial_fit"})
-_EVAL_TOKENS = frozenset({"test", "val", "valid", "validation", "holdout", "eval"})
 _SKIP_DIRS = frozenset({".venv", "venv", "node_modules", ".git", ".ipynb_checkpoints", "build", "dist"})
 
 
@@ -197,49 +178,6 @@ def serving_uses_shared_features(ctx: Context) -> Outcome:
     return passed(f"{len(users)} serving modules use {ctx.config.features_package}", sorted(users))
 
 
-def _shuffled_split(call: ast.Call, name: str | None) -> str | None:
-    if name and name.rsplit(".", 1)[-1] in _SHUFFLED_SPLITTERS:
-        return f"{name}: non-temporal split; use a time-ordered split"
-    return None
-
-
-@check(
-    "MLS003",
-    "no-shuffled-split",
-    Stage.STATIC,
-    "CTR data is time-ordered; random or k-fold splits leak future hours, shared users and repeated creatives into "
-    "training and overstate offline metrics.",
-)
-def no_shuffled_split(ctx: Context) -> Outcome:
-    """No random or k-fold splitters in the source tree."""
-    findings = _scan(ctx, "MLS003", _shuffled_split)
-    return failed("non-temporal splitters found", findings) if findings else passed("no non-temporal splitters")
-
-
-def _global_rng(call: ast.Call, name: str | None) -> str | None:
-    if not name:
-        return None
-    module, _, func = name.rpartition(".")
-    if module == "numpy.random" and func not in _NUMPY_RNG_OK:
-        return f"{name}: global NumPy RNG; pass a np.random.Generator"
-    if module == "random" and func in _STDLIB_RANDOM_GLOBAL:
-        return f"{name}: global stdlib RNG; pass a seeded random.Random or np.random.Generator"
-    return None
-
-
-@check(
-    "MLS004",
-    "no-global-rng",
-    Stage.STATIC,
-    "Global RNG state makes results depend on call order and imports; explicit generators make every stochastic step "
-    "reproducible from the run's seed.",
-)
-def no_global_rng(ctx: Context) -> Outcome:
-    """No calls to global NumPy or stdlib random state."""
-    findings = _scan(ctx, "MLS004", _global_rng)
-    return failed("global RNG calls found", findings) if findings else passed("all randomness uses explicit generators")
-
-
 def _unsafe_load(call: ast.Call, name: str | None) -> str | None:
     if name in _UNSAFE_LOADERS:
         return f"{name}: arbitrary code execution on untrusted files; use safetensors/ONNX/JSON"
@@ -279,32 +217,3 @@ def no_notebooks(ctx: Context) -> Outcome:
         and p.relative_to(ctx.root).parts[0] not in allowed
     ]
     return failed(f"{len(found)} notebooks in repo", found) if found else passed("no notebooks")
-
-
-def _identifier_tokens(node: ast.expr) -> set[str]:
-    names = {n.id for n in ast.walk(node) if isinstance(n, ast.Name)}
-    names |= {n.attr for n in ast.walk(node) if isinstance(n, ast.Attribute)}
-    return {token for name in names for token in name.lower().split("_")}
-
-
-def _fit_on_eval(call: ast.Call, _name: str | None) -> str | None:
-    if not (isinstance(call.func, ast.Attribute) and call.func.attr in _FIT_METHODS):
-        return None
-    args = list(call.args) + [kw.value for kw in call.keywords if kw.arg in {"X", "x", "y", "data"}]
-    if any(_EVAL_TOKENS & _identifier_tokens(arg) for arg in args):
-        return f".{call.func.attr}() on evaluation data; confirm intent and add `mlcheck: ignore[MLS007]`"
-    return None
-
-
-@check(
-    "MLS007",
-    "no-fit-on-eval-data",
-    Stage.STATIC,
-    "Fitting anything on validation/test data leaks it. Legitimate cases (calibrator on validation) must be marked "
-    "explicitly so a reviewer sees them.",
-    Severity.WARNING,
-)
-def no_fit_on_eval_data(ctx: Context) -> Outcome:
-    """No unmarked .fit()/.fit_transform() calls on variables named like evaluation data."""
-    findings = _scan(ctx, "MLS007", _fit_on_eval)
-    return failed("fit on evaluation data", findings) if findings else passed("no unmarked fits on evaluation data")

@@ -13,7 +13,6 @@ from mlcheck.contract import (
     DriftReport,
     LatencyReport,
     LeakageReport,
-    LedgerEntry,
     OpeReport,
     ParityReport,
     RunManifest,
@@ -112,11 +111,6 @@ class Context:
     def drift(self) -> DriftReport:
         """drift.json."""
         return self._json("drift.json", DriftReport)
-
-    @cached_property
-    def ledger(self) -> list[LedgerEntry]:
-        """evaluation_ledger.jsonl."""
-        return self._jsonl("evaluation_ledger.jsonl", LedgerEntry)
 
     @cached_property
     def decisions(self) -> list[Decision]:
