@@ -12,6 +12,10 @@
        delta = sum(y - p) / (sum p(1 - p) + tau)
    with tau = the prior strength. The NE of corrected vs uncorrected predictions, bucketed by the
    number of earlier impressions, shows where (if anywhere) per-character parameters pay off.
+   Using the beta-binomial strength as a logit-space Hessian penalty is a heuristic, not a derivation,
+   and when the pooled variance hits its numerical floor tau only says "no detectable variation".
+4. Cold ads: test rows whose creative (C14) or campaign (C17) never appeared in training, which the
+   standard slices (character, user) do not cover.
 """
 
 from pathlib import Path
@@ -27,6 +31,7 @@ from charade.scoring.scorer import Scorer
 
 OUT = Path("reports/coldstart")
 BUCKETS = (0, 5, 20, 50, 200, 1000)
+VARIANCE_FLOOR = 1e-8
 
 
 def _table(frame: pl.DataFrame) -> str:
@@ -117,7 +122,7 @@ def pooled_strength(train: pl.DataFrame, min_n: int = 50) -> tuple[float, float]
     )
     if per_char.height < 2:
         return float("nan"), float("inf")
-    var = max(float(per_char["resid"].var()) - float(per_char["noise"].mean()), 1e-8)  # pyright: ignore[reportArgumentType]
+    var = max(float(per_char["resid"].var()) - float(per_char["noise"].mean()), VARIANCE_FLOOR)  # pyright: ignore[reportArgumentType]
     m = float(per_char["ctr"].mean())  # pyright: ignore[reportArgumentType]
     return var**0.5, m * (1 - m) / var - 1
 
@@ -167,6 +172,33 @@ def graduation(frame: pl.DataFrame, p: np.ndarray, tau: float) -> pl.DataFrame:
     return pl.DataFrame(out)
 
 
+def cold_ads(test: pl.DataFrame, train: pl.DataFrame, p: np.ndarray) -> pl.DataFrame:
+    """NE and calibration on test rows by whether their creative and campaign appeared in training."""
+    rows = test.with_columns(
+        pl.Series("p", p),
+        pl.col("C14").is_in(train["C14"].unique().implode()).alias("seen_creative"),
+        pl.col("C17").is_in(train["C17"].unique().implode()).alias("seen_campaign"),
+    )
+    out: list[dict[str, object]] = []
+    for name, part in (
+        ("all test rows", rows),
+        ("creative unseen in training", rows.filter(~pl.col("seen_creative"))),
+        ("campaign unseen in training", rows.filter(~pl.col("seen_campaign"))),
+        ("creative and campaign seen", rows.filter(pl.col("seen_creative") & pl.col("seen_campaign"))),
+    ):
+        y, q = part["click"].to_numpy().astype(np.float64), part["p"].to_numpy()
+        out.append(
+            {
+                "slice": name,
+                "rows": part.height,
+                "share": part.height / rows.height,
+                "ne": normalized_entropy(y, q),
+                "pred_over_obs": float(q.mean() / y.mean()),
+            }
+        )
+    return pl.DataFrame(out)
+
+
 def run(settings: Settings | None = None, data_dir: Path | None = None, out: Path = OUT) -> dict[str, pl.DataFrame]:
     """Write reports/coldstart/coldstart.md and return the tables."""
     settings = settings or get_settings()
@@ -181,6 +213,13 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, out: Pat
     true_sd, tau = pooled_strength(train)
     later = frame.filter(pl.col("split") != "train")
     p_later = scorer.pctr(encode(scorer.spec, later))
+    floor = true_sd <= VARIANCE_FLOOR**0.5
+    graduation_title = (
+        f"Graduation, tau = {tau:,.0f}: the pooled variance beyond genre x tier hit its floor, so this tau only "
+        "means no detectable character variation, not a measured evidence requirement"
+        if floor
+        else f"Graduation, tau = {tau:,.0f} (pooled prior; true character sd beyond genre x tier = {true_sd:.4f})"
+    )
     tables = {
         "Permutation importance, characters unseen in training (test)": permutation_importance(
             scorer, cold_char, settings.seed
@@ -189,10 +228,11 @@ def run(settings: Settings | None = None, data_dir: Path | None = None, out: Pat
             scorer, new_user, settings.seed
         ).head(12),
         "Beta prior per genre x tier (training characters with >= 50 impressions)": prior,
-        f"Graduation, tau = {tau:,.0f} (pooled prior; true character sd beyond genre x tier = {true_sd:.4f})": (
-            graduation(later, p_later, tau)
-        ),
+        graduation_title: graduation(later, p_later, tau),
         "Graduation sensitivity, tau = 100 (as if characters varied by ~4 pp)": graduation(later, p_later, 100.0),
+        "Cold ads (test): creatives and campaigns never seen in training": cold_ads(
+            test, train, scorer.pctr(encode(scorer.spec, test))
+        ),
     }
     out.mkdir(parents=True, exist_ok=True)
     body = [
