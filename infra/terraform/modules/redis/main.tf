@@ -7,7 +7,7 @@ resource "random_password" "auth" {
 }
 
 resource "aws_secretsmanager_secret" "url" {
-  #checkov:skip=CKV2_AWS_57:Rotation requires a coordinated ElastiCache AUTH update; rotated by runbook (docs/09-operations.md)
+  #checkov:skip=CKV2_AWS_57:Rotation requires a coordinated ElastiCache AUTH update; rotated by runbook (docs/07-serving-operations.md)
   name       = "${var.name}/redis-url"
   kms_key_id = var.kms_key_arn
   tags       = var.tags

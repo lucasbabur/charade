@@ -3,7 +3,7 @@ name: Release
 # Continuous delivery stops at a versioned artifact: tag vX.Y.Z -> the API image, built from the
 # tagged commit, pushed to GitHub Container Registry as ghcr.io/<owner>/charade-api:X.Y.Z (immutable)
 # and :sha-<commit>. Deploying it is out of scope: infra/terraform is a validated sketch, never applied
-# (docs/09-operations.md). The model bundle is not baked in; tasks load a pinned bundle at start.
+# (docs/07-serving-operations.md). The model bundle is not baked in; tasks load a pinned bundle at start.
 
 on:
   push:

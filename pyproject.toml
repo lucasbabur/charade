@@ -86,17 +86,17 @@ seed = 20141021
 train_end = "2014-10-27T23:00:00"
 val_end = "2014-10-28T23:00:00"
 # Serving: Redis read budget. Within the 50 ms p99 envelope, a slow store degrades to cold-user
-# defaults instead of failing (docs/08-serving-architecture.md).
+# defaults instead of failing (docs/07-serving-operations.md).
 store_timeout_ms = 20.0
 
 # Shipped model. Values come from reports/tuning/{dcn,gbdt}.csv (best trial on the inner split,
-# train 10-21..26 / select 10-27); see docs/04-models-evaluation.md. `groups` and `text_provider`
+# train 10-21..26 / select 10-27); see docs/03-models-evaluation.md. `groups` and `text_provider`
 # follow reports/models/ablations.csv.
 [tool.charade.model]
 # character_id and conversation are dropped: their ablation CIs include zero (decision rule in docs/hypotheses.md).
 groups = ["context", "device", "ad", "character_meta", "user_history"]
 
-# Ranking policy (docs/05-ranking-policy.md). The data has no advertiser preferences, so the
+# Ranking policy (docs/04-ranking-policy.md). The data has no advertiser preferences, so the
 # brand-safety matrix below is illustrative: advertiser 157 accepts up to suggestive characters,
 # advertiser 48 only sfw ones. Every other advertiser accepts all tiers.
 [tool.charade.policy]

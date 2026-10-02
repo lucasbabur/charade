@@ -1,6 +1,6 @@
 """Turn calibrated pCTRs for N candidates into a ranked, gated, explained decision.
 
-Order of operations (docs/05-ranking-policy.md):
+Order of operations (docs/04-ranking-policy.md):
 1. Hard gates: brand safety (advertiser x character tier), frequency cap, exhausted budget.
    Gated candidates are never served, whatever their score.
 2. Value: pCTR x bid x pacing multiplier. With bid = 1 and no pacing this is pure CTR ranking.

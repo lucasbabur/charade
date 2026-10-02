@@ -1,4 +1,4 @@
-# Alarms that page (docs/09-operations.md): latency SLO, errors, degraded serving and no-fill, plus a
+# Alarms that page (docs/07-serving-operations.md): latency SLO, errors, degraded serving and no-fill, plus a
 # dashboard. Application metrics come from the structured decision log, so no
 # metrics agent is needed for the alarms; /metrics stays available for Prometheus scraping.
 
@@ -10,7 +10,7 @@ resource "aws_sns_topic" "alarms" {
 
 resource "aws_cloudwatch_metric_alarm" "latency_p99" {
   alarm_name          = "${var.name}-api-p99-latency"
-  alarm_description   = "ALB p99 above 40 ms for 5 minutes (SLO: 50 ms). Runbook: docs/09-operations.md#latency"
+  alarm_description   = "ALB p99 above 40 ms for 5 minutes (SLO: 50 ms). Runbook: docs/07-serving-operations.md#latency"
   namespace           = "AWS/ApplicationELB"
   metric_name         = "TargetResponseTime"
   extended_statistic  = "p99"
@@ -27,7 +27,7 @@ resource "aws_cloudwatch_metric_alarm" "latency_p99" {
 
 resource "aws_cloudwatch_metric_alarm" "errors" {
   alarm_name          = "${var.name}-api-5xx-rate"
-  alarm_description   = "Target 5xx above 0.5 % of requests for 5 minutes. Runbook: docs/09-operations.md#errors"
+  alarm_description   = "Target 5xx above 0.5 % of requests for 5 minutes. Runbook: docs/07-serving-operations.md#errors"
   comparison_operator = "GreaterThanThreshold"
   threshold           = 0.5
   evaluation_periods  = 5
@@ -89,7 +89,7 @@ resource "aws_cloudwatch_log_metric_filter" "decision" {
 resource "aws_cloudwatch_metric_alarm" "decision" {
   for_each            = local.log_metrics
   alarm_name          = "${var.name}-${each.key}"
-  alarm_description   = "${each.value.description}. Runbook: docs/09-operations.md"
+  alarm_description   = "${each.value.description}. Runbook: docs/07-serving-operations.md"
   namespace           = "Charade"
   metric_name         = each.key
   statistic           = "Sum"

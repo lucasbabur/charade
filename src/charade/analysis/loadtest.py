@@ -1,4 +1,4 @@
-"""Load-test inputs and summary (`uv run poe loadtest`, see docs/08-serving-architecture.md).
+"""Load-test inputs and summary (`uv run poe loadtest`, see docs/07-serving-operations.md).
 
 `build_requests` writes realistic `/v1/rank` bodies: test-day contexts with N candidates drawn from
 the creative pool, weighted by volume. `summarize` turns Locust's CSV stats into `latency.json`.
