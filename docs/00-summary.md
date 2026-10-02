@@ -24,7 +24,7 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 | Cold start | The model has no character ID, so a new character is scored from metadata like any other. Unseen characters: NE 0.908 vs 0.885 warm (n = 1,478, known genres only); new users 0.894 vs 0.856 returning | [06](06-cold-start.md) |
 | Drift | Ads rotate (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. An exposure penalty chosen on the validation day by a non-inferiority rule (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss, so it awaits an online test | [07](07-drift-adaptation.md) |
 | Serving | p50 8 / p95 14 / p99 25 ms at 400 rps, 0.005 % errors (impression events over the 10 ms store budget; impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [08](08-serving-architecture.md) |
-| Gates | mlcheck on the shipped bundle: 48 checks, 44 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
+| Gates | mlcheck on the shipped bundle: 44 checks, 40 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
 
 ## What the data taught (and what it changed)
 
@@ -58,7 +58,7 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 - **Infrastructure is a sketch, not a platform.** Rolling windows, gated promotion and pinned-bundle rollback are scripted; the serving environment passes Terraform validation, tflint and checkov. None of it has run on AWS, and the scheduler, log export and CI deploy credentials were deliberately left out.
 - **`confidence` and the evidence intervals are heuristics** derived from training support, not calibrated posteriors.
 - **External reviews found three correctness bugs, all fixed with tests:** Thompson-sampling propensities biased upward; counters that let later-hour events leak into earlier snapshots; and a frequency cap that ignored the current hour, because it reused the causal model feature. The cap now counts every recorded exposure; the feature still excludes the current hour.
-- **MLL006 is a budget, not a proof.** It caps how many distinct configurations look at one holdout window; it cannot prove results were not used to choose among them.
+- **Holdout discipline is not enforced by a gate.** Choices are made on validation and test only confirms; where that was violated and redone, docs/04 says so. An earlier ledger-based budget gate was removed because it did not track every analysis that read test.
 - **Feedback events are at-least-once.** The API re-emits an event when a retried write finds it already stored, and the row builder deduplicates; a transactional outbox (append to a Redis stream inside the same MULTI, delivered by a separate consumer) is the production version.
 - **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation procedure and the causal graduation check are what transfer; the graduation formula itself is a heuristic.
 

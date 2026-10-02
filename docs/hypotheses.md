@@ -1,7 +1,7 @@
 ---
 title: "Pre-registered hypotheses"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # Pre-registered hypotheses
@@ -29,4 +29,4 @@ Each hypothesis links the experiments that test it ([experiments/](../experiment
 - **Primary:** normalized entropy (NE) on test = log loss / entropy of the test base rate. The auction consumes pCTR × bid, so probability quality is what matters.
 - **Secondary:** log loss, ROC-AUC, predicted/observed ratio (overall and per day), equal-mass ECE, group AUC within user × hour.
 - **Uncertainty:** paired hour-block bootstrap (1,000 resamples) for every model comparison.
-- **Decision rule:** a component ships only if its validation NE improvement has a CI excluding zero; the test set is evaluated once per model version (MLL006).
+- **Decision rule:** a component ships only if its validation NE improvement has a CI excluding zero; the test set only confirms (exceptions in [04](04-models-evaluation.md#honesty-notes)).

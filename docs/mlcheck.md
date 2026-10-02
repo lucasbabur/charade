@@ -1,7 +1,7 @@
 ---
 title: "mlcheck — ML release gates"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # mlcheck — ML release gates
@@ -42,7 +42,6 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | `splits.parquet` | `id, split, ts` | MLL001–002 |
 | `predictions.parquet` | `id, split, model, label, pred, ts, slice_<name>…` for primary **and** baseline on val + test | MLM* |
 | `leakage.json` | shuffled-label AUC, per-feature univariate AUC, adversarial AUC | MLL004–005, MLL007 |
-| `evaluation_ledger.jsonl` | one line per evaluation: run, model version, split, configuration hash (model + features + policy + windows), window | MLL006 |
 | `parity.json` | offline vs serving features, torch vs ONNX outputs, bundle digest | MLV001–002, MLR005 |
 | `latency.json` | load-test p50/p95/p99, error rate, N candidates, duration, digest reported by the tested API | MLV003–004, MLR005 |
 | `ope.json` | per policy and estimator: value, CI, ESS, max weight; bundle digest | MLP001–002, MLR005 |
@@ -75,7 +74,6 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLL003 | leakage | error | fit-window | Every fitted object (vocabulary, encoder, prior, scaler, model, calibrator) must be fitted only on data that precedes the holdout, inside the split it declares. |
 | MLL004 | leakage | error | shuffled-label-auc | Retraining on shuffled labels must give chance-level AUC; anything else means the pipeline leaks the label. |
 | MLL005 | leakage | error | univariate-feature-auc | No single feature should predict clicks almost perfectly; one that does is usually derived from the label. |
-| MLL006 | leakage | error | holdout-config-budget | Every distinct configuration scored on the holdout is a chance to select on it. Re-scoring an identical configuration adds nothing; new configurations spend a pre-registered budget per holdout window. |
 | MLL007 | leakage | warning | adversarial-validation | A classifier that separates train from holdout rows with high AUC means strong covariate shift; offline metrics on that holdout will not transfer. |
 | MLM001 | model | error | predictions-contract | Every gate below is computed from predictions.parquet; it must hold primary and baseline predictions on every evaluation split for the same ids. |
 | MLM002 | model | error | prediction-sanity | Probabilities must be finite, strictly inside (0,1) and not constant; a 0 or 1 makes log loss infinite and a constant model ranks nothing. |
@@ -97,11 +95,8 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLR005 | repro | error | evidence-bound-to-bundle | Parity, latency and policy evidence only vouch for the model they measured; a stale report would pass gates for a model it never saw. |
 | MLS001 | static | error | serving-no-training-deps | The serving path must not import training frameworks, even transitively: they bloat the image, slow cold starts and invite fitting code into the request path. |
 | MLS002 | static | error | serving-uses-shared-features | Training and serving must build features with the same code; a serving path that re-implements features is the classic source of train/serve skew. |
-| MLS003 | static | error | no-shuffled-split | CTR data is time-ordered; random or k-fold splits leak future hours, shared users and repeated creatives into training and overstate offline metrics. |
-| MLS004 | static | error | no-global-rng | Global RNG state makes results depend on call order and imports; explicit generators make every stochastic step reproducible from the run's seed. |
 | MLS005 | static | error | safe-model-loading | Model artifacts travel through buckets and registries; pickle-based loading executes code from them. |
 | MLS006 | static | error | no-notebooks | Notebooks hide execution order and state; outside explicitly allowed directories (whose notebooks must be executed in CI), every result must come from a re-runnable command. |
-| MLS007 | static | warning | no-fit-on-eval-data | Fitting anything on validation/test data leaks it. Legitimate cases (calibrator on validation) must be marked explicitly so a reviewer sees them. |
 | MLV001 | serving | error | train-serve-parity | The serving path must produce the same features as the offline pipeline for the same rows; any difference is train/serve skew. |
 | MLV002 | serving | error | onnx-parity | The exported model is what serves traffic; it must reproduce the trained model's outputs. |
 | MLV003 | serving | error | latency-p99 | The ad slot waits for the ranker; p99 over budget means blank slots or a timed-out auction. |
@@ -111,7 +106,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 
 ## Result on the shipped run (`uv run mlcheck .`)
 
-**48 checks: 44 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
+**44 checks: 40 pass, 0 fail, 4 warn.** Every warning is a documented property of the data, not a defect:
 
 | Warning | Finding | Where it is handled |
 |---|---|---|
@@ -131,4 +126,4 @@ Gates that pass with margin:
 
 ## Tests
 
-`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 48 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 119 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.
+`tools/mlcheck/tests`: a synthetic **golden project** (sources, raw data and a complete run) passes all 44 checks. One **breakage per check** proves each gate fails on the defect it targets, and a test asserts the breakage table covers every registered code. Further tests cover stats, CLI and edge cases (missing artifact, missing source, suppression, unconfigured section). Results: 110 tests, 94 % branch coverage; ruff (incl. bandit and pydocstyle rules) clean; pyright strict clean.

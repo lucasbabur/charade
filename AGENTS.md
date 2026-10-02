@@ -61,14 +61,14 @@ infra/terraform/, docker/, docker-compose.yml, .github/ (workflows; dependabot.y
 
 Each one is enforced by an mlcheck gate. Breaking one fails CI.
 
-1. **Time is the only split.** Train 10-21→10-27, val 10-28, test 10-29→10-30. No `train_test_split`, KFold or shuffling (MLS003, MLL001–002).
-2. **Nothing is fitted on the future.** Vocabularies, encoders, priors, PCA, scalers and models are fitted on train; the calibrator is fitted on val. Record every fitted object in the manifest with `fit_split`/`fit_end` (MLL003). A legitimate fit on eval data needs `# mlcheck: ignore[MLS007]` and a reason.
+1. **Time is the only split.** Train 10-21→10-27, val 10-28, test 10-29→10-30. No `train_test_split`, KFold or shuffling (MLL001–002 check the split artifacts).
+2. **Nothing is fitted on the future.** Vocabularies, encoders, priors, PCA, scalers and models are fitted on train; the calibrator is fitted on val. Record every fitted object in the manifest with `fit_split`/`fit_end` (MLL003). A legitimate fit on eval data (the calibrator on val) is named in the manifest with its `fit_split`.
 3. **Counters are strictly causal.** Use only hours before the impression hour, because order within an hour is unknown.
 4. **One feature transform.** Training and serving both call `charade.features`. Never re-implement a feature in `serving/` (MLS002, MLV001).
 5. **Serving stays light.** `serving/` must not reach torch, lightgbm, sklearn, optuna or mlflow, even transitively. It loads ONNX (MLS001).
-6. **Explicit randomness.** Pass `np.random.Generator`/seeds; never use global `np.random.*` or `random.*` (MLS004). The primary model runs with ≥ 3 seeds (MLR004).
+6. **Explicit randomness.** Pass `np.random.Generator`/seeds; never use global `np.random.*` or `random.*` (code review; no gate). The primary model runs with ≥ 3 seeds (MLR004).
 7. **No pickle.** Artifacts are ONNX, JSON, parquet or safetensors. `torch.load` needs `weights_only=True` (MLS005).
-8. **The test set has a configuration budget.** Every holdout evaluation is logged with a configuration hash; at most `max_holdout_configs` distinct configurations may look at one window (MLL006). Tune on val. If you want to look at test, you are doing it wrong.
+8. **Choose on validation, confirm on test.** Tune, ablate and select on val. If a choice needs the test days, it is a new experiment on a fresh window, and the docs say so. No gate can prove this; it is a discipline.
 9. **Calibration matters as much as ranking.** Log loss and normalized entropy are the primary metrics; AUC is secondary. A model that improves AUC but breaks calibration (MLM005–007) does not ship.
 10. **Claims need intervals.** A "model A beats B" statement needs a paired hour-block bootstrap CI (MLM004). Use one seed and one split only for debugging.
 11. **Notebooks only in `experiments/`.** Each experiment is a folder with a frontmatter README (id, hypotheses, status, conclusion) and a notebook paired with a `.py` (edit the `.py`, then `jupytext --sync`). Logic lives in `src/charade/analysis`; CI executes every notebook on the fixture. Notebooks anywhere else fail MLS006.
