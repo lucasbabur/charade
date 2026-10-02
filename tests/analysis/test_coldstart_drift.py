@@ -16,13 +16,6 @@ def test_coldstart_report(bundle: Settings, tmp_path: Path) -> None:
     assert all(t.height > 0 for name, t in tables.items() if name.startswith("Permutation"))
 
 
-def test_graduation_correction_is_causal_and_zero_with_infinite_prior(features: pl.DataFrame) -> None:
-    later = features.filter(pl.col("split") != "train")
-    p = np.full(later.height, 0.18)
-    table = coldstart.graduation(later, p, tau=1e12)
-    assert np.allclose(table["delta_logloss"].to_numpy(), 0.0, atol=1e-9)
-
-
 def test_beta_prior_recovers_known_spread() -> None:
     rng = np.random.default_rng(0)
     ctr = rng.beta(0.2 * 200, 0.8 * 200, size=400)

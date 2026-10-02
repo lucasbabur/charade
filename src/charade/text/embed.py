@@ -6,7 +6,6 @@ without API keys. PCA is fitted on characters published by the end of training (
 """
 
 import hashlib
-import os
 from collections.abc import Callable
 from datetime import datetime
 from enum import StrEnum
@@ -17,7 +16,6 @@ import numpy.typing as npt
 import polars as pl
 from sklearn.decomposition import PCA, TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
-from tenacity import retry, stop_after_attempt, wait_exponential
 
 from charade.features.spec import TEXT_PREFIX
 
@@ -33,7 +31,6 @@ class Provider(StrEnum):
 
     TFIDF = "tfidf"
     QWEN3 = "qwen3_0_6b"
-    OPENAI = "openai_3_large"
 
 
 def _tfidf(texts: list[str]) -> Matrix:
@@ -54,24 +51,9 @@ def _has_cuda() -> bool:
     return torch.cuda.is_available()
 
 
-def _openai(texts: list[str]) -> Matrix:
-    from openai import OpenAI  # noqa: PLC0415
-
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-
-    @retry(stop=stop_after_attempt(5), wait=wait_exponential(min=1, max=30))
-    def batch(chunk: list[str]) -> list[list[float]]:
-        response = client.embeddings.create(model="text-embedding-3-large", input=chunk, dimensions=1024)
-        return [item.embedding for item in response.data]
-
-    vectors = [v for start in range(0, len(texts), 256) for v in batch(texts[start : start + 256])]
-    return np.asarray(vectors, dtype=np.float32)
-
-
 EMBEDDERS: dict[Provider, Callable[[list[str]], Matrix]] = {
     Provider.TFIDF: _tfidf,
     Provider.QWEN3: _qwen3,
-    Provider.OPENAI: _openai,
 }
 
 

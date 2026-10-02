@@ -25,11 +25,9 @@ train = [
     "onnx>=1.23",
     "onnxscript>=0.7",
     "optuna>=4.5",
-    "openai>=2.0",
     "scikit-learn>=1.9",
     "scipy>=1.18",
     "sentence-transformers>=6.1",
-    "tenacity>=9.1",
     "typer>=0.19",
 ]
 # Pick exactly one torch build: `--extra cpu` (CI) or `--extra gpu` (CUDA 13, local GTX 1660 SUPER).
@@ -139,7 +137,7 @@ test-mlcheck = { cmd = "pytest", cwd = "tools/mlcheck", help = "mlcheck's own te
 mlcheck = { cmd = "mlcheck . --stage static", help = "ML static gates" }
 mlcheck-data = { cmd = "mlcheck . --stage data", help = "Data contract on the raw CSVs (local only; data is not in git)" }
 eda = { cmd = "python -m charade.analysis.eda", help = "Write reports/eda/eda.md" }
-text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descriptions and write reports/text_bakeoff.csv (OPENAI_API_KEY optional)" }
+text = { cmd = "python -m charade.text.bakeoff", help = "Embed character descriptions and write reports/text_bakeoff.csv" }
 tune = { cmd = "python -m charade.models.tune", help = "Optuna search on the inner split; writes reports/tuning/" }
 train = { cmd = "python -m charade.models.pipeline", help = "Train, calibrate, evaluate once on test, export; writes artifacts and reports/models/metrics.json" }
 refit-study = { cmd = "python -m charade.models.refit", help = "Should the model also train on the validation day? Decided one day earlier; writes reports/models/refit_study.json" }

@@ -4,17 +4,13 @@ from datetime import datetime
 from functools import cache
 from pathlib import Path
 
-from pydantic import AliasChoices, BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
     PyprojectTomlConfigSettingsSource,
     SettingsConfigDict,
 )
-
-
-def _secret(name: str) -> SecretStr | None:
-    return Field(default=None, validation_alias=AliasChoices(name))
 
 
 class PolicyConfig(BaseModel):
@@ -105,11 +101,6 @@ class Settings(BaseSettings):
     redis_url: str | None = None
     """`CHARADE_REDIS_URL`; without it serving uses an in-process store."""
     store_timeout_ms: float = 10.0
-
-    gemini_api_key: SecretStr | None = _secret("GEMINI_API_KEY")
-    voyage_api_key: SecretStr | None = _secret("VOYAGE_API_KEY")
-    openai_api_key: SecretStr | None = _secret("OPENAI_API_KEY")
-    anthropic_api_key: SecretStr | None = _secret("ANTHROPIC_API_KEY")
 
     @classmethod
     def settings_customise_sources(
