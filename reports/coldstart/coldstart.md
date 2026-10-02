@@ -6,35 +6,35 @@ Cold-character test rows: 1,478; new-user test rows: 97,843.
 
 | feature | delta_ne |
 |---|---|
-| site_id | 0.0325 |
-| app_id | 0.0274 |
-| genre | 0.0241 |
-| app_category | 0.0106 |
-| site_category | 0.0057 |
-| banner_pos | 0.0057 |
-| user_seen | 0.0044 |
-| device_model | 0.0043 |
-| site_domain | 0.0033 |
-| C21 | 0.0033 |
-| C19 | 0.0031 |
-| C20 | 0.0019 |
+| site_id | 0.0323 |
+| genre | 0.0269 |
+| app_id | 0.0258 |
+| app_category | 0.0081 |
+| banner_pos | 0.0065 |
+| user_seen | 0.0063 |
+| device_model | 0.0048 |
+| site_category | 0.0047 |
+| site_domain | 0.0038 |
+| C21 | 0.0027 |
+| C19 | 0.0024 |
+| safety_tier | 0.0023 |
 
 ## Permutation importance, users with no earlier impressions (test)
 
 | feature | delta_ne |
 |---|---|
-| genre | 0.0367 |
-| app_id | 0.0367 |
-| site_id | 0.0320 |
-| app_category | 0.0131 |
-| site_domain | 0.0092 |
+| genre | 0.0381 |
+| app_id | 0.0360 |
+| site_id | 0.0310 |
+| app_category | 0.0127 |
+| site_domain | 0.0083 |
 | device_model | 0.0072 |
-| banner_pos | 0.0063 |
-| safety_tier | 0.0046 |
-| C14 | 0.0034 |
-| site_category | 0.0022 |
-| C21 | 0.0019 |
-| device_id_real | 0.0015 |
+| banner_pos | 0.0061 |
+| safety_tier | 0.0047 |
+| C14 | 0.0032 |
+| site_category | 0.0023 |
+| C21 | 0.0018 |
+| device_id_real | 0.0014 |
 
 ## Beta prior per genre x tier (training characters with >= 50 impressions)
 
@@ -71,22 +71,31 @@ Cold-character test rows: 1,478; new-user test rows: 97,843.
 | slice | sfw | 156 | 0.1720 | 0.0010 | 142416.4299 |
 | slice | suggestive | 61 | 0.1737 | 0.0038 | 10117.6372 |
 
-## Graduation, tau = 15,125,759 (pooled prior; true character sd beyond genre x tier = 0.0001)
+## Graduation, tau = 15,125,759: the pooled variance beyond genre x tier hit its floor, so this tau only means no detectable character variation, not a measured evidence requirement
 
 | earlier_impressions | rows | model_ne | corrected_ne | delta_logloss |
 |---|---|---|---|---|
-| <=5 | 28,228 | 0.8794 | 0.8794 | -0.0000 |
-| <=20 | 44,742 | 0.8766 | 0.8766 | -0.0000 |
-| <=50 | 58,662 | 0.8734 | 0.8734 | 0.0000 |
-| <=200 | 113,203 | 0.8760 | 0.8760 | -0.0000 |
-| <=1000 | 25,480 | 0.8847 | 0.8847 | 0.0000 |
+| <=5 | 28,228 | 0.8805 | 0.8805 | -0.0000 |
+| <=20 | 44,742 | 0.8781 | 0.8781 | -0.0000 |
+| <=50 | 58,662 | 0.8750 | 0.8750 | 0.0000 |
+| <=200 | 113,203 | 0.8772 | 0.8772 | -0.0000 |
+| <=1000 | 25,480 | 0.8862 | 0.8862 | 0.0000 |
 
 ## Graduation sensitivity, tau = 100 (as if characters varied by ~4 pp)
 
 | earlier_impressions | rows | model_ne | corrected_ne | delta_logloss |
 |---|---|---|---|---|
-| <=5 | 28,228 | 0.8794 | 0.8794 | -0.0000 |
-| <=20 | 44,742 | 0.8766 | 0.8765 | -0.0000 |
-| <=50 | 58,662 | 0.8734 | 0.8735 | 0.0000 |
-| <=200 | 113,203 | 0.8760 | 0.8761 | 0.0000 |
-| <=1000 | 25,480 | 0.8847 | 0.8853 | 0.0003 |
+| <=5 | 28,228 | 0.8805 | 0.8805 | -0.0000 |
+| <=20 | 44,742 | 0.8781 | 0.8780 | -0.0000 |
+| <=50 | 58,662 | 0.8750 | 0.8750 | 0.0000 |
+| <=200 | 113,203 | 0.8772 | 0.8773 | 0.0000 |
+| <=1000 | 25,480 | 0.8862 | 0.8868 | 0.0003 |
+
+## Cold ads (test): creatives and campaigns never seen in training
+
+| slice | rows | share | ne | pred_over_obs |
+|---|---|---|---|---|
+| all test rows | 127,406 | 1.0000 | 0.8855 | 1.0021 |
+| creative unseen in training | 54,602 | 0.4286 | 0.8886 | 0.9464 |
+| campaign unseen in training | 53,458 | 0.4196 | 0.8867 | 0.9485 |
+| creative and campaign seen | 72,804 | 0.5714 | 0.8891 | 1.0340 |
