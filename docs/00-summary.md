@@ -51,7 +51,7 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 
 - **Offline policy estimates are directional.** Propensities are inferred from impression shares, and effective samples are about 4 %. The first production change is logging real propensities and candidate sets, which the API now logs with every decision.
 - **The test window is 30 hours** and the cold-character slice has 1,478 rows; those CIs are wide.
-- **Not run:** OpenAI embeddings (the key had no quota), Gemini and Voyage (no keys). Given ρ ≈ 0 for two very different embedders, a third would not change the decision on this data.
+- **Not run:** paid embedding APIs (OpenAI, Gemini, Voyage: no usable keys). Given ρ ≈ 0 for two very different embedders, a third would not change the decision on this data.
 - **Brand-safety preferences** are illustrative; the data has none.
 - **Budget pacing is not connected to the API.** The pacer and budget gate are tested library code, but there is no spend feed to drive them.
 - **The feedback loop is code, not a running job.** The API logs decisions, impressions and clicks durably, and `charade.data.events` turns them into training rows (tested end to end), but no scheduled job builds the S3 export yet.
@@ -60,6 +60,6 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 - **External reviews found three correctness bugs, all fixed with tests:** Thompson-sampling propensities biased upward; counters that let later-hour events leak into earlier snapshots; and a frequency cap that ignored the current hour, because it reused the causal model feature. The cap now counts every recorded exposure; the feature still excludes the current hour.
 - **Holdout discipline is not enforced by a gate.** Choices are made on validation and test only confirms; where that was violated and redone, docs/04 says so. An earlier ledger-based budget gate was removed because it did not track every analysis that read test.
 - **Feedback events are at-least-once.** The API re-emits an event when a retried write finds it already stored, and the row builder deduplicates; a transactional outbox (append to a Redis stream inside the same MULTI, delivered by a separate consumer) is the production version.
-- **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation procedure and the causal graduation check are what transfer; the graduation formula itself is a heuristic.
+- **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation procedure is what transfers.
 
 Next steps: [10-next-steps.md](10-next-steps.md).

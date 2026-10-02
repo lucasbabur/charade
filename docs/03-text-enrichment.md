@@ -1,7 +1,7 @@
 ---
 title: "Character text"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # 03 — Character text
@@ -21,8 +21,7 @@ The residual is each character's training CTR (≥ 100 impressions) minus its ge
 
 | Provider | Status |
 |---|---|
-| OpenAI `text-embedding-3-large` | Implemented (`Provider.OPENAI`); the available key returned `insufficient_quota` on 2026-10-01. Run `OPENAI_API_KEY=… uv run poe text` to add it |
-| Gemini `gemini-embedding-001`, Voyage `voyage-4-large` | No keys available. They would plug in as one function each in `charade.text.embed.EMBEDDERS` |
+| OpenAI, Gemini, Voyage | Not run (no usable keys). Each would plug in as one function in `charade.text.embed.EMBEDDERS`; with ρ ≈ 0 for two very different embedders, a third would not change the decision |
 
 ## Pipeline rules
 

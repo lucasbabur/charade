@@ -1,7 +1,7 @@
 ---
 title: "ADR 0005: No character ID and no description text in the shipped model"
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-02
 ---
 
 # ADR 0005: No character ID and no description text in the shipped model
@@ -17,4 +17,4 @@ Drop the character-ID embedding and the conversation features; reject text featu
 
 ## Consequences
 
-New characters are scored exactly like old ones (no identity parameter to be missing). If production data shows character-level spread, the graduation procedure in docs/06 re-measures it and the ID group returns through the same ablation gate.
+New characters are scored exactly like old ones (no identity parameter to be missing). If production data shows character-level spread, the checks in docs/06 re-measure it and the ID group returns through the same ablation gate.

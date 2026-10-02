@@ -80,7 +80,7 @@ Read [docs/01-data.md](docs/01-data.md) before touching features. The traps: `de
 
 ## External APIs (paid)
 
-Embedding providers (`charade.text.embed`; OpenAI is the only paid one implemented) run **offline only**, cached by provider and a hash of the texts.
+Embedding providers (`charade.text.embed`: TF-IDF and Qwen3, both local) run **offline only**, cached by provider and a hash of the texts.
 
 - Never call them from tests or CI; tests use TF-IDF.
 - Never call them from `serving/`.
