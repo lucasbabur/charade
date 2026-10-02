@@ -28,9 +28,9 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 
 ## What the data taught (and what it changed)
 
-1. **Genre and safety tier are the character.**
+1. **Genre and safety tier carry the character signal.**
    - Genre alone spans 14.7 % (mentor) to 23.2 % (romance) CTR, and genre × campaign interactions are real (H1).
-   - Beyond genre × tier, characters are indistinguishable: the true spread is 0.0001.
+   - Character-ID features did not improve validation log loss in the ablation (−0.0001 [−0.0006, +0.0002], both seed sets), so the shipped model uses metadata instead. That is a finding about this data, not a claim that characters are interchangeable.
    - So the shipped model has no character ID: a new character has no missing parameter. That does not establish performance on new genres, shifted metadata or real conversation content.
 2. **Description text adds nothing here.** The descriptions are templates; the embeddings recover genre perfectly and add no CTR signal (ρ ≈ 0 ± 0.1). Adding them hurts validation log loss. The pipeline is kept for real free-text personas.
 3. **Most "users" are placeholders.** 82 % of `device_id`s are one value, and 81 % of IPs appear once. The user proxy is IP + device model, and history counters exclude the current hour (the classic Avazu same-hour leak, H5).
