@@ -36,7 +36,7 @@ def test_drift_writes_contract_and_reports(bundle: Settings, tmp_path: Path) -> 
     assert all(days for days in payload["psi"].values())
     stale = tables[drift.STALE_TITLE]
     assert stale.height > 0
-    assert "per day of model age" in (tmp_path / "drift.md").read_text()
+    assert "Per day of model age" in (tmp_path / "drift.md").read_text()
 
 
 def test_age_slope_recovers_a_linear_trend_and_ignores_day_difficulty() -> None:

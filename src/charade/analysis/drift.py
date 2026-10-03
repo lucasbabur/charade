@@ -166,10 +166,10 @@ def staleness(
     return pl.DataFrame(rows).sort("scored_day", "age_days")
 
 
-def age_slope(table: pl.DataFrame) -> float:
-    """NE change per day of model age, within each scored day (so day-level difficulty cancels)."""
+def age_slope(table: pl.DataFrame, column: str = "ne") -> float:
+    """Change of `column` per day of model age, within each scored day (so day-level differences cancel)."""
     centred = table.with_columns(
-        (pl.col("ne") - pl.col("ne").mean().over("scored_day")).alias("dne"),
+        (pl.col(column) - pl.col(column).mean().over("scored_day")).alias("dne"),
         (pl.col("age_days") - pl.col("age_days").mean().over("scored_day")).cast(pl.Float64).alias("dage"),
     )
     x, y = centred["dage"].to_numpy(), centred["dne"].to_numpy()
@@ -257,7 +257,11 @@ def run(
     for title, table in tables.items():
         body += [f"## {title}", "", _table(table), ""]
         if title == STALE_TITLE:
-            body += [f"NE change per day of model age, within scored day: {age_slope(stale):+.5f}", ""]
+            body += [
+                f"Per day of model age, within scored day: NE {age_slope(stale):+.5f}, "
+                f"pred/obs {age_slope(stale, 'calibration_ratio'):+.4f}",
+                "",
+            ]
     (out / "drift.md").write_text("\n".join(body))
     return tables
 
