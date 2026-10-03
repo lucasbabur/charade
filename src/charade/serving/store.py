@@ -4,12 +4,15 @@ Four kinds of key:
     charade:dec:<request>      Served {user, hour, candidate, campaign, genre, pctr, model_version}, once, 1 h
     charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
     charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 1 h
-    charade:pairs:<version>    hash {<campaign>|<genre>:expected, ...:clicks}: the live correction's evidence
-                               for one model version, kept 48 h after its last event. An impression adds the
-                               served pCTR to `expected`, a click adds 1 to `clicks`, as atomic increments
-                               queued in that event's transaction. The sums compare clicks with one model's
-                               pCTR, so each bundle starts from empty, as the E012 replay that chose the prior
-                               starts each day from empty. One hash per version makes a request's read one HMGET.
+    charade:pair:<version>:<campaign>|<genre>:{expected,clicks}
+                               float strings: the live correction's evidence for one model version, kept 48 h
+                               after the last event. An impression adds the served pCTR to `expected`, a click
+                               adds 1 to `clicks`, as atomic increments queued in that event's transaction. The
+                               sums compare clicks with one model's pCTR, so each bundle starts from empty, as
+                               the E012 replay that chose the prior starts each day from empty. A request reads
+                               them with one MGET. Plain keys, not one hash per version: a small hash is a
+                               listpack scanned per field, and a 200-field HMGET of mostly absent fields cost
+                               215 us of single-threaded Redis time per request under load.
 
 One canonical identity per event. A decision is immutable: re-recording the same request id with the
 same content is a duplicate, with different content a conflict. An impression event names only its
@@ -51,12 +54,12 @@ from charade.ranking.correction import PairState, pair_key
 DECISION_PREFIX = "charade:dec:"
 USER_PREFIX = "charade:user:"
 IMPRESSION_PREFIX = "charade:imp:"
-PAIRS_PREFIX = "charade:pairs:"
+PAIR_PREFIX = "charade:pair:"
 USER_TTL_SECONDS = 14 * 24 * 3600
 IMPRESSION_TTL_SECONDS = CLICK_WINDOW_HOURS * 3600
 """Decisions and impressions live as long as a click can still be attributed (the label maturity window)."""
 PAIR_TTL_SECONDS = 48 * 3600
-"""A version's correction sums outlive a quiet night: a bundle serves for a day, then its hash expires."""
+"""A version's correction sums outlive a quiet night: a bundle serves for a day, then its sums expire."""
 MAX_RETRIES = 50
 
 
@@ -140,6 +143,10 @@ def _apply_impression(history: UserHistory | None, served: Served) -> UserHistor
     history = history or UserHistory()
     history.record(served.hour, served.campaign, 0)
     return history
+
+
+def _sum_key(model_version: str, pair: str, total: str) -> str:
+    return f"{PAIR_PREFIX}{model_version}:{pair}:{total}"
 
 
 def _existing(impression: Impression, request_id: str) -> Recorded:
@@ -253,9 +260,8 @@ class RedisStore:
             pipe.set(imp_key, impression.model_dump_json(), ex=IMPRESSION_TTL_SECONDS)
             pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             if pair:
-                version, key = pair
-                pipe.hincrbyfloat(PAIRS_PREFIX + version, f"{key}:expected", served.pctr or 0.0)
-                pipe.expire(PAIRS_PREFIX + version, PAIR_TTL_SECONDS)
+                pipe.incrbyfloat(_sum_key(*pair, "expected"), served.pctr or 0.0)
+                pipe.expire(_sum_key(*pair, "expected"), PAIR_TTL_SECONDS)
             await pipe.execute()
             found.append(impression)
             return Outcome.RECORDED
@@ -289,20 +295,19 @@ class RedisStore:
                 history.record_click(impression.served.hour)
                 pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             if pair:
-                version, key = pair
-                pipe.hincrbyfloat(PAIRS_PREFIX + version, f"{key}:clicks", 1.0)
-                pipe.expire(PAIRS_PREFIX + version, PAIR_TTL_SECONDS)
+                pipe.incrbyfloat(_sum_key(*pair, "clicks"), 1.0)
+                pipe.expire(_sum_key(*pair, "clicks"), PAIR_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
 
         return await self._transact([imp_key, user_key], attempt)
 
     async def pairs(self, model_version: str, keys: list[str]) -> list[PairState]:
-        """One HMGET on the version's hash, bounded by the timeout."""
+        """One MGET bounded by the timeout."""
         if not keys:
             return []
-        fields = [f"{k}:{total}" for k in keys for total in ("expected", "clicks")]
-        raw = await self._call(self.redis.hmget(PAIRS_PREFIX + model_version, fields))
+        sums = [_sum_key(model_version, k, total) for k in keys for total in ("expected", "clicks")]
+        raw = await self._call(self.redis.mget(sums))
         return [
             PairState(expected=float(e or 0.0), clicks=float(c or 0.0))
             for e, c in zip(raw[::2], raw[1::2], strict=True)
