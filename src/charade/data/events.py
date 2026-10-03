@@ -14,8 +14,8 @@ counted by reason when:
     conflicting decision   one request id logged with two different decisions
     conflicting impression one impression id logged for two different requests or candidates
     not the served ad      the impression names a candidate its decision did not choose
-    label pending          the impression is younger than CLICK_WINDOW_HOURS at `as_of`: a click may
-                           still arrive, so click = 0 would be a guess, not a label
+    label pending          a click for the impression may still arrive at `as_of` (its hour plus one, since
+                           the hour is truncated, plus CLICK_WINDOW_HOURS), so click = 0 would be a guess
 The result has exactly the columns of `impressions.csv`, so the training pipeline consumes it unchanged.
 """
 
@@ -32,8 +32,9 @@ import polars as pl
 from charade.data.load import IMPRESSION_COLUMNS
 
 AD_FIELDS = ("banner_pos", "C14", "C15", "C16", "C17", "C18", "C19", "C21")
-CLICK_WINDOW_HOURS = 48
-"""Clicks are attributed for 48 h after an impression (the store then forgets it), so labels mature then."""
+CLICK_WINDOW_HOURS = 1
+"""Clicks are attributed for 1 h after an impression (the store then forgets it), so labels mature then.
+Clicks on an ad in a chat come within minutes; the label maturity, not the click delay, is what training waits on."""
 DECISION_IDENTITY = ("request_id", "hour", "character_id", "chosen_id", "context", "ads")
 IMPRESSION_IDENTITY = ("impression_id", "request_id", "candidate_id", "hour")
 
@@ -75,7 +76,8 @@ def build_rows(lines: Iterable[str], as_of: datetime) -> tuple[pl.DataFrame, Cou
         (r for r in records if r["event"] == "impression"), "impression_id", IMPRESSION_IDENTITY
     )
     clicked = {str(r["impression_id"]) for r in records if r["event"] == "click"}
-    mature_before = _naive_utc(as_of.isoformat()) - timedelta(hours=CLICK_WINDOW_HOURS)
+    # `hour` is truncated, so an impression logged at hour h happened as late as h + 1.
+    mature_before = _naive_utc(as_of.isoformat()) - timedelta(hours=CLICK_WINDOW_HOURS + 1)
     rows: list[dict[str, object]] = []
     dropped: Counter[str] = Counter()
     for impression_id, imp in impressions.items():
