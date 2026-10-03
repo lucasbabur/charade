@@ -116,11 +116,11 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLX001 feature-drift-psi | PSI > 0.25 on ad ids, `app_id`, and `hour_of_day` (partial last day) | Same as above |
 
 Gates that pass with margin:
-- leakage (shuffled-label AUC 0.472; strongest single feature 0.671);
+- leakage (shuffled-label AUC 0.4999 (clicks shuffled before features, 3 seeds); strongest single feature 0.671);
 - beats baseline, CI excluding zero;
 - calibration 1.002 and ECE 0.005;
 - exact train/serve parity, ONNX within 1.9e-6;
-- p99 25 ms at 400 rps over 90 s;
+- p99 31 ms at 400 rps over 90 s on the current bundle;
 - every evidence report (parity, OPE, latency) names the shipped bundle's digest (model files only: serving code and policy settings are not part of it);
 - 3,000 decisions respecting gates, with per-candidate propensities that form the policy's exact distribution.
 

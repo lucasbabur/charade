@@ -313,7 +313,7 @@ resource "aws_appautoscaling_policy" "requests" {
   policy_type        = "TargetTrackingScaling"
 
   target_tracking_scaling_policy_configuration {
-    # Measured: p99 25 ms at 400 rps per 8-worker task (docs/07-serving-operations.md).
+    # Measured: p99 25-31 ms at 400 rps per 8-worker task (docs/07-serving-operations.md).
     target_value = var.target_rps_per_task * 60
     predefined_metric_specification {
       predefined_metric_type = "ALBRequestCountPerTarget"
