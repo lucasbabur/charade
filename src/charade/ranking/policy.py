@@ -4,8 +4,9 @@ Order of operations (docs/04-ranking-policy.md):
 1. Hard gates: brand safety (advertiser x character tier), frequency cap, exhausted budget.
    Gated candidates are never served, whatever their score.
 2. Value: pCTR x bid x pacing multiplier. With bid = 1 and no pacing this is pure CTR ranking.
-3. Uncertainty (a heuristic, not a calibrated posterior): each pCTR gets a Beta(pCTR * n, (1 - pCTR) * n)
-   interval, where n is how much evidence training had for the (campaign, genre) pair.
+3. Uncertainty: each pCTR is multiplied by the live (campaign, genre) correction (`charade.ranking.correction`)
+   and gets the interval pCTR x (correction +- 1.645 sd). The width reflects how many outcomes the pair has
+   logged; it is not a calibrated posterior over prediction error.
 4. Decision, with exact selection probabilities: on a hashed exploration bucket of rate eps the ad
    is sampled from q_i proportional to (upper interval bound x bid x pacing)^k over eligible ads;
    otherwise the greedy ad is served. Every eligible ad therefore has the closed-form probability
@@ -42,9 +43,11 @@ class Candidate(BaseModel):
 
     candidate_id: str
     advertiser_id: str
-    campaign_id: str
     pctr: float
-    evidence: float = 0.0
+    correction: float = 1.0
+    """Posterior mean of the pair's pCTR multiplier (1 with no logged outcomes)."""
+    correction_sd: float = 0.0
+    """Posterior sd of that multiplier; 0 means no interval."""
     bid: float = 1.0
     pacing: float = Field(default=1.0, ge=0, le=1)
     prior_exposures: int = 0
@@ -60,6 +63,7 @@ class Ranked(BaseModel):
     candidate_id: str
     rank: int | None
     pctr: float
+    correction: float
     pctr_low: float
     pctr_high: float
     value: float
@@ -77,7 +81,7 @@ class Decision(BaseModel):
     propensity: float | None
     explored: bool
     confidence: str
-    """Heuristic: `low` when the top two candidates' evidence intervals overlap, else `high`. Not a
+    """Heuristic: `low` when the top two candidates' correction intervals overlap, else `high`. Not a
     calibrated probability statement."""
 
 
@@ -125,20 +129,15 @@ def selection_probabilities(
     return p, greedy, q
 
 
-def _beta_params(pctr: Floats, evidence: Floats, config: PolicyConfig) -> tuple[Floats, Floats]:
-    n = np.clip(evidence, config.min_evidence, config.max_evidence)
-    p = np.clip(pctr, 1e-4, 1 - 1e-4)
-    return p * n, (1 - p) * n
-
-
 def decide(candidates: list[Candidate], character_tier: str, request_id: str, config: PolicyConfig) -> Decision:
     """Rank candidates and choose one (or none if every candidate is gated)."""
     reasons = [gate_reasons(c, character_tier, config) for c in candidates]
     pctr = np.array([c.pctr for c in candidates], dtype=np.float64)
     weight = np.array([c.bid * c.pacing for c in candidates], dtype=np.float64)
-    value = pctr * weight
-    a, b = _beta_params(pctr, np.array([c.evidence for c in candidates], dtype=np.float64), config)
-    low, high = _beta_quantiles(a, b)
+    mean = np.array([c.correction for c in candidates], dtype=np.float64)
+    sd = np.array([c.correction_sd for c in candidates], dtype=np.float64)
+    value = np.clip(pctr * mean, 0.0, 1.0) * weight
+    low, high = _interval(pctr, mean, sd)
     eligible = np.array([not r for r in reasons], dtype=bool)
     # Rank key: value, then raw logit (isotonic calibration ties pCTRs), then candidate id.
     order = sorted(range(len(candidates)), key=lambda i: (-value[i], -candidates[i].logit, candidates[i].candidate_id))
@@ -162,6 +161,7 @@ def decide(candidates: list[Candidate], character_tier: str, request_id: str, co
             candidate_id=candidates[i].candidate_id,
             rank=None if reasons[i] else rank,
             pctr=float(pctr[i]),
+            correction=float(mean[i]),
             pctr_low=float(low[i]),
             pctr_high=float(high[i]),
             value=float(value[i]),
@@ -180,11 +180,9 @@ def decide(candidates: list[Candidate], character_tier: str, request_id: str, co
     )
 
 
-def _beta_quantiles(a: Floats, b: Floats) -> tuple[Floats, Floats]:
-    """5 % and 95 % quantiles of Beta(a, b), normal approximation (a, b >= ~2 here, clipped to [0, 1])."""
-    mean = a / (a + b)
-    sd = np.sqrt(a * b / ((a + b) ** 2 * (a + b + 1)))
-    return np.clip(mean - 1.645 * sd, 0.0, 1.0), np.clip(mean + 1.645 * sd, 0.0, 1.0)
+def _interval(pctr: Floats, mean: Floats, sd: Floats) -> tuple[Floats, Floats]:
+    """5 % and 95 % bounds of pCTR x correction (normal approximation of the Gamma posterior), clipped to [0, 1]."""
+    return np.clip(pctr * (mean - 1.645 * sd), 0.0, 1.0), np.clip(pctr * (mean + 1.645 * sd), 0.0, 1.0)
 
 
 def _confidence(ranked: list[Ranked]) -> str:

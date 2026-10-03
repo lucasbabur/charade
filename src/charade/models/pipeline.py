@@ -31,8 +31,7 @@ from charade.models.calibrate import fit_calibrator
 from charade.models.core import SPLITS, Prepared, load_prepared, logits, train_dcn_ensemble, train_logistic
 from charade.models.export import export_onnx, torch_logits
 from charade.models.gbdt import predict_gbdt, train_gbdt
-from charade.ranking.evidence import build_evidence
-from charade.scoring.scorer import CALIBRATOR_FILE, EVIDENCE_FILE, MODEL_FILE, SPEC_FILE, Scorer, bundle_sha256
+from charade.scoring.scorer import CALIBRATOR_FILE, MODEL_FILE, SPEC_FILE, Scorer, bundle_sha256
 from charade.text.embed import Provider, derived_path
 
 REPORTS = Path("reports/models")
@@ -173,7 +172,6 @@ def run(settings: Settings | None = None, out: Path | None = None, reports: Path
     (out / SPEC_FILE).write_text(prep.spec.model_dump_json())
     (out / CALIBRATOR_FILE).write_text(calibrators[PRIMARY].model_dump_json())
     _character_table(settings, cfg.text_provider).write_parquet(out / "characters.parquet")
-    (out / EVIDENCE_FILE).write_text(build_evidence(prep.frame.filter(pl.col("split") == "train")).model_dump_json())
     scorer = Scorer(out)
     sample = Encoded(categorical=prep.x["test"].categorical[:20_000], dense=prep.x["test"].dense[:20_000])
     onnx_diff = float(np.abs(scorer.logits(sample) - torch_logits(ensemble, sample)).max())

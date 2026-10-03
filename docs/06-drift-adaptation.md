@@ -6,7 +6,7 @@ updated-at: 2026-10-03
 
 # 06 — Drift and adaptation
 
-**The rolling-window backtest is descriptive, not an isolated effect of model age.** Training volume and traffic mix vary; NE, AUC and calibration point estimates do not establish ranking stability or an optimal retraining cadence. Daily retraining remains an operational choice for new creatives and calibration monitoring. The validation-selected exposure penalty (λ = 2) cuts cohort concentration 24 % on test, but does not confirm CTR non-inferiority ([drift.md](../reports/drift/drift.md), [adaptation.md](../reports/drift/adaptation.md)).
+**The rolling-window backtest is descriptive, not an isolated effect of model age.** Training volume and traffic mix vary; NE, AUC and calibration point estimates do not establish ranking stability or an optimal retraining cadence. Daily retraining remains an operational choice for new creatives and calibration monitoring. The validation-selected exposure penalty (λ = 2) cuts cohort concentration 24 % on test, but does not confirm CTR non-inferiority ([drift.md](../reports/drift/drift.md), [adaptation.md](../reports/drift/adaptation.md)). The shipped adaptation layer is the live (campaign, genre) correction: it follows outcomes between retrains and is non-inferior on test (<!--n:corr_dr-->+0.49 pp [−0.07, +1.02]<!--/n--> DR vs greedy).
 
 ## What shifts (daily, train → test)
 
@@ -88,3 +88,7 @@ Greedy pCTR ranking concentrates each genre on the few campaigns the model likes
   1. Keep the per-genre decayed campaign counts in Redis next to the user histories.
   2. Feed `exp(−λ · share)` into the candidate's value multiplier (`Candidate.pacing`, currently unused because budget pacing is not wired).
   3. A/B test λ online, because offline estimates this wide cannot settle a 0.1 pp question.
+
+## Adaptation 3: live (campaign, genre) correction (shipped)
+
+Between daily retrains the model's pCTR is frozen while campaigns rotate and fatigue. The correction of [E012](../experiments/E012-live-correction/README.md) multiplies each candidate's pCTR by a per-(campaign, genre) posterior mean learned from the served pCTRs and observed clicks, updated inside the impression and click transactions. Replayed on the test days from empty sums, prior <!--n:corr_prior-->80<!--/n--> selected on validation: DR CTR change vs greedy <!--n:corr_dr-->+0.49 pp [−0.07, +1.02]<!--/n-->, logged-ad log loss <!--n:corr_logloss-->−0.00054 [−0.00087, −0.00022]<!--/n-->, cohort HHI <!--n:corr_hhi-->0.0275<!--/n--> against 0.0293 for greedy, without targeting concentration. A half-life on the sums exists for week-scale drift but cannot be distinguished from none on a 30-hour window, so the shipped setting keeps every outcome. Unlike the exposure penalty, this layer reacts to outcomes, so its replay is a lower bound on what it learns in production, where it also sees the outcomes of its own choices. Details and the two readings: [04](04-ranking-policy.md#live-campaign-genre-correction-e012).

@@ -14,10 +14,10 @@ updated-at: 2026-10-03
 client ──POST /v1/rank──▶ FastAPI worker (1 of N, single-threaded libs)
                            │ 1. validate (pydantic): ≤ 500 candidates, typed ids, ISO or YYMMDDHH hour
                            │ 2. character row ← in-memory table (5k rows); unknown → request metadata or strict defaults
-                           │ 3. user history ← Redis GET (20 ms budget) ──timeout──▶ cold-user defaults, degraded=true
+                           │ 3. user history ← Redis GET; pair corrections ← Redis MGET (20 ms budget) ──timeout──▶ cold defaults, degraded=true
                            │ 4. assemble N rows → charade.features.derive + encode (the training code)
                            │ 5. ONNX Runtime, one batched call → logits → calibration map (identity for the shipped model)
-                           │ 6. policy: gates → value → evidence intervals → greedy / 5 % exploration → exact propensities
+                           │ 6. policy: gates → corrected value → intervals → greedy / 5 % exploration → exact propensities
                            │ 7. store the decision: request_id → {user, hour, chosen ad, campaign}, write-once (Redis SET NX, 48 h)
                            │ 8. JSON decision log: context, every candidate's attributes, pCTR, gates, propensity; chosen id; versions
                            ▼
@@ -43,17 +43,17 @@ Two measured fixes got p99 under budget:
 
 | Kind | What | Why |
 |---|---|---|
-| Precomputed offline | Model (ONNX), calibrator, vocabularies + scaling (`feature_spec.json`), character table, (campaign, genre) evidence | Nothing is fitted or joined at request time |
+| Precomputed offline | Model (ONNX), calibrator, vocabularies + scaling (`feature_spec.json`), character table | Nothing is fitted or joined at request time |
 | In process memory | All of the above (~10 MB per worker) | No network hop except the user history |
-| Online store | Per-user counters: totals, last two active hours, 24 h hourly buckets, per-campaign (count, last hour, count in last hour), capped at 200 campaigns | Exactly reproduces the offline counter definitions (parity tests, including hypothesis-generated event sequences) |
-| Approximated | Evidence-interval quantiles (normal approximation); exposure counts at hour granularity; user detail kept for 48 h (snapshots more than 24 h behind a user's newest event see pruned detail) | Each costs microseconds instead of milliseconds; each is documented where it is used |
+| Online store | Per-user counters: totals, last two active hours, 24 h hourly buckets, per-campaign (count, last hour, count in last hour), capped at 200 campaigns. Per-(campaign, genre) correction sums (expected clicks, clicks, last hour), one MGET per request | Exactly reproduces the offline counter definitions (parity tests, including hypothesis-generated event sequences); the correction is a few floats per pair, updated in the event transactions |
+| Approximated | Correction-interval quantiles (normal approximation of the Gamma posterior); exposure counts at hour granularity; user detail kept for 48 h (snapshots more than 24 h behind a user's newest event see pruned detail) | Each costs microseconds instead of milliseconds; each is documented where it is used |
 | Not on the hot path | Text embeddings, character enrichment, retraining, OPE | Offline jobs; serving reads their outputs |
 
 ## Failure modes
 
 | Condition | Behaviour | Signal |
 |---|---|---|
-| Redis slow or down | Serve with cold-user counters, `degraded: true`; **frequency cap not enforced** and the decision not stored (warning in the response), so that request's impression event later gets 404; events → 503, retried upstream (idempotent) | `charade_degraded_total`, `charade_frequency_cap_unenforced_total` |
+| Redis slow or down | Serve with cold-user counters and every (campaign, genre) correction at its prior (multiplier 1), `degraded: true`; **frequency cap not enforced** and the decision not stored (warning in the response), so that request's impression event later gets 404; events → 503, retried upstream (idempotent) | `charade_degraded_total`, `charade_frequency_cap_unenforced_total` |
 | Unknown character | Use `character` metadata from the request if present; else OOV metadata and the **mature** tier (strictest brand safety) | `charade_cold_start_total{entity="character"}` |
 | Unknown categorical values | OOV embedding (index 0) | Drift monitor (PSI) |
 | Every candidate gated | 200, `chosen_id: null`, propensity null | `charade_no_fill_total` |

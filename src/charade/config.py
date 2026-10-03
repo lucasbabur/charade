@@ -17,12 +17,16 @@ class PolicyConfig(BaseModel):
     """`[tool.charade.policy]`."""
 
     exploration_rate: float = Field(default=0.05, ge=0, le=1)
-    min_evidence: float = 20.0
-    max_evidence: float = 1000.0
+    correction_prior: float = Field(default=80.0, gt=0)
+    """Strength, in expected clicks, of the prior that the model's pCTR needs no (campaign, genre) correction
+    (`charade.ranking.correction`; chosen on validation in E012). A pair graduates once its logged expected
+    clicks reach it."""
+    correction_half_life_hours: float | None = None
+    """Decay of the correction's evidence per hour of age; None keeps every outcome."""
     frequency_cap: int = 8
     """Max earlier impressions of one campaign to one user before the campaign is gated for that user."""
     exploration_sharpness: float = Field(default=2.0, ge=0)
-    """Exploration samples q_i proportional to (upper evidence bound x bid x pacing)^k: k = 0 is uniform,
+    """Exploration samples q_i proportional to (upper bound of the corrected pCTR x bid x pacing)^k: k = 0 is uniform,
     larger k favours plausible winners; uncertain candidates have higher upper bounds."""
     advertiser_max_tier: dict[str, str] = Field(default_factory=dict[str, str])
     """Advertiser (C21) -> highest character safety tier it accepts. Unlisted advertisers accept all tiers."""

@@ -102,8 +102,7 @@ groups = ["context", "device", "ad", "character_meta", "user_history"]
 # advertiser 48 only sfw ones. Every other advertiser accepts all tiers.
 [tool.charade.policy]
 exploration_rate = 0.05
-min_evidence = 20.0
-max_evidence = 1000.0
+correction_prior = 80.0
 frequency_cap = 8
 exploration_sharpness = 2.0
 advertiser_max_tier = { "157" = "suggestive", "48" = "sfw" }
@@ -252,7 +251,7 @@ baseline_model = "logreg"
 split_order = ["train", "val", "test"]
 holdout_split = "test"
 required_slices = ["character_support", "genre", "safety_tier", "surface", "day", "user_seen", "banner_pos"]
-bundle_files = ["model.onnx", "feature_spec.json", "calibrator.json", "evidence.json", "characters.parquet"]
+bundle_files = ["model.onnx", "feature_spec.json", "calibrator.json", "characters.parquet"]
 
 [tool.mlcheck.data]
 path = "impressions.csv"

@@ -27,6 +27,7 @@ echo "windows: train <= $CHARADE_TRAIN_END < val <= $CHARADE_VAL_END < holdout <
 poe train
 poe ope
 poe parity
+poe correction
 poe drift
 mlcheck . --artifacts-dir "$CHARADE_ARTIFACTS_DIR" --data-dir "$CHARADE_DATA_DIR" \
   --skip MLV003 --skip MLV004 # latency is gated by the load test before release, not per retrain

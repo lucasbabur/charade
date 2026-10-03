@@ -13,9 +13,8 @@ from charade.scoring.calibration import Calibrator
 MODEL_FILE = "model.onnx"
 SPEC_FILE = "feature_spec.json"
 CALIBRATOR_FILE = "calibrator.json"
-EVIDENCE_FILE = "evidence.json"
 CHARACTERS_FILE = "characters.parquet"
-BUNDLE_FILES = (MODEL_FILE, SPEC_FILE, CALIBRATOR_FILE, EVIDENCE_FILE, CHARACTERS_FILE)
+BUNDLE_FILES = (MODEL_FILE, SPEC_FILE, CALIBRATOR_FILE, CHARACTERS_FILE)
 """What serves traffic; every evidence report names their digest (mlcheck MLR005)."""
 
 
