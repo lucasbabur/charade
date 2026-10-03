@@ -42,7 +42,6 @@ class Thresholds(BaseModel):
     max_null_fraction: float = 0.0
     dominant_value_share: float = 0.5
     volume_mad_k: float = 3.0
-    shuffled_auc_low: float = 0.47
     shuffled_auc_high: float = 0.53
     max_univariate_auc: float = 0.9
     max_adversarial_auc: float = 0.8

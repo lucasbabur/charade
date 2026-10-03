@@ -2,20 +2,39 @@
 
 import lightgbm as lgb
 import numpy as np
+import polars as pl
 from sklearn.metrics import roc_auc_score
 
-from charade.models.core import Prepared, train_logistic
+from charade.features.counters import RAW_COUNTER_COLUMNS, offline_counters
+from charade.features.derive import derive
+from charade.features.spec import TEXT_PREFIX
+from charade.models.core import Prepared, prepare, train_logistic
 from charade.models.trainer import predict_logits
 
 ADVERSARIAL_ROWS = 100_000
 
 
-def shuffled_label_auc(prep: Prepared, seed: int) -> float:
-    """Validation AUC of the baseline retrained on permuted training labels (chance if nothing leaks)."""
-    rng = np.random.default_rng(seed)
-    shuffled = Prepared(prep.frame, prep.spec, prep.x, {**prep.y, "train": rng.permutation(prep.y["train"])})
-    result = train_logistic(shuffled, seed)
-    return float(roc_auc_score(prep.y["val"], predict_logits(result.model, prep.x["val"])))
+def shuffled_label_auc(prep: Prepared, seed: int, repeats: int = 3) -> float:
+    """Mean validation AUC of the baseline trained on shuffled clicks; 0.5 if nothing reaches the label.
+
+    Clicks are permuted on the raw rows *before* the label-derived counters are rebuilt, so a leak in
+    feature construction (e.g. counters that see the current hour) survives the shuffle and shows up as
+    AUC above chance. Validation labels are permuted with the same draw, so early stopping and the score
+    both see noise and a clean pipeline lands at 0.5 instead of drifting with the checkpoint chosen.
+    """
+    raw = prep.frame.drop(RAW_COUNTER_COLUMNS)
+    groups, text = (
+        set(prep.spec.groups),
+        bool(prep.spec.dense) and any(d.startswith(TEXT_PREFIX) for d in prep.spec.dense),
+    )
+    aucs: list[float] = []
+    for repeat in range(repeats):
+        rng = np.random.default_rng([seed, repeat])
+        shuffled = raw.with_columns(pl.Series("click", rng.permutation(raw["click"].to_numpy())))
+        noise = prepare(derive(offline_counters(shuffled)).sort(["ts", "id"]), groups, text)
+        result = train_logistic(noise, seed + repeat)
+        aucs.append(float(roc_auc_score(noise.y["val"], predict_logits(result.model, noise.x["val"]))))
+    return float(np.mean(aucs))
 
 
 def feature_aucs(prep: Prepared) -> dict[str, float]:

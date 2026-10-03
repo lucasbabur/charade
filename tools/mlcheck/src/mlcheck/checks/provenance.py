@@ -177,15 +177,15 @@ def fit_window(ctx: Context) -> Outcome:
     "MLL004",
     "shuffled-label-auc",
     Stage.LEAKAGE,
-    "Retraining on shuffled labels must give chance-level AUC; anything else means the pipeline leaks the label.",
+    "A model trained on shuffled labels must not beat chance; above chance means the pipeline reaches the label. "
+    "One-sided: a leak can only raise the AUC, so values below chance are noise, not failures.",
 )
 def shuffled_label_auc(ctx: Context) -> Outcome:
-    """Validation AUC of a model trained on permuted labels is within the chance band."""
-    auc = ctx.leakage.shuffled_label_auc
-    low, high = ctx.thresholds.shuffled_auc_low, ctx.thresholds.shuffled_auc_high
-    if not low <= auc <= high:
-        return failed(f"shuffled-label AUC {auc:.4f} outside [{low}, {high}]")
-    return passed(f"shuffled-label AUC {auc:.4f}")
+    """Validation AUC of a model trained on permuted labels is at most `shuffled_auc_high`."""
+    auc, high = ctx.leakage.shuffled_label_auc, ctx.thresholds.shuffled_auc_high
+    if auc > high:
+        return failed(f"shuffled-label AUC {auc:.4f} > {high}: the pipeline reaches the label")
+    return passed(f"shuffled-label AUC {auc:.4f} (<= {high})")
 
 
 @check(

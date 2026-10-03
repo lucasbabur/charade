@@ -8,7 +8,9 @@ import torch
 
 from charade.config import DcnConfig
 from charade.evaluation.metrics import ece, normalized_entropy, paired_bootstrap, summary
+from charade.features.counters import offline_counters
 from charade.features.spec import Group
+from charade.models import leakage
 from charade.models.calibrate import fit_calibrator
 from charade.models.core import prepare, train_dcn, train_logistic
 from charade.models.export import export_onnx, torch_logits
@@ -102,3 +104,27 @@ def test_fixed_step_training_runs_exactly_that_many_steps(features: pl.DataFrame
     prep = prepare(features, GROUPS, text=False)
     result = train_dcn(prep, TINY, seed=0, fixed_steps=7)
     assert result.best_step == 7
+
+
+def test_shuffled_label_probe_rebuilds_counters_from_shuffled_clicks(
+    features: pl.DataFrame, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The probe must shuffle labels before label-derived features are built, or a counter leak stays invisible.
+
+    On the full data a same-hour counter leak injected this way scores 0.983 against 0.4999 clean
+    (docs/03-models-evaluation.md); the fixture is too small for the baseline to learn it before early
+    stopping, so here the mechanism is checked directly.
+    """
+    prep = prepare(features, {Group.CONTEXT, Group.AD, Group.USER_HISTORY}, text=False)
+    seen: list[np.ndarray] = []
+
+    def spy(frame: pl.DataFrame) -> pl.DataFrame:
+        seen.append(frame.sort("id")["click"].to_numpy())
+        return offline_counters(frame)
+
+    monkeypatch.setattr(leakage, "offline_counters", spy)
+    auc = leakage.shuffled_label_auc(prep, seed=0, repeats=2)
+    original = features.sort("id")["click"].to_numpy()
+    assert len(seen) == 2
+    assert all(np.sort(s).tolist() == np.sort(original).tolist() and (s != original).any() for s in seen)
+    assert abs(auc - 0.5) < 0.05

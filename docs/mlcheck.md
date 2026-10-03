@@ -72,7 +72,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 | MLL001 | leakage | error | split-disjoint | An event in two splits is evaluated on data it was trained on. |
 | MLL002 | leakage | error | split-temporal-order | Production predicts the future from the past; each split must start strictly after the previous one ends, and match the manifest windows. |
 | MLL003 | leakage | error | fit-window | Every fitted object (vocabulary, encoder, prior, scaler, model, calibrator) must be fitted only on data that precedes the holdout, inside the split it declares. |
-| MLL004 | leakage | error | shuffled-label-auc | Retraining on shuffled labels must give chance-level AUC; anything else means the pipeline leaks the label. |
+| MLL004 | leakage | error | shuffled-label-auc | A model trained on shuffled labels must not beat chance (one-sided: a leak can only raise the AUC); above chance means the pipeline leaks the label. |
 | MLL005 | leakage | error | univariate-feature-auc | No single feature should predict clicks almost perfectly; one that does is usually derived from the label. |
 | MLL007 | leakage | warning | adversarial-validation | A classifier that separates train from holdout rows with high AUC means strong covariate shift; offline metrics on that holdout will not transfer. |
 | MLM001 | model | error | predictions-contract | Every gate below is computed from predictions.parquet; it must hold primary and baseline predictions on every evaluation split for the same ids. |
