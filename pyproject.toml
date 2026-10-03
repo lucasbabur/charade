@@ -152,6 +152,7 @@ coldstart = { cmd = "python -m charade.analysis.coldstart", help = "Cold-start s
 drift = { cmd = "python -m charade.analysis.drift", help = "PSI, churn, staleness backtest, online recalibration; writes drift.json and reports/drift/" }
 adapt = { cmd = "python -m charade.analysis.adaptation", help = "Cohort-exposure adaptation layer replay; writes reports/drift/adaptation.md" }
 fixture = { cmd = "python -m charade.analysis.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
+docs-numbers = { cmd = "python -m charade.analysis.docnumbers", help = "Fill the <!--n:key--> numbers in docs from reports/ (tests/docs fails when they drift)" }
 openapi = { cmd = "python -m charade.serving.openapi", help = "Regenerate docs/api/openapi.json" }
 serve = { cmd = "uvicorn charade.serving.app:app --reload", help = "Run the API locally" }
 tf = { shell = "terraform fmt -check -recursive infra/terraform && for env in infra/terraform/envs/*/; do terraform -chdir=$env init -backend=false -input=false >/dev/null && terraform -chdir=$env validate || exit 1; done", help = "Terraform fmt and validate" }
