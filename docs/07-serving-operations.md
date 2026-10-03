@@ -6,7 +6,7 @@ updated-at: 2026-10-03
 
 # 07 — Serving and operations (< 50 ms p99)
 
-**Bottom line:** 100 candidates ranked at **p50 8 / p99 25–31 ms at 400 rps** (two 90 s runs on different bundles; run-to-run variance on a shared desktop), with impression and click events in the mix (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)). Errors: 0 in the latest run; the earlier one had 2 of 39,839 (impression events answered 503 when Redis exceeded the 10 ms store budget; callers retry, see the contract below). The report names the bundle digest the tested API served (mlcheck MLR005). **Scope:** 100 candidates, not the 500 the API accepts; impressions reported for 10 % of rankings; one desktop, not Fargate. A Fargate run with production event volume comes before promising an SLA.
+**Bottom line:** 100 candidates ranked at **p50 9 / p99 32 ms at 400 rps** in the recorded 90 s run (back-to-back runs on this shared desktop range p99 32–72 ms, and the build before the live correction 38–86 ms alongside them, so the variance is the machine, not the code), with impression and click events in the mix (Locust against `docker compose`, 8 workers, one 24-core desktop, not Fargate), with exact train/serve feature parity ([latency.json](../reports/serving/latency.json)). Errors: 2 of 35,577 (impression events answered 503 when Redis exceeded the 10 ms store budget; callers retry, see the contract below). The report names the bundle digest the tested API served (mlcheck MLR005). **Scope:** 100 candidates, not the 500 the API accepts; impressions reported for 10 % of rankings; one desktop, not Fargate. A Fargate run with production event volume comes before promising an SLA.
 
 ## Request path
 
@@ -35,9 +35,10 @@ late click ────────POST /v1/events/click {impression_id}──�
 | Policy | 0.8 ms | 1.3 ms | Analytic intervals (normal approximation); closed-form exploration distribution |
 | Redis GET | ~0.3 ms | bounded at 20 ms | One key per user; the timeout degrades, never fails |
 
-Two measured fixes got p99 under budget:
+Three measured fixes got p99 under budget:
 1. **Encode:** dict lookups for small frames. The first measurement was p99 120 ms at saturation.
 2. **One thread per library per worker** (`POLARS_MAX_THREADS=1` etc. in the image). Polars defaults to one thread per core, so 8 workers × 24 threads contended; p99 dropped from 48 ms to 26–30 ms at the same load.
+3. **Correction reads.** The live correction first kept each pair's sums under one WATCHed key (hot keys retried until timeout: p99 110 ms, 0.47 % errors), then in one hash per model version read with a 200-field HMGET. A small Redis hash is a listpack scanned per field, so that read cost 215 µs of single-threaded Redis time and queued every other command (user fetch 1.0 → 4.7 ms). Plain keys with `INCRBYFLOAT` and one `MGET` cost 42 µs; stage times and p99 are back to the pre-correction build's, side by side.
 
 ## What is cached, precomputed, approximated
 
@@ -96,7 +97,7 @@ USERS=32 uv run poe loadtest                   # capacity probe
 
 - **Stateless workers:** scale horizontally behind the ALB (ECS Fargate, [07-serving-operations.md](07-serving-operations.md)). Autoscale on CPU at about 50 % and on request count per target.
 - **Redis:** ElastiCache with replicas. The per-user key design shards cleanly.
-- **Larger N or models:** the model is about 2 ms of a 25–31 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.
+- **Larger N or models:** the model is about 2 ms of a ~32 ms p99. Before reaching for GPUs, the levers are int8 ONNX quantization and candidate-count caps.
 - **Decision logs at Simula's volume (~1.2 B ads served):** logging every candidate of every request (≈ 10 KB for N = 100) is ≈ 12 TB of mostly redundant data. Log the served ad, its propensity and the context on every request (a few hundred bytes); log full candidate sets only for the exploration bucket plus a small random sample of greedy requests, which is all off-policy evaluation and counterfactual training need. Write asynchronously (stdout → log agent → object storage, never in the request path) in a compact columnar format (Parquet or protobuf), not JSON.
 
 ## Infrastructure (Terraform sketch)
@@ -157,7 +158,7 @@ scripts/retrain.sh (run by hand or any scheduler): pull exports → rolling wind
 ### Latency
 1. Read `charade_rank_stage_seconds` by stage: `fetch` (Redis), `assemble`, `score`, `policy`.
 2. If `fetch` is high, check the Redis CPU and connection count, or a failover in progress. Raising `store_timeout_ms` trades latency for fewer degraded responses.
-3. If CPU is high and the stages are flat, it is queueing: check the autoscaling activity and `max_tasks`. The load-tested point is 400 rps per task at p99 25–31 ms.
+3. If CPU is high and the stages are flat, it is queueing: check the autoscaling activity and `max_tasks`. The load-tested point is 400 rps per task at p99 ~32 ms.
 4. If a new release coincides, roll back (the circuit breaker does this for failed health checks).
 
 ### Errors

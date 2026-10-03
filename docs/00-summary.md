@@ -12,7 +12,7 @@ updated-at: 2026-10-03
 3. ranks the rest;
 4. serves one, explores on a bounded 5 % of traffic with a known distribution, and logs every candidate's exact selection probability.
 
-It does this in **p99 25–31 ms at 400 rps** for 100 candidates, measured on one desktop.
+It does this in **p99 32 ms at 400 rps** for 100 candidates in the recorded run, measured on one shared desktop where back-to-back runs vary (below).
 
 ## Headline results (test days 10-29/30; Avazu sample + synthetic character layer, 30-hour test window)
 
@@ -24,7 +24,7 @@ It does this in **p99 25–31 ms at 400 rps** for 100 candidates, measured on on
 | Ranking | Exact propensities logged for every candidate. Offline policy evaluation runs end to end; under reconstructed candidate sets and inferred logging propensities it estimates <!--n:ope_shipped_dr-->+1.47 pp [+0.51, +2.40]<!--/n--> CTR (DR with an independent reward model). That demonstrates the evaluation machinery, not business value | [04](04-ranking-policy.md) |
 | Cold start | The model has no character ID, so a new character is scored from metadata like any other. Ads graduate: a (campaign, genre) pair's live correction takes over from the model once its logged expected clicks reach <!--n:corr_prior-->80<!--/n-->; on test it narrows cold-campaign pred/obs <!--n:corr_cold_pred_obs-->0.937 → 0.951<!--/n-->. Unseen characters: NE <!--n:cold_char_ne-->0.908<!--/n--> vs <!--n:warm_char_ne-->0.885<!--/n--> warm (n = <!--n:cold_char_n-->1,478<!--/n-->, known genres only); new users <!--n:new_user_ne-->0.895<!--/n--> vs <!--n:seen_user_ne-->0.856<!--/n--> returning | [05](05-cold-start.md) |
 | Drift | Ads rotate (13–37 % new creatives per day). The rolling-window backtest reports NE, AUC and calibration but does not isolate age from volume or establish ranking stability. Daily retraining remains an operational choice. Shipped adaptation layer: a live (campaign, genre) correction learned from outcomes, non-inferior on test (<!--n:corr_dr-->+0.49 pp [−0.07, +1.02]<!--/n--> DR vs greedy) and lowering the shown ad's log loss (<!--n:corr_logloss-->−0.00054 [−0.00087, −0.00022]<!--/n-->). An exposure penalty selected on validation (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss; it awaits an online test | [06](06-drift-adaptation.md) |
-| Serving | p50 8 / p95 14–15 / p99 25–31 ms at 400 rps over two runs, errors ≤ 0.005 % (impression events over the 10 ms store budget; impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [07](07-serving-operations.md) |
+| Serving | p50 9 / p95 16 / p99 32 ms at 400 rps, errors 0.005 % (impression and click events included). On this shared desktop, back-to-back runs of this build ranged p99 32–72 ms and of the pre-correction build 38–86 ms, so the 50 ms budget holds on a quiet machine with little margin under noise; train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [07](07-serving-operations.md) |
 | Gates | mlcheck on the shipped bundle: 44 checks, 40 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
 
 ## What the data taught (and what it changed)
