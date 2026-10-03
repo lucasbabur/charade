@@ -8,8 +8,8 @@ Replay on the reconstructed candidate sets of `charade.analysis.policy_eval`, in
 h are scored with pair sums built from logged rows in strictly earlier hours (the logs carry no order
 within an hour). The observation stream is the logged ad's outcome and the model's pCTR for it, so the
 state depends on logs, never on the simulated policy's choices, and the per-row target probabilities stay
-valid for the doubly robust estimate. Each split starts from empty sums, which understates production,
-where the state carries over.
+valid for the doubly robust estimate. Each split starts from empty sums, as
+serving does: its sums are keyed by model version, so a daily retrain starts them over.
 
 Two readings per configuration:
     DR CTR lift vs greedy pCTR     same estimator and assumptions as the exposure-penalty study

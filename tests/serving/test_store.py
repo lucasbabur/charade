@@ -124,17 +124,21 @@ async def test_decisions_are_immutable_and_impressions_take_their_identity(make:
 @pytest.mark.anyio
 @pytest.mark.parametrize("make", [0, 1], ids=["memory", "redis"])
 async def test_impressions_and_clicks_feed_the_pair_correction_once(make: int) -> None:
-    """Served pCTR goes to `expected`, a click to `clicks`; retries change nothing; unseen pairs are empty."""
+    """Served pCTR goes to `expected`, a click to `clicks`; retries change nothing; unseen pairs and
+    another model version's pairs are empty."""
     store = _stores()[make]
-    served = Served(user="u", hour=100, candidate_id="a", campaign="camp", genre="romance", pctr=0.25)
+    served = Served(
+        user="u", hour=100, candidate_id="a", campaign="camp", genre="romance", pctr=0.25, model_version="m1"
+    )
     await store.record_decision("r", served)
     assert (await store.record_impression("i", "r"))[0] is Outcome.RECORDED
     assert (await store.record_impression("i", "r"))[0] is Outcome.DUPLICATE
     assert await store.record_click("i") is Outcome.RECORDED
     assert await store.record_click("i") is Outcome.DUPLICATE
-    state, other = await store.pairs(["camp|romance", "camp|horror"])
+    state, other, retrained = await store.pairs(["m1:camp|romance", "m1:camp|horror", "m2:camp|romance"])
     assert (state.expected, state.clicks) == (pytest.approx(0.25), 1.0)
     assert (other.expected, other.clicks) == (0.0, 0.0)
+    assert (retrained.expected, retrained.clicks) == (0.0, 0.0)
 
 
 @pytest.mark.anyio
@@ -143,7 +147,7 @@ async def test_decisions_without_genre_or_pctr_leave_the_correction_alone(make: 
     store = _stores()[make]
     await _serve(store, "i1", campaign="camp")
     await store.record_click("i1")
-    (state,) = await store.pairs(["camp|romance"])
+    (state,) = await store.pairs(["m1:camp|romance"])
     assert (state.expected, state.clicks) == (0.0, 0.0)
 
 
@@ -155,7 +159,9 @@ async def test_concurrent_pair_updates_lose_nothing() -> None:
 
     async def serve(i: int) -> Outcome:
         async with gate:
-            served = Served(user=f"u{i}", hour=100, candidate_id="a", campaign="camp", genre="g", pctr=0.5)
+            served = Served(
+                user=f"u{i}", hour=100, candidate_id="a", campaign="camp", genre="g", pctr=0.5, model_version="m1"
+            )
             await store.record_decision(f"r{i}", served)
             return (await store.record_impression(f"i{i}", f"r{i}"))[0]
 
@@ -165,6 +171,6 @@ async def test_concurrent_pair_updates_lose_nothing() -> None:
 
     await asyncio.gather(*(serve(i) for i in range(100)))
     await asyncio.gather(*(click(i) for i in range(0, 100, 2)))
-    (state,) = await store.pairs(["camp|g"])
+    (state,) = await store.pairs(["m1:camp|g"])
     assert state.expected == pytest.approx(50.0)
     assert state.clicks == 50.0

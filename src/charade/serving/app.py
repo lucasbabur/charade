@@ -177,7 +177,7 @@ async def _correction(
     pairs = [PairState() for _ in campaigns]
     if not degraded:
         try:
-            pairs = await runtime.store.pairs([pair_key(c, genre) for c in campaigns])
+            pairs = await runtime.store.pairs([pair_key(runtime.model_version, c, genre) for c in campaigns])
         except StoreUnavailableError:
             degraded = True
             metrics.DEGRADED.inc()
@@ -193,7 +193,13 @@ async def _store_decision(
     """Record what this request served, so impression events take their identity from it. True if degraded."""
     campaign = next(c.C17 for c in body.candidates if c.candidate_id == chosen)
     served = Served(
-        user=user, hour=epoch_hour(body.hour), candidate_id=chosen, campaign=campaign, genre=genre, pctr=pctr
+        user=user,
+        hour=epoch_hour(body.hour),
+        candidate_id=chosen,
+        campaign=campaign,
+        genre=genre,
+        pctr=pctr,
+        model_version=runtime.model_version,
     )
     try:
         outcome = await runtime.store.record_decision(body.request_id, served)
