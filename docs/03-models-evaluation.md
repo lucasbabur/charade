@@ -6,7 +6,7 @@ updated-at: 2026-10-03
 
 # 03 — Models and evaluation
 
-**Bottom line:** a 3-seed DCN-v2 ensemble reaches **test NE 0.8855** (AUC 0.737, pred/obs 1.002, ECE 0.005), beating an equally tuned 3-seed LightGBM ensemble by −0.0040 [−0.0053, −0.0027] and logistic by −0.0117 [−0.0136, −0.0098] log loss. Single model against single model, the gap halves to −0.0020 [−0.0041, +0.0004] and is not established. Ablations repeated with two independent seed sets dropped character ID and conversation features and rejected text ([metrics.json](../reports/models/metrics.json)).
+**Bottom line:** a 3-seed DCN-v2 ensemble reaches **test NE 0.8855** (AUC 0.737, pred/obs 1.002, ECE 0.005), beating an equally tuned 3-seed LightGBM ensemble by <!--n:vs_lightgbm-->−0.0040 [−0.0053, −0.0027]<!--/n--> and logistic by <!--n:vs_logistic-->−0.0117 [−0.0136, −0.0098]<!--/n--> log loss. Single model against single model, the gap halves to <!--n:vs_lightgbm_single-->−0.0020 [−0.0041, +0.0004]<!--/n--> and is not established. Ablations repeated with two independent seed sets dropped character ID and conversation features and rejected text ([metrics.json](../reports/models/metrics.json)).
 
 ## Protocol
 

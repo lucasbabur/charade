@@ -1,7 +1,7 @@
 ---
 title: "Candidate ranking"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 04 — Candidate ranking
@@ -45,7 +45,7 @@ The logs show one ad per impression, so candidate sets are reconstructed:
 | Uniform random | +0.09 pp [−0.25, +0.41] | −0.03 pp [−0.36, +0.26] | 17,149 |
 | Greedy pCTR, no gates | +2.17 pp [+1.08, +3.33] | +1.65 pp [+0.72, +2.73] | 4,059 |
 | Greedy pCTR with gates, no exploration | +1.97 pp [+0.85, +3.09] | +1.52 pp [+0.52, +2.50] | 4,018 |
-| **Shipped policy (gates + 5 % exploration)** | +1.90 pp [+0.84, +2.97] | **+1.46 pp [+0.50, +2.38]** | 4,395 |
+| **Shipped policy (gates + 5 % exploration)** | +1.90 pp [+0.84, +2.97] | **<!--n:ope_shipped_dr-->+1.46 pp [+0.50, +2.38]<!--/n-->** | 4,395 |
 
 Paired hour-block bootstrap, 1,000 resamples; the observed logging CTR is 17.51 %. The DR direct-method term uses an **independent reward model**: a LightGBM trained on days before the last training day. Using the evaluated policy's own pCTR there would grade the model by its own beliefs (an earlier version did). On the validation day the same evaluation gives +1.96 pp [+0.68, +3.17] for the shipped policy ([ope_val.md](../reports/policy/ope_val.md)).
 

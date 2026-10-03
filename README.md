@@ -57,6 +57,6 @@ Every setting lives in `pyproject.toml`: tool settings under `[tool.<name>]`, pr
    uv run poe check   # lint, types, tests (charade + mlcheck), ML static gates
    uv run poe tf      # terraform fmt + validate
    ```
-   If you changed the API, run `uv run poe openapi` and commit the contract.
+   If you changed the API, run `uv run poe openapi` and commit the contract. If you regenerated reports, run `uv run poe docs-numbers`: numbers written `<!--n:key-->…<!--/n-->` in the docs come from `reports/`, and CI fails when they drift.
 4. Docs in `docs/` carry `title` / `created-at` / `updated-at` frontmatter; bump `updated-at` when you edit one (tests in `tests/docs` check freshness, links and `poe` commands).
 5. Use atomic [conventional commits](https://www.conventionalcommits.org/) (`feat(ranking): …`). Every commit must pass its own tests.

@@ -19,6 +19,7 @@ Only commands that work today are listed. When you add a command, add it here in
 | Everything CI runs on Python | `uv run poe check` (lint, types, import layers, dead code, tests, mlcheck tests, ML static gates) |
 | Terraform fmt + validate | `uv run poe tf` (CI also runs tflint and checkov; locally via their Docker images, see docs/07-serving-operations.md) |
 | Regenerate OpenAPI contract | `uv run poe openapi` (commit `docs/api/openapi.json`) |
+| Refresh generated doc numbers | `uv run poe docs-numbers` (fills `<!--n:key-->…<!--/n-->` from `reports/`; never hand-edit those values) |
 | Data contract on raw CSVs | `uv run poe mlcheck-data` |
 | Train + evaluate + export (GPU if available) | `uv run poe train` (then `uv run mlcheck .`) |
 | Ablations / tuning / EDA / text bake-off / refit study | `uv run poe ablate` / `tune` / `eda` / `text` / `refit-study` |
@@ -102,6 +103,7 @@ Embedding providers (`charade.text.embed`: TF-IDF and Qwen3, both local) run **o
 - [ ] `uv run poe check` passes (and `uv run poe tf` if you touched `infra/`). Coverage on touched packages ≥ 85 % branch.
 - [ ] `uv run mlcheck . --stage static` passes. If you touched training or evaluation, the full run gates pass with `--strict`, or every WARN is explained in the docs.
 - [ ] If the API changed, `docs/api/openapi.json` is regenerated and committed.
+- [ ] If reports changed, `uv run poe docs-numbers` was run and the docs committed.
 - [ ] Every doc you changed has its `updated-at` bumped (CI checks it), links resolve and `uv run poe` commands exist (`tests/docs`).
 - [ ] No secrets, raw data, notebooks or artifacts are staged.
 
