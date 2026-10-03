@@ -22,7 +22,7 @@ class BrokenStore(MemoryStore):
     async def record_impression(self, impression_id: str, request_id: str) -> Recorded:
         raise StoreUnavailableError(impression_id)
 
-    async def pairs(self, keys: list[str]) -> list[PairState]:
+    async def pairs(self, model_version: str, keys: list[str]) -> list[PairState]:
         raise StoreUnavailableError(keys[0])
 
 

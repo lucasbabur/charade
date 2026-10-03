@@ -14,7 +14,7 @@ updated-at: 2026-10-03
 client ──POST /v1/rank──▶ FastAPI worker (1 of N, single-threaded libs)
                            │ 1. validate (pydantic): ≤ 500 candidates, typed ids, ISO or YYMMDDHH hour
                            │ 2. character row ← in-memory table (5k rows); unknown → request metadata or strict defaults
-                           │ 3. user history ← Redis GET; pair corrections ← pipelined HMGET (20 ms budget) ──timeout──▶ cold defaults, degraded=true
+                           │ 3. user history ← Redis GET; pair corrections ← one HMGET (20 ms budget) ──timeout──▶ cold defaults, degraded=true
                            │ 4. assemble N rows → charade.features.derive + encode (the training code)
                            │ 5. ONNX Runtime, one batched call → logits → calibration map (identity for the shipped model)
                            │ 6. policy: gates → corrected value → intervals → greedy / 5 % exploration → exact propensities
@@ -45,7 +45,7 @@ Two measured fixes got p99 under budget:
 |---|---|---|
 | Precomputed offline | Model (ONNX), calibrator, vocabularies + scaling (`feature_spec.json`), character table | Nothing is fitted or joined at request time |
 | In process memory | All of the above (~10 MB per worker) | No network hop except the user history |
-| Online store | Per-user counters: totals, last two active hours, 24 h hourly buckets, per-campaign totals and 48 h hourly counts, never trimmed. Per-(campaign, genre) correction sums (expected clicks, clicks) in a hash, one pipelined round trip per request | Exactly reproduces the offline counter definitions (parity tests, including hypothesis-generated event sequences); the correction is two floats per pair, added by atomic increments inside the event transactions but never watched, so a popular pair cannot cause retries |
+| Online store | Per-user counters: totals, last two active hours, 24 h hourly buckets, per-campaign totals and 48 h hourly counts, never trimmed. Per-(campaign, genre) correction sums (expected clicks, clicks) in one hash per model version, so a retrain starts them from empty; one HMGET per request | Exactly reproduces the offline counter definitions (parity tests, including hypothesis-generated event sequences); the correction is two floats per pair, added by atomic increments inside the event transactions but never watched, so a popular pair cannot cause retries |
 | Approximated | Correction-interval quantiles (normal approximation of the Gamma posterior); exposure counts at hour granularity; user detail kept for 48 h (snapshots more than 24 h behind a user's newest event see pruned detail) | Each costs microseconds instead of milliseconds; each is documented where it is used |
 | Not on the hot path | Text embeddings, character enrichment, retraining, OPE | Offline jobs; serving reads their outputs |
 
