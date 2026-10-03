@@ -3,6 +3,7 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
+import pytest
 
 from charade.analysis import adaptation, coldstart, drift
 from charade.analysis.policy_eval import load_candidates
@@ -29,11 +30,24 @@ def test_beta_prior_recovers_known_spread() -> None:
 
 
 def test_drift_writes_contract_and_reports(bundle: Settings, tmp_path: Path) -> None:
-    tables = drift.run(bundle, FIXTURES, tmp_path, first_cutoff=5)
+    tables = drift.run(bundle, FIXTURES, tmp_path, window_days=5)
     payload = json.loads((bundle.artifacts_dir / "drift.json").read_text())
     assert payload["reference"] == "train"
     assert all(days for days in payload["psi"].values())
-    assert tables["Staleness: frozen models scored on later days (1 seed each)"].height > 0
+    stale = tables[drift.STALE_TITLE]
+    assert stale.height > 0
+    assert "per day of model age" in (tmp_path / "drift.md").read_text()
+
+
+def test_age_slope_recovers_a_linear_trend_and_ignores_day_difficulty() -> None:
+    table = pl.DataFrame(
+        {
+            "scored_day": ["a", "a", "a", "b", "b"],
+            "age_days": [2, 3, 4, 2, 3],
+            "ne": [0.80, 0.81, 0.82, 0.90, 0.91],
+        }
+    )
+    assert drift.age_slope(table) == pytest.approx(0.01)
 
 
 def test_psi_is_zero_for_identical_and_positive_for_shifted() -> None:
