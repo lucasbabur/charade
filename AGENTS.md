@@ -6,7 +6,7 @@ Instructions for AI coding agents (Claude Code, Codex, Cursor, …) working in t
 
 **Charade** is a CTR prediction and candidate-ranking system for contextual ads inside AI companion chats (Simula take-home). Given an impression (character, conversation turn, publisher, device, hour) and N candidate ads, it predicts calibrated P(click) and returns a gated, explained ranking in under 50 ms p99. The stack is Python 3.12, uv workspace, polars, PyTorch (DCN-v2), LightGBM (challenger), ONNX Runtime (serving), FastAPI, Redis, Terraform (AWS), Docker.
 
-Design decisions live in [docs/adr/](docs/adr/); gates in [docs/mlcheck.md](docs/mlcheck.md). If code and an ADR disagree, stop and ask; do not silently pick one.
+Design decisions are the Decisions table in [docs/00-summary.md](docs/00-summary.md); gates in [docs/mlcheck.md](docs/mlcheck.md). If code and a recorded decision disagree, stop and ask; do not silently pick one.
 
 ## Commands
 
@@ -38,7 +38,7 @@ The raw data (`impressions.csv`, `characters.csv`, 170 MB) sits in the repo root
 
 ## Layout
 
-The code is organised by ML concern, not by clean-architecture layers ([ADR 0008](docs/adr/0008-ml-layout-and-mlcheck.md)).
+The code is organised by ML concern, not by clean-architecture layers (Decisions table in [docs/00-summary.md](docs/00-summary.md#decisions)).
 
 ```
 src/charade/{data,features,text,models,evaluation,ranking,scoring,serving,analysis}/  config.py

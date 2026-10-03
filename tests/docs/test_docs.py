@@ -11,7 +11,7 @@ import jupytext
 import pytest
 
 ROOT = Path(__file__).parents[2]
-DOCS = sorted([*ROOT.glob("docs/*.md"), *ROOT.glob("docs/adr/*.md")])
+DOCS = sorted(ROOT.glob("docs/*.md"))
 EXPERIMENTS = sorted(ROOT.glob("experiments/E*/README.md"))
 EXPERIMENT_FIELDS = ("id", "title", "hypotheses", "status", "conclusion", "created-at", "updated-at")
 LINKED = [
