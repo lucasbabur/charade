@@ -97,3 +97,13 @@ def test_rows_whose_logged_ad_is_outside_the_top_k_stay_in_the_population() -> N
     zeros = np.zeros_like(y)
     ips = estimate("uniform top-k", pi, rows["logged_mu"].to_numpy(), y, zeros, zeros, np.zeros(len(y), np.int64))[0]
     assert ips.value == pytest.approx(0.2)
+
+
+def test_opportunity_diagnostic_flattens_within_candidate_sets(bundle: Settings, tmp_path: Path) -> None:
+    from charade.analysis import opportunity  # noqa: PLC0415
+
+    report = opportunity.run(bundle, out=tmp_path / "opportunity.json")
+    assert report["opportunities"] != 0
+    assert report["mean_candidates"] >= 2  # pyright: ignore[reportOperatorIssue]
+    cost = report["logloss_cost_of_flattening"]
+    assert cost["ci_low"] <= cost["delta"] <= cost["ci_high"]  # pyright: ignore[reportIndexIssue]
