@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -29,14 +30,22 @@ def test_beta_prior_recovers_known_spread() -> None:
     assert 120 < prior["prior_strength"][0] < 330
 
 
-def test_drift_writes_contract_and_reports(bundle: Settings, tmp_path: Path) -> None:
+def test_drift_writes_contract_and_reports(bundle: Settings, tmp_path: Path, features: pl.DataFrame) -> None:
     tables = drift.run(bundle, FIXTURES, tmp_path, window_days=5)
     payload = json.loads((bundle.artifacts_dir / "drift.json").read_text())
     assert payload["reference"] == "train"
     assert all(days for days in payload["psi"].values())
     stale = tables[drift.STALE_TITLE]
     assert stale.height > 0
-    assert "Per day of model age" in (tmp_path / "drift.md").read_text()
+    for row in stale.iter_rows(named=True):
+        val_day = datetime.fromisoformat(row["trained_through"]) + timedelta(days=1)
+        train = features.filter((pl.col("ts") >= val_day - timedelta(days=5)) & (pl.col("ts") < val_day))
+        assert row["train_rows"] == train.height
+        assert 0 <= row["auc"] <= 1
+    report = (tmp_path / "drift.md").read_text()
+    assert "Training duration: 5 days" in report
+    assert "age is not isolated from training volume" in report
+    assert "Descriptive slope" in report
 
 
 def test_age_slope_recovers_a_linear_trend_and_ignores_day_difficulty() -> None:

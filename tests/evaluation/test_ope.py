@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +8,7 @@ import pytest
 
 from charade.analysis import policy_eval
 from charade.config import Settings
+from charade.evaluation.metrics import normalized_entropy
 from charade.evaluation.ope import estimate, lift
 
 
@@ -107,3 +109,43 @@ def test_opportunity_diagnostic_flattens_within_candidate_sets(bundle: Settings,
     assert report["mean_candidates"] >= 2  # pyright: ignore[reportOperatorIssue]
     cost = report["logloss_cost_of_flattening"]
     assert cost["ci_low"] <= cost["delta"] <= cost["ci_high"]  # pyright: ignore[reportIndexIssue]
+
+
+def test_flattening_excludes_missing_logged_ads_and_ignores_padding(bundle: Settings) -> None:
+    from charade.analysis import opportunity  # noqa: PLC0415
+
+    candidates = replace(
+        policy_eval.load_candidates(bundle),
+        logged=np.array([0, 1, -1, 0]),
+        y=np.array([0.0, 1.0, 1.0, 1.0]),
+        blocks=np.arange(4),
+        mask=np.array([[True, True, False]] * 4),
+        pctr=np.array([[0.1, 0.3, 99], [0.2, 0.6, 99], [0.3, 0.9, 99], [0.3, 0.5, 99]]),
+    )
+    report = opportunity.compare(candidates)
+    assert report["opportunities"] == 3
+    assert report["excluded_outside_candidate_set"] == 1
+    assert report["flattened"] == {
+        "ne": pytest.approx(normalized_entropy(np.array([0.0, 1.0, 1.0]), np.array([0.2, 0.4, 0.4]))),
+        "auc": 1.0,
+    }
+    assert "share_of_skill_that_ranks_ads" not in report
+
+
+def test_flattening_loss_can_change_without_changing_the_selected_ad(bundle: Settings) -> None:
+    """Duplicating a lower-scored alternative changes the mean, not the winner or logged predictions."""
+    from charade.analysis import opportunity  # noqa: PLC0415
+
+    candidates = replace(
+        policy_eval.load_candidates(bundle),
+        logged=np.zeros(4, dtype=np.int64),
+        y=np.array([0.0, 1.0, 0.0, 1.0]),
+        blocks=np.arange(4),
+        mask=np.ones((4, 2), dtype=bool),
+        pctr=np.array([[0.5, 0.1]] * 4),
+    )
+    duplicated = replace(candidates, mask=np.ones((4, 3), dtype=bool), pctr=np.array([[0.5, 0.1, 0.1]] * 4))
+    before, after = opportunity.compare(candidates), opportunity.compare(duplicated)
+    assert np.array_equal(candidates.pctr.argmax(axis=1), duplicated.pctr.argmax(axis=1))
+    assert before["model"] == after["model"]
+    assert before["logloss_cost_of_flattening"] != after["logloss_cost_of_flattening"]

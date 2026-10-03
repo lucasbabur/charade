@@ -1,4 +1,4 @@
-"""The same model family at 40x the data (`python -m charade.analysis.fullscale <train.gz>`).
+"""Model comparisons across data volumes (`python -m charade.analysis.fullscale <train.gz>`).
 
 The shipped bundle needs the synthetic character layer, which the full Kaggle Avazu train file
 (~40M rows, the same ten days) does not have. So this compares like with like: the same pipeline
@@ -104,7 +104,8 @@ def run(
 
     From the full file (1 in `user_share` users), two models are trained: one on 1 in `small_share`
     users' train and validation rows (about the sample's size), one on all of them. Both are scored on
-    the same test rows, so the difference is the volume effect alone. `small_share` must be a multiple
+    the same test rows. Both training and validation volume change; this is a one-seed descriptive
+    comparison, not an isolated training-volume effect. `small_share` must be a multiple
     of `user_share` so the small run's users are a subset of the large run's.
     """
     if small_share % user_share:
