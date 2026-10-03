@@ -1,9 +1,9 @@
 """Online user-history store. Redis in production, in-memory for tests and local runs.
 
 Four kinds of key:
-    charade:dec:<request>      Served {user, hour, candidate, campaign, genre, pctr, model_version}, once, 48 h
+    charade:dec:<request>      Served {user, hour, candidate, campaign, genre, pctr, model_version}, once, 1 h
     charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
-    charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 48 h
+    charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 1 h
     charade:pairs:<version>    hash {<campaign>|<genre>:expected, ...:clicks}: the live correction's evidence
                                for one model version, kept 48 h after its last event. An impression adds the
                                served pCTR to `expected`, a click adds 1 to `clicks`, as atomic increments
@@ -54,7 +54,9 @@ IMPRESSION_PREFIX = "charade:imp:"
 PAIRS_PREFIX = "charade:pairs:"
 USER_TTL_SECONDS = 14 * 24 * 3600
 IMPRESSION_TTL_SECONDS = CLICK_WINDOW_HOURS * 3600
-"""Decisions, impressions and pair sums live as long as a click can still be attributed (the label maturity window)."""
+"""Decisions and impressions live as long as a click can still be attributed (the label maturity window)."""
+PAIR_TTL_SECONDS = 48 * 3600
+"""A version's correction sums outlive a quiet night: a bundle serves for a day, then its hash expires."""
 MAX_RETRIES = 50
 
 
@@ -253,7 +255,7 @@ class RedisStore:
             if pair:
                 version, key = pair
                 pipe.hincrbyfloat(PAIRS_PREFIX + version, f"{key}:expected", served.pctr or 0.0)
-                pipe.expire(PAIRS_PREFIX + version, IMPRESSION_TTL_SECONDS)
+                pipe.expire(PAIRS_PREFIX + version, PAIR_TTL_SECONDS)
             await pipe.execute()
             found.append(impression)
             return Outcome.RECORDED
@@ -289,7 +291,7 @@ class RedisStore:
             if pair:
                 version, key = pair
                 pipe.hincrbyfloat(PAIRS_PREFIX + version, f"{key}:clicks", 1.0)
-                pipe.expire(PAIRS_PREFIX + version, IMPRESSION_TTL_SECONDS)
+                pipe.expire(PAIRS_PREFIX + version, PAIR_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
 

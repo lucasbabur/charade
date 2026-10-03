@@ -43,7 +43,7 @@ def test_serving_logs_rebuild_training_rows(
     lines = capsys.readouterr().out.splitlines()
     rows, dropped = build_rows(lines, MATURE)
     assert dropped == {}
-    pending, held = build_rows(lines, datetime.fromisoformat(str(sample_body["hour"])) + timedelta(hours=47))
+    pending, held = build_rows(lines, datetime.fromisoformat(str(sample_body["hour"])) + timedelta(hours=1))
     assert (pending.height, held) == (0, {"label pending": 3})
     assert rows.columns == list(IMPRESSION_COLUMNS)
     assert rows["id"].to_list() == ["imp-0", "imp-1", "imp-2"]
