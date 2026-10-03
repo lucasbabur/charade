@@ -1,12 +1,14 @@
 """Online user-history store. Redis in production, in-memory for tests and local runs.
 
 Four kinds of key:
-    charade:dec:<request>      Served {user, hour, candidate_id, campaign, genre, pctr}, written once, kept 48 h
+    charade:dec:<request>      Served {user, hour, candidate, campaign, genre, pctr, model_version}, once, 48 h
     charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
     charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 48 h
-    charade:pair:<campaign>|<genre>  hash {expected, clicks}: the live correction's evidence, kept 30 days after
-                               its last event. An impression adds the served pCTR to `expected`, a click adds 1
-                               to `clicks`, as atomic increments queued in that event's transaction.
+    charade:pair:<version>:<campaign>|<genre>
+                               hash {expected, clicks}: the live correction's evidence for the model version
+                               that served, kept 48 h after its last event. An impression adds the served pCTR
+                               to `expected`, a click adds 1 to `clicks`, as atomic increments queued in that
+                               event's transaction.
 
 One canonical identity per event. A decision is immutable: re-recording the same request id with the
 same content is a duplicate, with different content a conflict. An impression event names only its
@@ -50,9 +52,8 @@ USER_PREFIX = "charade:user:"
 IMPRESSION_PREFIX = "charade:imp:"
 PAIR_PREFIX = "charade:pair:"
 USER_TTL_SECONDS = 14 * 24 * 3600
-PAIR_TTL_SECONDS = 30 * 24 * 3600
 IMPRESSION_TTL_SECONDS = CLICK_WINDOW_HOURS * 3600
-"""Decisions and impressions live as long as a click can still be attributed (the label maturity window)."""
+"""Decisions, impressions and pair sums live as long as a click can still be attributed (the label maturity window)."""
 MAX_RETRIES = 50
 
 
@@ -81,12 +82,15 @@ class Served(BaseModel):
     campaign: str
     genre: str | None = None
     pctr: float | None = None
-    """Character genre and the model's pCTR of the served ad. Both feed the (campaign, genre) correction;
-    when either is missing (history replays) the correction is left untouched."""
+    model_version: str | None = None
+    """Character genre, the model's pCTR of the served ad and the model that scored it. All three feed the
+    (campaign, genre) correction; when any is missing (history replays) the correction is left untouched."""
 
     def pair(self) -> str | None:
         """Correction key this decision updates, if it carries what the correction needs."""
-        return pair_key(self.campaign, self.genre) if self.genre is not None and self.pctr is not None else None
+        if self.genre is None or self.pctr is None or self.model_version is None:
+            return None
+        return pair_key(self.model_version, self.campaign, self.genre)
 
 
 class Impression(BaseModel):
@@ -248,7 +252,7 @@ class RedisStore:
             pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             if pair:
                 pipe.hincrbyfloat(pair_k, "expected", served.pctr or 0.0)
-                pipe.expire(pair_k, PAIR_TTL_SECONDS)
+                pipe.expire(pair_k, IMPRESSION_TTL_SECONDS)
             await pipe.execute()
             found.append(impression)
             return Outcome.RECORDED
@@ -284,7 +288,7 @@ class RedisStore:
                 pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             if pair:
                 pipe.hincrbyfloat(pair_k, "clicks", 1.0)
-                pipe.expire(pair_k, PAIR_TTL_SECONDS)
+                pipe.expire(pair_k, IMPRESSION_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
 
