@@ -33,6 +33,7 @@ from charade.serving.schemas import (
 from charade.serving.store import Outcome, Served, StoreUnavailableError
 
 log = structlog.get_logger()
+UNMATCHED_ROUTE = "unmatched"
 
 
 def _runtime(request: Request) -> Runtime:
@@ -279,7 +280,10 @@ def create_app(runtime: Runtime | None = None) -> FastAPI:
     async def timing(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
         start = time.perf_counter()
         response = await call_next(request)
-        metrics.LATENCY.labels(request.url.path).observe(time.perf_counter() - start)
+        # Label by the matched route template, never the raw path: arbitrary URLs (scanners, typos) would
+        # otherwise each create a new Prometheus series and grow memory without bound.
+        route = request.scope.get("route")
+        metrics.LATENCY.labels(getattr(route, "path", UNMATCHED_ROUTE)).observe(time.perf_counter() - start)
         return response
 
     api.add_api_route(
