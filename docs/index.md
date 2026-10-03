@@ -57,6 +57,7 @@ One folder per experiment in [experiments/](../experiments/): `README.md` (front
 | [E009](../experiments/E009-feature-importance/README.md) | Per-feature importance (SHAP, permutation) |
 | [E010](../experiments/E010-full-avazu-scale/README.md) | Same model family at 9x the data (full Avazu) |
 | [E011](../experiments/E011-ranking-skill/README.md) | Predictive cost of flattening candidate scores |
+| [E012](../experiments/E012-live-correction/README.md) | Live (campaign, genre) correction: graduation and adaptation from outcomes |
 
 ## Generated reports
 
@@ -69,6 +70,7 @@ One folder per experiment in [experiments/](../experiments/): `README.md` (front
 | [reports/policy/ope.md](../reports/policy/ope.md), [sample_rankings.json](../reports/sample_rankings.json) | `uv run poe ope`, `uv run poe samples` |
 | [reports/coldstart/coldstart.md](../reports/coldstart/coldstart.md) | `uv run poe coldstart` |
 | [reports/drift/drift.md](../reports/drift/drift.md), [adaptation.md](../reports/drift/adaptation.md) | `uv run poe drift`, `uv run poe adapt` |
+| [reports/policy/correction.md](../reports/policy/correction.md), [reports/coldstart/graduation.csv](../reports/coldstart/graduation.csv) | `uv run poe correction` |
 | [reports/serving/latency.json](../reports/serving/latency.json) | `uv run poe loadtest` |
 
 ## Reading paths

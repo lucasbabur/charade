@@ -46,6 +46,8 @@ def numbers(root: Path) -> dict[str, str]:
     lift = _ope_dr_lift(ope, "shipped policy (gates + 5% exploration)")
     cold, warm = slices[("character_support", "0 (cold)")], slices[("character_support", ">200")]
     new, seen = slices[("user_seen", "new")], slices[("user_seen", "seen")]
+    corr = json.loads((reports / "policy/correction.json").read_text())
+    corr_test = corr["test"]
 
     def cmp(name: str) -> str:
         c = comparisons[name]
@@ -68,6 +70,18 @@ def numbers(root: Path) -> dict[str, str]:
         "cold_char_n": lambda: f"{int(cold['n']):,}",
         "new_user_ne": lambda: f"{new['ne']:.3f}",
         "seen_user_ne": lambda: f"{seen['ne']:.3f}",
+        "corr_prior": lambda: f"{corr['prior']:.0f}",
+        "corr_dr": lambda: (
+            f"{_signed(corr_test['dr_delta_vs_greedy_pp'], 2)} pp [{_signed(corr_test['ci_low_pp'], 2)}, "
+            f"{_signed(corr_test['ci_high_pp'], 2)}]"
+        ),
+        "corr_logloss": lambda: _interval(
+            corr_test["logloss_adj_minus_model"], corr_test["ll_ci_low"], corr_test["ll_ci_high"], 5
+        ),
+        "corr_ne": lambda: f"{corr_test['ne_model']:.4f} → {corr_test['ne_adj']:.4f}",
+        "corr_cold_pred_obs": lambda: f"{corr_test['pred_obs_model_cold']:.3f} → {corr_test['pred_obs_adj_cold']:.3f}",
+        "corr_graduated": lambda: f"{100 * corr_test['graduated_share_last_hour']:.0f} %",
+        "corr_hhi": lambda: f"{corr_test['cohort_hhi']:.4f}",
     }
     return {key: make() for key, make in values.items()}
 

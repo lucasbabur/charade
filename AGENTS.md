@@ -26,7 +26,7 @@ Only commands that work today are listed. When you add a command, add it here in
 | Off-policy evaluation of ranking policies (after `train`) | `uv run poe ope` |
 | Train/serve parity, sample rankings | `uv run poe parity`, `uv run poe samples` |
 | Experiments: smoke-run all / rerun on full data | `uv run poe test-notebooks` / `uv run poe experiments` |
-| Cold start, drift + staleness, adaptation replay | `uv run poe coldstart`, `drift`, `adapt` |
+| Cold start, drift + staleness, adaptation replay, live correction replay | `uv run poe coldstart`, `drift`, `adapt`, `correction` |
 | Load test (needs `docker compose up -d --build`) | `uv run poe loadtest` |
 | Run the API | `uv run poe serve` |
 | One ML gate with evidence | `uv run mlcheck . --only MLM004 -v` |
