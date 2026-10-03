@@ -1,21 +1,23 @@
 ---
 id: E011
-title: "How much of the model's skill ranks ads?"
+title: "Predictive cost of flattening candidate scores"
 hypotheses: [H1, H11]
 status: concluded
-conclusion: "Only 3.4 % of the model's skill ranks ads: replacing each candidate's pCTR with its opportunity's mean costs 0.0018 log loss [0.0010, 0.0030] (NE 0.8842 -> 0.8882); the rest predicts whether a moment is clickable at all, which the ranker cannot use."
+conclusion: "Replacing candidate scores with their unweighted opportunity mean costs 0.0018 logged-impression log loss [0.0010, 0.0030] (NE 0.8842 -> 0.8882). This is a predictive score ablation, not a percentage of ranking skill or an estimate of CTR lift."
 created-at: 2026-10-03
 updated-at: 2026-10-03
 ---
 
-# E011 — How much of the model's skill ranks ads?
+# E011 — Predictive cost of flattening candidate scores
 
-**Result:** Only 3.4 % of the model's skill ranks ads: replacing each candidate's pCTR with its opportunity's mean costs 0.0018 log loss [0.0010, 0.0030] (NE 0.8842 -> 0.8882); the rest predicts whether a moment is clickable at all, which the ranker cannot use.
+**Result:** Replacing candidate scores with their unweighted opportunity mean costs 0.0018 logged-impression log loss [0.0010, 0.0030] (NE 0.8842 -> 0.8882). This is a predictive score ablation, not a percentage of ranking skill or an estimate of CTR lift.
 
-**Question:** NE rewards predicting whether a moment gets a click; the ranker only uses differences between candidates of one moment. How big is that second part?
+**Question:** How much does logged-impression predictive loss change when every candidate in an opportunity receives the same score?
 
-**Method:** On 102,874 test opportunities (impressions with their reconstructed candidate sets, as in off-policy evaluation), compare the logged ad's shipped pCTR with the mean pCTR of its opportunity's candidates; paired hour-block bootstrap. Suggested by the external reviewer's flattening diagnostic.
+**Method:** On 102,874 test opportunities, compare the shipped scorer on the reconstructed logged candidate with the unweighted candidate mean. Logged ads outside the top-K are excluded; ad attributes are reconstructed by their mode. Paired hour-block bootstrap of the logged-impression log-loss gap.
 
-**Decision:** No model change; report the within-opportunity gap next to NE, and prioritise ad-content and conversation features, which act within opportunities.
+**Limits:** Averaging changes calibration and candidate weighting as well as discrimination. With nonuniform logging, an unweighted candidate mean is not the context-conditional CTR. Duplicating a lower-scored alternative changes this gap without changing the chosen ad. The earlier skill-share interpretation is withdrawn; policy value still needs the assumptions in [04](../../docs/04-ranking-policy.md) or an online test.
+
+**Decision:** No model change. Report the score-ablation gap with its scope; evaluate ranking decisions with real candidate sets, propensities and outcomes.
 
 The notebook ([notebook.ipynb](notebook.ipynb), paired with [notebook.py](notebook.py)) runs `charade.analysis.opportunity` and writes [reports/models/opportunity.json](../../reports/models/opportunity.json).

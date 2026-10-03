@@ -56,7 +56,7 @@ One folder per experiment in [experiments/](../experiments/): `README.md` (front
 | [E008](../experiments/E008-drift-and-adaptation/README.md) | Drift, staleness and exposure re-balancing |
 | [E009](../experiments/E009-feature-importance/README.md) | Per-feature importance (SHAP, permutation) |
 | [E010](../experiments/E010-full-avazu-scale/README.md) | Same model family at 9x the data (full Avazu) |
-| [E011](../experiments/E011-ranking-skill/README.md) | How much of the model's skill ranks ads |
+| [E011](../experiments/E011-ranking-skill/README.md) | Predictive cost of flattening candidate scores |
 
 ## Generated reports
 

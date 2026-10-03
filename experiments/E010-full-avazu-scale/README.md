@@ -3,14 +3,14 @@ id: E010
 title: "The same model family at 9x the data (full Kaggle Avazu)"
 hypotheses: [H1]
 status: concluded
-conclusion: "On one shared test set, 9x the training data (0.74M -> 6.7M rows from the full Kaggle file) lowers NE by 0.016 (DCN-v2 0.873 -> 0.857, LightGBM 0.875 -> 0.855); the two models swap places and stay within 0.003 NE, so volume moves NE about four times more than the architecture choice."
+conclusion: "On one shared test set, single-seed DCN-v2 NE is 0.873 with 0.74M training rows and 0.857 with 6.7M; LightGBM is 0.875 and 0.855. These are descriptive results with changing training and validation volume; seeds and paired intervals are needed before comparative claims."
 created-at: 2026-10-02
 updated-at: 2026-10-03
 ---
 
 # E010 — The same model family at 9x the data
 
-**Result:** On one shared test set, 9x the training data (0.74M -> 6.7M rows from the full Kaggle file) lowers NE by 0.016 (DCN-v2 0.873 -> 0.857, LightGBM 0.875 -> 0.855); the two models swap places and stay within 0.003 NE, so volume moves NE about four times more than the architecture choice.
+**Result:** On one shared test set, single-seed DCN-v2 NE is 0.873 with 0.74M training rows and 0.857 with 6.7M; LightGBM is 0.875 and 0.855. These are descriptive results with changing training and validation volume; seeds and paired intervals are needed before comparative claims.
 
 **Question:** Do the NE level and the DCN-v2 vs LightGBM ranking hold when the 1M-row sample is replaced by the full Kaggle Avazu file (same ten days)?
 

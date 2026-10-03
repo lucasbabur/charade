@@ -1,5 +1,6 @@
 {
   "opportunities": 102874,
+  "excluded_outside_candidate_set": 8494,
   "mean_candidates": 6.998085036063534,
   "model": {
     "ne": 0.8842318166796227,
@@ -14,5 +15,5 @@
     "ci_low": 0.0009815574527979242,
     "ci_high": 0.0029739452217340773
   },
-  "share_of_skill_that_ranks_ads": 0.03418077853617801
+  "interpretation": "Predictive score ablation on reconstructed candidates; not ranking-skill share or CTR lift."
 }

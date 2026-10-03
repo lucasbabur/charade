@@ -19,11 +19,11 @@ It does this in **p99 25–31 ms at 400 rps** for 100 candidates, measured on on
 | | Result | Evidence |
 |---|---|---|
 | CTR model | DCN-v2 3-seed ensemble: **NE 0.8855**, AUC 0.737, pred/obs 1.002, ECE 0.005 (no calibration map: none beat identity by more than noise) | [03](03-models-evaluation.md) |
-| Ranking skill | Most of that NE is context (is this moment clickable?). Only **3.4 %** of the skill distinguishes the candidates of one opportunity, which is all the ranker uses: flattening each candidate set to its mean pCTR costs 0.0018 log loss [0.0010, 0.0030] | [E011](../experiments/E011-ranking-skill/README.md) |
+| Score flattening | Giving every candidate its opportunity's unweighted mean pCTR costs 0.0018 logged-impression log loss [0.0010, 0.0030]. This changes calibration and candidate weighting as well as discrimination; it does not measure a share of ranking skill or CTR lift | [E011](../experiments/E011-ranking-skill/README.md) |
 | vs LightGBM / logistic | Equal tuning effort, 3-seed ensembles each: −0.0040 [−0.0053, −0.0027] vs LightGBM, −0.0117 [−0.0136, −0.0098] vs logistic. Single model vs single model: −0.0020 [−0.0041, +0.0004], not established | MLM004 |
 | Ranking | Exact propensities logged for every candidate. Offline policy evaluation runs end to end; under reconstructed candidate sets and inferred logging propensities it estimates +1.46 pp CTR [+0.50, +2.38] (DR with an independent reward model). That demonstrates the evaluation machinery, not business value | [04](04-ranking-policy.md) |
 | Cold start | The model has no character ID, so a new character is scored from metadata like any other. Unseen characters: NE 0.908 vs 0.885 warm (n = 1,478, known genres only); new users 0.894 vs 0.856 returning | [05](05-cold-start.md) |
-| Drift | Ads rotate (13–37 % new creatives per day); a frozen model keeps its ranking quality for a week but its calibration drifts about 1.2 % per day, so retrain daily. An exposure penalty chosen on the validation day by a non-inferiority rule (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss, so it awaits an online test | [06](06-drift-adaptation.md) |
+| Drift | Ads rotate (13–37 % new creatives per day). The rolling-window backtest reports NE, AUC and calibration but does not isolate age from volume or establish ranking stability. Daily retraining remains an operational choice. An exposure penalty selected on validation (λ = 2) cuts cohort concentration 24 % on test, but test cannot rule out a 0.6 pp CTR loss; it awaits an online test | [06](06-drift-adaptation.md) |
 | Serving | p50 8 / p95 14–15 / p99 25–31 ms at 400 rps over two runs, errors ≤ 0.005 % (impression events over the 10 ms store budget; impression and click events included); train/serve feature parity exact; ONNX = PyTorch to 1.9e-6 | [07](07-serving-operations.md) |
 | Gates | mlcheck on the shipped bundle: 44 checks, 40 pass, 0 fail, 4 warn (documented); this line is checked against `uv run mlcheck .` by `tests/docs` when a bundle is present | [mlcheck.md](mlcheck.md) |
 
@@ -52,7 +52,7 @@ One line each; the reasoning and the numbers live in the linked page.
 | Gate (brand safety, frequency cap), rank by pCTR × bid, serve greedy on 95 %, explore 5 % from a known distribution, log every candidate's exact propensity | Hard business rules never lose to a score; exact propensities make every decision usable for off-policy evaluation | [04](04-ranking-policy.md) |
 | One feature implementation shared by training and serving; serving never imports torch, LightGBM or sklearn | Train/serve skew is the classic failure; a light serving image keeps p99 low | [02](02-features.md), [07](07-serving-operations.md) |
 | Organise code by ML concern and gate releases with mlcheck, not with clean-architecture layers | The risks here are leakage, skew and irreproducibility, not swapping databases | [mlcheck.md](mlcheck.md) |
-| Retrain daily on a rolling window; no online recalibration | Calibration drifts ~1.2 % per day of model age (ranking does not, within a week) and new creatives need embeddings; online recalibration did not help on the validation day | [06](06-drift-adaptation.md) |
+| Retrain daily on a rolling window; no online recalibration | Refresh new creatives and monitor calibration; the backtest does not establish an optimal cadence or stable ranking. Online recalibration did not help on the validation day | [06](06-drift-adaptation.md) |
 
 ## How it is built
 

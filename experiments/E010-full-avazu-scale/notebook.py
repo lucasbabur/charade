@@ -19,7 +19,7 @@
 #
 # **Hypotheses:** H1 ([docs/hypotheses.md](../../docs/hypotheses.md))
 #
-# **Result:** On one shared test set, 9x the training data (0.74M -> 6.7M rows from the full Kaggle file) lowers NE by 0.016 (DCN-v2 0.873 -> 0.857, LightGBM 0.875 -> 0.855); the two models swap places and stay within 0.003 NE, so volume moves NE about four times more than the architecture choice.
+# **Result:** On one shared test set, single-seed DCN-v2 NE is 0.873 with 0.74M training rows and 0.857 with 6.7M; LightGBM is 0.875 and 0.855. These are descriptive results with changing training and validation volume; seeds and paired intervals are needed before comparative claims.
 #
 # **Question:** How much does training volume move NE, compared with the DCN-v2 vs LightGBM choice?
 #
@@ -52,13 +52,13 @@ pl.DataFrame(
 
 # %% [markdown]
 # ## Reading
-# - **Volume:** on the same test rows, 9x the training data lowers NE by 0.016 for DCN-v2 and 0.021 for LightGBM. That is about four times the DCN-v2 vs LightGBM ensemble gap on the shipped data (0.004).
-# - **Architecture:** DCN-v2 leads by 0.003 NE at 0.74M rows and trails by 0.002 at 6.7M (single seeds, within seed noise). Consistent with E004: the architecture-alone advantage is not established.
-# - **Character layer:** without it the sample model scores NE 0.914 on the sample's test set against the shipped 0.8855, so the synthetic character features carry ~0.03 NE here (generated with genre effects; not evidence for real personas).
-# - **Correction:** an earlier version compared the sample's test set with the full file's (test CTR 17.1 % vs 15.6 %) and reported a 0.057 NE gain; most of that was the different test population.
+# - **Volume:** the observed NE differences are 0.016 for DCN-v2 and 0.021 for LightGBM. Training and validation volume both change; no paired intervals or repeated seeds are available. The earlier fourfold comparison mixed these NE differences with E004 log loss and is withdrawn.
+# - **Architecture:** DCN-v2 leads by 0.003 NE at 0.74M rows and trails by 0.002 at 6.7M (single seeds; seed variability was not measured). Consistent with E004: the architecture-alone advantage is not established.
+# - **Character layer:** the no-character sample run is a single model, whereas the shipped result is an ensemble. Use the controlled E005 ablation for the character-feature effect, not this cross-configuration comparison.
+# - **Correction:** an earlier version compared the sample's test set with the full file's (test CTR 17.1 % vs 15.6 %) and reported a 0.057 NE gain; that comparison did not isolate data volume.
 
 # %% [markdown]
 # ## Conclusion
-# On one shared test set, 9x the training data (0.74M -> 6.7M rows from the full Kaggle file) lowers NE by 0.016 (DCN-v2 0.873 -> 0.857, LightGBM 0.875 -> 0.855); the two models swap places and stay within 0.003 NE, so volume moves NE about four times more than the architecture choice.
+# On one shared test set, single-seed DCN-v2 NE is 0.873 with 0.74M training rows and 0.857 with 6.7M; LightGBM is 0.875 and 0.855. These are descriptive results with changing training and validation volume; seeds and paired intervals are needed before comparative claims.
 #
 # **Decision:** Keep DCN-v2 for the shipped model (single ONNX graph; character interactions on the real task) without claiming it beats boosted trees; with production volume, re-run the comparison with seeds and CIs before choosing. More data is the first scaling lever.
