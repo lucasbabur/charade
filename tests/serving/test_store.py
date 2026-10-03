@@ -133,8 +133,8 @@ async def test_impressions_and_clicks_feed_the_pair_correction_once(make: int) -
     assert await store.record_click("i") is Outcome.RECORDED
     assert await store.record_click("i") is Outcome.DUPLICATE
     state, other = await store.pairs(["camp|romance", "camp|horror"])
-    assert (state.expected, state.clicks, state.hour) == (pytest.approx(0.25), 1.0, 100)
-    assert (other.expected, other.clicks, other.hour) == (0.0, 0.0, None)
+    assert (state.expected, state.clicks) == (pytest.approx(0.25), 1.0)
+    assert (other.expected, other.clicks) == (0.0, 0.0)
 
 
 @pytest.mark.anyio

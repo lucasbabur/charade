@@ -8,9 +8,10 @@ The correction `r` multiplies the model's pCTR for every future (c, g) candidate
     r ~ Gamma(prior + clicks, prior + expected):  mean (prior + clicks) / (prior + expected),
                                                    sd   sqrt(prior + clicks) / (prior + expected).
 A pair has graduated when `expected >= prior`: the logs weigh at least as much as the prior, so the
-observed rate, not the model, now decides the pair's level. With a half-life, both sums decay per hour so
-the correction follows drift. `prior` was chosen on the validation day (E012); the policy consumes the
-mean as a multiplier and the sd as the width of the candidate's interval.
+observed rate, not the model, now decides the pair's level. `prior` was chosen on the validation day (E012);
+the policy consumes the mean as a multiplier and the sd as the width of the candidate's interval. The sums
+are plain additive counters, so the store updates them with atomic increments and no transaction. A decay
+was replayed in E012 and was indistinguishable from none on this data, so none is applied.
 """
 
 import numpy as np
@@ -25,8 +26,6 @@ class PairState(BaseModel):
 
     expected: float = 0.0
     clicks: float = 0.0
-    hour: int | None = None
-    """Epoch hour of the last update; decay is applied lazily from here."""
 
 
 def pair_key(campaign: str, genre: str) -> str:
@@ -43,28 +42,3 @@ def posterior(expected: Floats, clicks: Floats, prior: float) -> tuple[Floats, F
 def graduated(expected: Floats, prior: float) -> npt.NDArray[np.bool_]:
     """True where the logged evidence outweighs the prior."""
     return expected >= prior
-
-
-def decay_factor(hours: int, half_life_hours: float | None) -> float:
-    """Multiplier that `hours` of silence apply to both sums (1 without a half-life)."""
-    if half_life_hours is None or hours <= 0:
-        return 1.0
-    return float(0.5 ** (hours / half_life_hours))
-
-
-def decayed(state: PairState, hour: int, half_life_hours: float | None) -> PairState:
-    """The pair's sums as of `hour`, decay applied for the hours since its last update."""
-    if state.hour is None or hour <= state.hour:
-        return state
-    factor = decay_factor(hour - state.hour, half_life_hours)
-    return PairState(expected=state.expected * factor, clicks=state.clicks * factor, hour=hour)
-
-
-def observe(
-    state: PairState, hour: int, expected: float = 0.0, clicks: float = 0.0, half_life_hours: float | None = None
-) -> PairState:
-    """Add one impression's expected clicks or one click at `hour`, decaying older evidence first."""
-    current = decayed(state, hour, half_life_hours)
-    return PairState(
-        expected=current.expected + expected, clicks=current.clicks + clicks, hour=max(hour, current.hour or hour)
-    )

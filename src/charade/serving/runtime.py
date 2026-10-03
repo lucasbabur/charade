@@ -28,11 +28,8 @@ def load_runtime(settings: Settings, store: FeatureStore | None = None) -> Runti
     """Load the bundle from `settings.artifacts_dir`; tolerate its absence (readiness reports it)."""
     directory: Path = settings.artifacts_dir
     if store is None:
-        half_life = settings.policy.correction_half_life_hours
         store = (
-            RedisStore(settings.redis_url, settings.store_timeout_ms / 1000, half_life_hours=half_life)
-            if settings.redis_url
-            else MemoryStore(half_life_hours=half_life)
+            RedisStore(settings.redis_url, settings.store_timeout_ms / 1000) if settings.redis_url else MemoryStore()
         )
     if not (directory / "model.onnx").is_file():
         return Runtime(None, {}, settings.policy, store, "none")
