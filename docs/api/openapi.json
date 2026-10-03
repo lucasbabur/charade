@@ -156,6 +156,12 @@
             "title": "Character",
             "type": "boolean"
           },
+          "pairs_cold": {
+            "default": 0,
+            "description": "Candidates whose (campaign, genre) pair has not graduated: logged expected clicks below the correction prior, so the model's pCTR still dominates their score",
+            "title": "Pairs Cold",
+            "type": "integer"
+          },
           "user": {
             "title": "User",
             "type": "boolean"
@@ -504,7 +510,7 @@
             "$ref": "#/components/schemas/ColdStart"
           },
           "confidence": {
-            "description": "Heuristic: low when the top two evidence intervals overlap; not a statistical guarantee",
+            "description": "Heuristic: low when the top two correction intervals overlap; not a statistical guarantee",
             "enum": [
               "high",
               "low"
@@ -578,6 +584,12 @@
             "title": "Candidate Id",
             "type": "string"
           },
+          "correction": {
+            "default": 1.0,
+            "description": "Live (campaign, genre) multiplier applied to pCTR (posterior mean; 1 = no evidence)",
+            "title": "Correction",
+            "type": "number"
+          },
           "gate_reasons": {
             "items": {
               "$ref": "#/components/schemas/GateReason"
@@ -590,17 +602,17 @@
             "type": "boolean"
           },
           "pctr": {
-            "description": "Calibrated click probability",
+            "description": "Calibrated click probability from the model, before the live correction",
             "title": "Pctr",
             "type": "number"
           },
           "pctr_high": {
-            "description": "Upper bound of the same heuristic evidence interval",
+            "description": "Upper bound of the same interval",
             "title": "Pctr High",
             "type": "number"
           },
           "pctr_low": {
-            "description": "Lower bound of a heuristic evidence interval (training support for the campaign x genre); not a calibrated posterior",
+            "description": "Lower bound: pCTR x (correction - 1.645 sd), the live (campaign, genre) correction's posterior; a heuristic width, not a calibrated posterior over prediction error",
             "title": "Pctr Low",
             "type": "number"
           },
@@ -621,7 +633,7 @@
             "title": "Rank"
           },
           "value": {
-            "description": "pCTR x bid x pacing; the ranking key",
+            "description": "pCTR x correction x bid x pacing; the ranking key",
             "title": "Value",
             "type": "number"
           }

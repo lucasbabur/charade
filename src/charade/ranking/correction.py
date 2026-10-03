@@ -29,6 +29,11 @@ class PairState(BaseModel):
     """Epoch hour of the last update; decay is applied lazily from here."""
 
 
+def pair_key(campaign: str, genre: str) -> str:
+    """Store key of a pair."""
+    return f"{campaign}|{genre}"
+
+
 def posterior(expected: Floats, clicks: Floats, prior: float) -> tuple[Floats, Floats]:
     """(mean, sd) of the correction multiplier for arrays of pair sums."""
     scale = prior + expected

@@ -123,13 +123,16 @@ class RankedAd(BaseModel):
 
     candidate_id: str
     rank: int | None
-    pctr: float = Field(description="Calibrated click probability")
-    pctr_low: float = Field(
-        description="Lower bound of a heuristic evidence interval (training support for the campaign x genre); "
-        "not a calibrated posterior"
+    pctr: float = Field(description="Calibrated click probability from the model, before the live correction")
+    correction: float = Field(
+        default=1.0, description="Live (campaign, genre) multiplier applied to pCTR (posterior mean; 1 = no evidence)"
     )
-    pctr_high: float = Field(description="Upper bound of the same heuristic evidence interval")
-    value: float = Field(description="pCTR x bid x pacing; the ranking key")
+    pctr_low: float = Field(
+        description="Lower bound: pCTR x (correction - 1.645 sd), the live (campaign, genre) correction's "
+        "posterior; a heuristic width, not a calibrated posterior over prediction error"
+    )
+    pctr_high: float = Field(description="Upper bound of the same interval")
+    value: float = Field(description="pCTR x correction x bid x pacing; the ranking key")
     gated: bool
     gate_reasons: list[GateReason]
     propensity: float = Field(description="Exact probability that this request serves this candidate (0 if gated)")
@@ -140,6 +143,11 @@ class ColdStart(BaseModel):
 
     character: bool
     user: bool
+    pairs_cold: int = Field(
+        default=0,
+        description="Candidates whose (campaign, genre) pair has not graduated: logged expected clicks below the "
+        "correction prior, so the model's pCTR still dominates their score",
+    )
 
 
 class RankResponse(BaseModel):
@@ -152,7 +160,7 @@ class RankResponse(BaseModel):
     )
     explored: bool
     confidence: Literal["high", "low"] = Field(
-        description="Heuristic: low when the top two evidence intervals overlap; not a statistical guarantee"
+        description="Heuristic: low when the top two correction intervals overlap; not a statistical guarantee"
     )
     degraded: bool = Field(description="True when the feature store was unavailable and defaults were used")
     cold_start: ColdStart

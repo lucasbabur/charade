@@ -1,4 +1,4 @@
-"""Everything a worker loads once: scorer, character table, evidence, policy, store."""
+"""Everything a worker loads once: scorer, character table, policy, store."""
 
 import json
 from dataclasses import dataclass
@@ -7,8 +7,7 @@ from pathlib import Path
 import polars as pl
 
 from charade.config import PolicyConfig, Settings
-from charade.ranking.evidence import Evidence
-from charade.scoring.scorer import CHARACTERS_FILE, EVIDENCE_FILE, Scorer, bundle_sha256
+from charade.scoring.scorer import CHARACTERS_FILE, Scorer, bundle_sha256
 from charade.serving.store import FeatureStore, MemoryStore, RedisStore
 
 
@@ -18,7 +17,6 @@ class Runtime:
 
     scorer: Scorer | None
     characters: dict[str, dict[str, object]]
-    evidence: Evidence
     policy: PolicyConfig
     store: FeatureStore
     model_version: str
@@ -30,11 +28,14 @@ def load_runtime(settings: Settings, store: FeatureStore | None = None) -> Runti
     """Load the bundle from `settings.artifacts_dir`; tolerate its absence (readiness reports it)."""
     directory: Path = settings.artifacts_dir
     if store is None:
+        half_life = settings.policy.correction_half_life_hours
         store = (
-            RedisStore(settings.redis_url, settings.store_timeout_ms / 1000) if settings.redis_url else MemoryStore()
+            RedisStore(settings.redis_url, settings.store_timeout_ms / 1000, half_life_hours=half_life)
+            if settings.redis_url
+            else MemoryStore(half_life_hours=half_life)
         )
     if not (directory / "model.onnx").is_file():
-        return Runtime(None, {}, Evidence(counts={}), settings.policy, store, "none")
+        return Runtime(None, {}, settings.policy, store, "none")
     characters = pl.read_parquet(directory / CHARACTERS_FILE)
     table = {
         row["character_id"]: row
@@ -47,7 +48,6 @@ def load_runtime(settings: Settings, store: FeatureStore | None = None) -> Runti
     return Runtime(
         scorer=Scorer(directory),
         characters=table,
-        evidence=Evidence.model_validate_json((directory / EVIDENCE_FILE).read_text()),
         policy=settings.policy,
         store=store,
         model_version=version,

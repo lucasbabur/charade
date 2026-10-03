@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 
 from charade.config import Settings
 from charade.features.counters import UserHistory
+from charade.ranking.correction import PairState
 from charade.serving.app import create_app
 from charade.serving.assemble import epoch_hour, user_key
 from charade.serving.runtime import Runtime, load_runtime
@@ -20,6 +21,9 @@ class BrokenStore(MemoryStore):
 
     async def record_impression(self, impression_id: str, request_id: str) -> Recorded:
         raise StoreUnavailableError(impression_id)
+
+    async def pairs(self, keys: list[str]) -> list[PairState]:
+        raise StoreUnavailableError(keys[0])
 
 
 def _client(bundle: Settings, store: MemoryStore | None = None) -> TestClient:
@@ -43,9 +47,14 @@ def test_unknown_character_uses_request_metadata_or_strictest_defaults(
     body = copy.deepcopy(sample_body) | {"character_id": "never-seen"}
     with _client(bundle) as client:
         default = client.post("/v1/rank", json=body).json()
+        # A different character under the same request id would be a different decision (409), so use a new id.
         provided = client.post(
             "/v1/rank",
-            json=body | {"character": {"genre": "romance", "safety_tier": "sfw", "created_at": "2014-10-29T00:00:00"}},
+            json=body
+            | {
+                "request_id": "req-1-with-metadata",
+                "character": {"genre": "romance", "safety_tier": "sfw", "created_at": "2014-10-29T00:00:00"},
+            },
         ).json()
     assert default["cold_start"]["character"] is True
     assert default["ranked"] != provided["ranked"]
@@ -199,3 +208,28 @@ def test_store_outage_reports_unenforced_cap(bundle: Settings, sample_body: dict
     with _client(bundle, BrokenStore()) as client:
         body = client.post("/v1/rank", json=sample_body).json()
     assert "feature store unavailable: frequency cap not enforced, decision not stored" in body["warnings"]
+
+
+def test_outcomes_move_the_campaign_correction_for_the_next_request(
+    bundle: Settings, sample_body: dict[str, object]
+) -> None:
+    """A click on a served campaign raises its correction above 1 for the same genre; untouched pairs stay cold."""
+    store = MemoryStore()
+    with _client(bundle, store) as client:
+        first = client.post("/v1/rank", json=sample_body).json()
+        assert all(r["correction"] == 1.0 for r in first["ranked"])
+        assert first["cold_start"]["pairs_cold"] == len(first["ranked"])
+        client.post("/v1/events/impression", json={"impression_id": "imp-1", "request_id": "req-1"})
+        client.post("/v1/events/click", json={"impression_id": "imp-1"})
+        body = copy.deepcopy(sample_body) | {"request_id": "req-2"}
+        second = client.post("/v1/rank", json=body).json()
+    chosen = first["chosen_id"]
+    campaign = next(c["C17"] for c in sample_body["candidates"] if c["candidate_id"] == chosen)  # type: ignore[union-attr]
+    same_campaign = {c["candidate_id"] for c in sample_body["candidates"] if c["C17"] == campaign}  # type: ignore[union-attr]
+    for r in second["ranked"]:
+        if r["candidate_id"] in same_campaign:
+            assert r["correction"] > 1.0
+            assert r["value"] == pytest.approx(min(r["pctr"] * r["correction"], 1.0))
+        else:
+            assert r["correction"] == 1.0
+    assert second["cold_start"]["pairs_cold"] == len(second["ranked"])

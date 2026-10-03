@@ -39,9 +39,8 @@ from charade.features.derive import derive
 from charade.features.spec import Group, encode, fit_spec
 from charade.models.dataset import build_frame
 from charade.models.gbdt import predict_gbdt, train_gbdt
-from charade.ranking.evidence import Evidence
 from charade.ranking.policy import Candidate, Decision, decide, gate_reasons
-from charade.scoring.scorer import EVIDENCE_FILE, Scorer, bundle_sha256
+from charade.scoring.scorer import Scorer, bundle_sha256
 
 TOP_K = 10
 GREEDY = "greedy pCTR (no gates)"
@@ -111,21 +110,17 @@ def _row_candidates(pairs: pl.DataFrame) -> dict[int, list[tuple[int, Candidate,
         "C14",
         "banner_pos",
         "C21",
-        "C17",
         "pctr",
         "logit",
-        "evidence",
         "user_campaign_imps",
         "safety_tier",
     )
-    for row, slot, c14, pos, c21, c17, pctr, logit, evidence, exposures, tier in pairs.select(columns).iter_rows():
+    for row, slot, c14, pos, c21, pctr, logit, exposures, tier in pairs.select(columns).iter_rows():
         candidate = Candidate(
             candidate_id=f"{c14}@{pos}",
             advertiser_id=c21,
-            campaign_id=c17,
             pctr=pctr,
             logit=logit,
-            evidence=evidence,
             prior_exposures=int(exposures),
         )
         out.setdefault(row, []).append((slot, candidate, tier))
@@ -173,7 +168,6 @@ class CandidateMatrices:
     """Independent outcome model's click probability (DR direct-method term)."""
     logit: np.ndarray
     gated: np.ndarray
-    evidence: np.ndarray
     campaign: np.ndarray
     logged: np.ndarray
     y: np.ndarray
@@ -234,7 +228,6 @@ def load_candidates(settings: Settings, data_dir: Path | None = None, split: str
     """
     art = settings.artifacts_dir
     scorer = Scorer(art)
-    evidence = Evidence.model_validate_json((art / EVIDENCE_FILE).read_text())
     frame = build_frame(settings, data_dir or settings.data_dir)
     history = _campaign_exposure(frame)
     test = frame.filter(pl.col("split") == split)
@@ -243,11 +236,6 @@ def load_candidates(settings: Settings, data_dir: Path | None = None, split: str
     logits, pctrs = scorer.score(encode(scorer.spec, pairs))
     pairs = pairs.with_columns(
         pl.Series("pctr", pctrs), pl.Series("logit", logits), pl.Series("reward", reward_model(frame, settings)(pairs))
-    )
-    pairs = pairs.with_columns(
-        pl.struct("C17", "genre")
-        .map_elements(lambda r: evidence.lookup(r["C17"], r["genre"]), return_dtype=pl.Float64)
-        .alias("evidence"),
     )
     candidates = _row_candidates(pairs)
     pairs = pairs.with_columns(
@@ -271,7 +259,6 @@ def load_candidates(settings: Settings, data_dir: Path | None = None, split: str
         reward=_matrix(pairs, "reward", n, 0.0),
         logit=_matrix(pairs, "logit", n, 0.0),
         gated=_matrix(pairs, "gated", n, 1.0).astype(bool),
-        evidence=_matrix(pairs, "evidence", n, 0.0),
         campaign=campaign,
         logged=ordered["logged_slot"].to_numpy(),
         y=ordered["click"].to_numpy().astype(np.float64),

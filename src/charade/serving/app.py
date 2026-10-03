@@ -14,6 +14,7 @@ from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from charade import __version__
 from charade.config import get_settings
 from charade.features.counters import UserHistory
+from charade.ranking.correction import PairState, graduated, pair_key, posterior
 from charade.ranking.policy import Candidate, Ranked, decide
 from charade.serving import metrics
 from charade.serving.assemble import assemble, epoch_hour, unknown_character, user_key
@@ -92,6 +93,7 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
     # feature. With the store down there is no exposure state: the cap fails open, flagged as degraded.
     campaigns = [c.C17 for c in body.candidates]
     cap_counts = (history or UserHistory()).exposures_so_far(campaigns)
+    expected, mean, sd, degraded = await _correction(runtime, campaigns, genre, degraded)
     if degraded:
         warnings.append("feature store unavailable: frequency cap not enforced, decision not stored")
         metrics.CAP_UNENFORCED.inc()
@@ -99,22 +101,26 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         Candidate(
             candidate_id=c.candidate_id,
             advertiser_id=c.C21,
-            campaign_id=c.C17,
             pctr=float(p),
-            evidence=runtime.evidence.lookup(c.C17, genre),
+            correction=float(m),
+            correction_sd=float(w),
             bid=c.bid,
             # pacing / budget_exhausted keep their defaults: no budget feed exists (charade.ranking.pacing).
             prior_exposures=int(e),
             logit=float(z),
         )
-        for c, p, z, e, ok in zip(body.candidates, pctr, logits, cap_counts, finite, strict=True)
+        for c, p, z, e, m, w, ok in zip(body.candidates, pctr, logits, cap_counts, mean, sd, finite, strict=True)
         if ok
     ]
     decision = decide(candidates, str(character["safety_tier"]), body.request_id, runtime.policy)
     if decision.chosen_id is not None and not degraded:
-        degraded = await _store_decision(runtime, body, user, decision.chosen_id, warnings)
+        served_pctr = next(c.pctr for c in candidates if c.candidate_id == decision.chosen_id)
+        degraded = await _store_decision(runtime, body, user, decision.chosen_id, genre, served_pctr, warnings)
     done = time.perf_counter()
+    graduated_pairs = graduated(expected, runtime.policy.correction_prior)
     _observe(decision.ranked, decision.chosen_id, decision.explored, cold_character, history is None, len(candidates))
+    metrics.GRADUATED.labels("graduated").inc(int(graduated_pairs.sum()))
+    metrics.GRADUATED.labels("cold").inc(int((~graduated_pairs).sum()))
     for stage, seconds in (
         ("fetch", fetched - start),
         ("assemble", assembled - fetched),
@@ -154,17 +160,41 @@ async def rank(body: RankRequest, runtime: Annotated[Runtime, Depends(_ready_run
         explored=decision.explored,
         confidence="low" if decision.confidence == "low" else "high",
         degraded=degraded,
-        cold_start=ColdStart(character=cold_character, user=history is None),
+        cold_start=ColdStart(character=cold_character, user=history is None, pairs_cold=int((~graduated_pairs).sum())),
         warnings=warnings,
         model_version=runtime.model_version,
         ranked=[RankedAd.model_validate(r.model_dump()) for r in decision.ranked],
     )
 
 
-async def _store_decision(runtime: Runtime, body: RankRequest, user: str, chosen: str, warnings: list[str]) -> bool:
+async def _correction(
+    runtime: Runtime, campaigns: list[str], genre: str, degraded: bool
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, bool]:
+    """(expected clicks, multiplier mean, multiplier sd, degraded) of each candidate's (campaign, genre) pair.
+
+    Without the store every pair sits at its prior: multiplier 1 with the prior's width.
+    """
+    pairs = [PairState() for _ in campaigns]
+    if not degraded:
+        try:
+            pairs = await runtime.store.pairs([pair_key(c, genre) for c in campaigns])
+        except StoreUnavailableError:
+            degraded = True
+            metrics.DEGRADED.inc()
+    expected = np.array([s.expected for s in pairs], dtype=np.float64)
+    clicks = np.array([s.clicks for s in pairs], dtype=np.float64)
+    mean, sd = posterior(expected, clicks, runtime.policy.correction_prior)
+    return expected, mean, sd, degraded
+
+
+async def _store_decision(
+    runtime: Runtime, body: RankRequest, user: str, chosen: str, genre: str, pctr: float, warnings: list[str]
+) -> bool:
     """Record what this request served, so impression events take their identity from it. True if degraded."""
     campaign = next(c.C17 for c in body.candidates if c.candidate_id == chosen)
-    served = Served(user=user, hour=epoch_hour(body.hour), candidate_id=chosen, campaign=campaign)
+    served = Served(
+        user=user, hour=epoch_hour(body.hour), candidate_id=chosen, campaign=campaign, genre=genre, pctr=pctr
+    )
     try:
         outcome = await runtime.store.record_decision(body.request_id, served)
     except StoreUnavailableError:

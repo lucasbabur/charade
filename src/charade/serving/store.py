@@ -1,9 +1,12 @@
 """Online user-history store. Redis in production, in-memory for tests and local runs.
 
-Three kinds of key:
-    charade:dec:<request>      Served {user, hour, candidate_id, campaign}, written once by /v1/rank, kept 48 h
+Four kinds of key:
+    charade:dec:<request>      Served {user, hour, candidate_id, campaign, genre, pctr}, written once, kept 48 h
     charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
     charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 48 h
+    charade:pair:<campaign>|<genre>  PairState {expected, clicks, hour}: the live correction's evidence, kept 30 days
+                               after its last event. An impression adds the served pCTR to `expected`, a click
+                               adds 1 to `clicks`, both inside the impression's or click's transaction.
 
 One canonical identity per event. A decision is immutable: re-recording the same request id with the
 same content is a duplicate, with different content a conflict. An impression event names only its
@@ -39,11 +42,14 @@ from redis.exceptions import RedisError, WatchError
 
 from charade.data.events import CLICK_WINDOW_HOURS
 from charade.features.counters import UserHistory
+from charade.ranking.correction import PairState, observe, pair_key
 
 DECISION_PREFIX = "charade:dec:"
 USER_PREFIX = "charade:user:"
 IMPRESSION_PREFIX = "charade:imp:"
+PAIR_PREFIX = "charade:pair:"
 USER_TTL_SECONDS = 14 * 24 * 3600
+PAIR_TTL_SECONDS = 30 * 24 * 3600
 IMPRESSION_TTL_SECONDS = CLICK_WINDOW_HOURS * 3600
 """Decisions and impressions live as long as a click can still be attributed (the label maturity window)."""
 MAX_RETRIES = 50
@@ -72,6 +78,14 @@ class Served(BaseModel):
     hour: int
     candidate_id: str
     campaign: str
+    genre: str | None = None
+    pctr: float | None = None
+    """Character genre and the model's pCTR of the served ad. Both feed the (campaign, genre) correction;
+    when either is missing (history replays) the correction is left untouched."""
+
+    def pair(self) -> str | None:
+        """Correction key this decision updates, if it carries what the correction needs."""
+        return pair_key(self.campaign, self.genre) if self.genre is not None and self.pctr is not None else None
 
 
 class Impression(BaseModel):
@@ -105,6 +119,10 @@ class FeatureStore(Protocol):
         """Count a click once, attributed to its impression's user and hour."""
         ...
 
+    async def pairs(self, keys: list[str]) -> list[PairState]:
+        """Correction evidence per key (empty state when unseen). Raises StoreUnavailableError."""
+        ...
+
     async def ping(self) -> bool:
         """True when the store is reachable."""
         ...
@@ -116,6 +134,17 @@ def _apply_impression(history: UserHistory | None, served: Served) -> UserHistor
     return history
 
 
+def _apply_pair(state: PairState | None, served: Served, half_life: float | None, click: bool) -> PairState:
+    """The pair's evidence after this impression (served pCTR) or click (one click)."""
+    if click:
+        return observe(state or PairState(), served.hour, clicks=1.0, half_life_hours=half_life)
+    return observe(state or PairState(), served.hour, expected=served.pctr or 0.0, half_life_hours=half_life)
+
+
+def _pair_state(raw: Any) -> PairState:
+    return PairState() if raw is None else PairState.model_validate_json(raw)
+
+
 def _existing(impression: Impression, request_id: str) -> Recorded:
     return (Outcome.DUPLICATE if impression.request_id == request_id else Outcome.CONFLICT), impression
 
@@ -123,10 +152,12 @@ def _existing(impression: Impression, request_id: str) -> Recorded:
 class MemoryStore:
     """Process-local store (tests, single-process local runs). No awaits inside a write, so writes are atomic."""
 
-    def __init__(self) -> None:
+    def __init__(self, half_life_hours: float | None = None) -> None:
+        self.half_life_hours = half_life_hours
         self.decisions: dict[str, Served] = {}
         self.users: dict[str, UserHistory] = {}
         self.impressions: dict[str, Impression] = {}
+        self.pair_states: dict[str, PairState] = {}
 
     async def get(self, user: str) -> UserHistory | None:
         """History or None."""
@@ -149,6 +180,8 @@ class MemoryStore:
             return Outcome.UNKNOWN_DECISION, None
         impression = self.impressions[impression_id] = Impression(request_id=request_id, served=served)
         self.users[served.user] = _apply_impression(self.users.get(served.user), served)
+        if (pair := served.pair()) is not None:
+            self.pair_states[pair] = _apply_pair(self.pair_states.get(pair), served, self.half_life_hours, click=False)
         return Outcome.RECORDED, impression
 
     async def record_click(self, impression_id: str) -> Outcome:
@@ -161,7 +194,15 @@ class MemoryStore:
         impression.clicked = True
         if impression.served.user in self.users:
             self.users[impression.served.user].record_click(impression.served.hour)
+        if (pair := impression.served.pair()) is not None:
+            self.pair_states[pair] = _apply_pair(
+                self.pair_states.get(pair), impression.served, self.half_life_hours, click=True
+            )
         return Outcome.RECORDED
+
+    async def pairs(self, keys: list[str]) -> list[PairState]:
+        """Evidence per key."""
+        return [self.pair_states.get(k, PairState()).model_copy() for k in keys]
 
     async def ping(self) -> bool:
         """Always reachable."""
@@ -171,9 +212,12 @@ class MemoryStore:
 class RedisStore:
     """Redis-backed store: bounded reads, transactional idempotent writes."""
 
-    def __init__(self, url: str, timeout_s: float, client: Redis | None = None) -> None:
+    def __init__(
+        self, url: str, timeout_s: float, client: Redis | None = None, half_life_hours: float | None = None
+    ) -> None:
         self.redis = client or Redis.from_url(url, socket_timeout=timeout_s, socket_connect_timeout=timeout_s)
         self.timeout_s = timeout_s
+        self.half_life_hours = half_life_hours
 
     async def get(self, user: str) -> UserHistory | None:
         """One GET bounded by the timeout."""
@@ -201,6 +245,8 @@ class RedisStore:
         imp_key = IMPRESSION_PREFIX + impression_id
         served = None if raw_dec is None else Served.model_validate_json(raw_dec)
         user_key = USER_PREFIX + (served.user if served else "")
+        pair = served.pair() if served else None
+        pair_k = PAIR_PREFIX + (pair or "")
         found: list[Impression] = []
 
         async def attempt(pipe: Any) -> Outcome:
@@ -211,16 +257,20 @@ class RedisStore:
             if served is None:
                 return Outcome.UNKNOWN_DECISION
             raw = await pipe.get(user_key)
+            raw_pair = await pipe.get(pair_k) if pair else None
             history = _apply_impression(None if raw is None else UserHistory.model_validate_json(raw), served)
             impression = Impression(request_id=request_id, served=served)
             pipe.multi()
             pipe.set(imp_key, impression.model_dump_json(), ex=IMPRESSION_TTL_SECONDS)
             pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
+            if pair:
+                state = _apply_pair(_pair_state(raw_pair), served, self.half_life_hours, click=False)
+                pipe.set(pair_k, state.model_dump_json(), ex=PAIR_TTL_SECONDS)
             await pipe.execute()
             found.append(impression)
             return Outcome.RECORDED
 
-        outcome = await self._transact([imp_key, user_key], attempt)
+        outcome = await self._transact([imp_key, user_key, *([pair_k] if pair else [])], attempt)
         return outcome, found[-1] if found else None
 
     async def record_click(self, impression_id: str) -> Outcome:
@@ -229,7 +279,10 @@ class RedisStore:
         raw_imp = await self._call(self.redis.get(imp_key))
         if raw_imp is None:
             return Outcome.UNKNOWN_IMPRESSION
-        user_key = USER_PREFIX + Impression.model_validate_json(raw_imp).served.user
+        served = Impression.model_validate_json(raw_imp).served
+        user_key = USER_PREFIX + served.user
+        pair = served.pair()
+        pair_k = PAIR_PREFIX + (pair or "")
 
         async def attempt(pipe: Any) -> Outcome:
             current = await pipe.get(imp_key)
@@ -239,6 +292,7 @@ class RedisStore:
             if impression.clicked:
                 return Outcome.DUPLICATE
             raw = await pipe.get(user_key)
+            raw_pair = await pipe.get(pair_k) if pair else None
             impression.clicked = True
             pipe.multi()
             pipe.set(imp_key, impression.model_dump_json(), keepttl=True)
@@ -246,10 +300,20 @@ class RedisStore:
                 history = UserHistory.model_validate_json(raw)
                 history.record_click(impression.served.hour)
                 pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
+            if pair:
+                state = _apply_pair(_pair_state(raw_pair), impression.served, self.half_life_hours, click=True)
+                pipe.set(pair_k, state.model_dump_json(), ex=PAIR_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
 
-        return await self._transact([imp_key, user_key], attempt)
+        return await self._transact([imp_key, user_key, *([pair_k] if pair else [])], attempt)
+
+    async def pairs(self, keys: list[str]) -> list[PairState]:
+        """One MGET bounded by the timeout."""
+        if not keys:
+            return []
+        raw = await self._call(self.redis.mget([PAIR_PREFIX + k for k in keys]))
+        return [_pair_state(r) for r in raw]
 
     async def _transact(self, keys: list[str], attempt: Callable[[Any], Awaitable[Outcome]]) -> Outcome:
         try:

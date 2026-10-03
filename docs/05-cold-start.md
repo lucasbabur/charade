@@ -15,7 +15,7 @@ updated-at: 2026-10-03
 | Published | The character table refresh (or the request's `character` field, if the table is stale) supplies genre, safety tier, creator type, popularity and creation date |
 | First request | Scored on metadata + context + device + user history. No identity parameter exists that could be missing |
 | Not even metadata | OOV embeddings and the **mature** tier for brand safety (the strictest gate). `cold_start.character = true` in the response, and a metric counts it |
-| Exploration | Evidence is counted per (campaign, genre), not per character, so a new character in a known genre inherits its genre's posterior width. A genuinely new genre gets the minimum evidence (20) and therefore exploration |
+| Exploration | The live correction is kept per (campaign, genre), not per character, so a new character in a known genre inherits its genre's posteriors. A genuinely new genre starts every pair at the prior (multiplier 1, widest interval) and therefore explores |
 
 ## A brand-new user (or device)
 
@@ -39,6 +39,10 @@ For both kinds of cold entity, the publisher surface and the character's genre c
 - **Decision:** this synthetic dataset shows no reliable gain from character-specific parameters, so the shipped model has none, and the character-ID ablation agrees ([03](03-models-evaluation.md)). That is narrower than "characters never matter": creator-written personas may carry real per-character signal.
 - **Rule for production:** re-run the same two checks on fresh data, the per-cell spread and the character-ID ablation on validation, and add a character embedding only if the ablation gain has a CI excluding zero. No formula for a graduation threshold is claimed; an earlier version derived one and it rested on a variance estimate that had hit its numerical floor.
 
+## Graduation of ads
+
+Ads are the entities that arrive cold here, so graduation is defined on them ([E012](../experiments/E012-live-correction/README.md), [04](04-ranking-policy.md#live-campaign-genre-correction-e012)). Each (campaign, genre) pair accumulates expected clicks E from the served pCTRs and observed clicks K. **Bootstrap:** while E < a, the model's pCTR dominates the pair's score and its interval is at its widest, so exploration favours it. **Graduated:** once E ≥ a = <!--n:corr_prior-->80<!--/n--> expected clicks (about 450 impressions at the base rate), the logged outcomes weigh at least as much as the prior and the observed rate decides the pair's level. The response reports `cold_start.pairs_cold` and the metric `charade_correction_pairs_total` counts both states. On the test replay from empty sums, <!--n:corr_graduated-->23 %<!--/n--> of impressions in the last hour fell on graduated pairs ([graduation.csv](../reports/coldstart/graduation.csv)); production carries its state over, so this understates it. The rule was not tuned: a is the prior strength the CTR non-inferiority selection chose, and graduation falls out of it.
+
 ## Users, by the same logic
 
 User history passes the ablation test (+0.0012 log loss when removed, CI excludes 0). Users therefore graduate continuously, through counters rather than through an ID: every impression updates them, and `user_seen` switches the model's regime from the first repeat visit on.
@@ -54,4 +58,4 @@ Characters are not the main cold-start problem here; ads are. 43 % of test rows 
 | Campaign unseen in training | 53,458 | 0.8867 | 0.949 |
 | Creative and campaign seen | 72,804 | 0.8891 | 1.034 |
 
-Unseen creatives rank about as well as seen ones: they fall back to their OOV embedding plus the ad's other fields (site, app, banner position, C15–C21), which still carry signal. But calibration splits: unseen ads are under-predicted by about 5 % and seen ones over-predicted by about 3 %, which average out to 1.002 overall. The overall calibration ratio hides that, so the next model work belongs here, not in a new architecture: creative content features (text or image embeddings of the ad) and a hierarchy backoff for new campaigns. This is a standing slice of the cold-start report.
+Unseen creatives rank about as well as seen ones: they fall back to their OOV embedding plus the ad's other fields (site, app, banner position, C15–C21), which still carry signal. But calibration splits: unseen ads are under-predicted by about 5 % and seen ones over-predicted by about 3 %, which average out to 1.002 overall. The overall calibration ratio hides that, so the next model work belongs here, not in a new architecture: creative content features (text or image embeddings of the ad) and a hierarchy backoff for new campaigns. This is a standing slice of the cold-start report. The live correction already closes part of the gap online: cold-campaign pred/obs <!--n:corr_cold_pred_obs-->0.937 → 0.951<!--/n--> on the test replay ([04](04-ranking-policy.md#live-campaign-genre-correction-e012)).

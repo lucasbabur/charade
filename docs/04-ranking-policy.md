@@ -6,7 +6,7 @@ updated-at: 2026-10-03
 
 # 04 — Candidate ranking
 
-**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.46 pp CTR (DR, [+0.50, +2.38])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)).
+**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.46 pp CTR (DR, [+0.50, +2.38])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)). Since E012 the score carries a live (campaign, genre) correction learned from outcomes (below).
 
 ## Pipeline per request (`charade.ranking.policy.decide`)
 
@@ -15,12 +15,25 @@ updated-at: 2026-10-03
 | 1. Brand-safety gate | `advertiser_max_tier[C21]` ≥ character `safety_tier`, else gated | An advertiser that is family-safe must never appear next to a mature persona, whatever its pCTR. The data has no advertiser preferences, so the matrix in `[tool.charade.policy]` is illustrative (advertiser 157 ≤ suggestive, 48 = sfw only) |
 | 2. Frequency cap | Every exposure of the campaign to the user recorded so far, **including the current hour**, ≥ 8 → gated | A hard limit needs the live count; the model feature `log_user_campaign_imps` deliberately excludes the current hour, so the two use different counters. If Redis is unavailable there is no exposure state: the cap fails open, the response warns, and `charade_frequency_cap_unenforced_total` counts it |
 | 3. Score | Calibrated pCTR from one batched ONNX call | One forward pass for all N candidates |
-| 4. Value | pCTR × bid | Bid defaults to 1 (pure CTR ranking, as the brief asks) |
-| 5. Evidence interval | Beta(pCTR·n, (1−pCTR)·n), n = training impressions of (campaign, genre), clipped to [20, 1000] | A heuristic width, not a calibrated posterior over prediction error. Never-seen pairings get wide intervals |
+| 4. Value | corrected pCTR × bid | Bid defaults to 1 (pure CTR ranking, as the brief asks) |
+| 5. Live correction | pCTR × r, r = (a + clicks) / (a + expected) over the pair's logged outcomes, a = <!--n:corr_prior-->80<!--/n--> expected clicks; interval pCTR × (r ± 1.645 sd) | Learned online from the ad's own clicks per genre (`charade.ranking.correction`, [E012](../experiments/E012-live-correction/README.md)). A heuristic width, not a calibrated posterior over prediction error; a pair with no outcomes sits at r = 1 with the prior's width |
 | 6. Decision | Greedy = best eligible by value, then raw logit (a step-shaped calibration map can tie pCTRs), then id. On the hashed 5 % exploration bucket, sample from q_i ∝ (upper bound_i × bid_i)² over eligible candidates | Exploration favours plausible winners and uncertain candidates, with a bounded, auditable budget |
 | 7. Propensity | **Exact:** p_i = 0.95 · 1[i = greedy] + 0.05 · q_i, 0 if gated; logged for every candidate | Makes every logged decision valid for off-policy evaluation and counterfactual training |
 
 **Response per candidate:** rank (null if gated), pCTR, interval, value, gate reasons, propensity. The decision also carries `confidence: low` when the top two intervals overlap. That is a heuristic flag for callers and monitoring, not a statistical guarantee.
+
+## Live (campaign, genre) correction (E012)
+
+The model's pCTR is multiplied by a Gamma-Poisson posterior mean per (campaign, genre): expected clicks E (sum of served pCTRs) and observed clicks K accumulate in Redis from the impression and click events, and r = (a + K) / (a + E) with prior strength a = <!--n:corr_prior-->80<!--/n--> expected clicks selected on the validation day by the E008 non-inferiority rule. Replayed on the test days from empty sums ([correction.md](../reports/policy/correction.md)):
+
+| Reading (test, read once) | Result |
+|---|---|
+| DR CTR change vs greedy pCTR | <!--n:corr_dr-->+0.49 pp [−0.07, +1.02]<!--/n--> (non-inferior at the 0.2 pp margin; a gain is not established) |
+| Log loss of corrected vs raw pCTR on the ad actually shown, causal and online | <!--n:corr_logloss-->−0.00054 [−0.00087, −0.00022]<!--/n-->; NE <!--n:corr_ne-->0.8842 → 0.8831<!--/n--> |
+| Cold-campaign pred/obs | <!--n:corr_cold_pred_obs-->0.937 → 0.951<!--/n--> |
+| Cohort HHI | <!--n:corr_hhi-->0.0275<!--/n--> vs 0.0293 for greedy |
+
+The log-loss reading needs no off-policy assumption: it compares two predictions for the same shown ad using only earlier hours. Half-life (12 h, 48 h, none) is indistinguishable on 30 hours, so the shipped setting keeps every outcome; the knob exists for week-scale drift (`correction_half_life_hours`). The replay learns from logging traffic rather than from the corrected policy's own choices, so the CTR point estimate awaits the same online test as the exposure penalty. Graduation, the cold-start half of this component, is in [05](05-cold-start.md#graduation-of-ads).
 
 **Not connected: budget pacing.** `charade.ranking.pacing.Pacer` (a PI controller on spend) and the budget gate exist and are tested, and the policy consumes `pacing` and `budget_exhausted`. But the data has no budgets or spend, so the API always passes pacing 1 and "not exhausted". Wiring it needs a spend feed and per-campaign pacer state in Redis.
 

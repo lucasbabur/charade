@@ -11,7 +11,7 @@ CONFIG = PolicyConfig(advertiser_max_tier={"family": "sfw"})
 
 
 def _candidates(pctrs: list[float], **overrides: object) -> list[Candidate]:
-    base = {"advertiser_id": "adv", "campaign_id": "camp", "evidence": 500.0}
+    base = {"advertiser_id": "adv", "campaign_id": "camp"}
     return [Candidate(candidate_id=f"c{i}", pctr=p, **(base | overrides)) for i, p in enumerate(pctrs)]  # type: ignore[arg-type]
 
 
@@ -47,8 +47,8 @@ def test_exploration_bucket_is_deterministic_and_near_rate() -> None:
 
 
 def test_uncertain_close_candidates_are_flagged_low_confidence() -> None:
-    thin = _candidates([0.20, 0.19], evidence=20.0)
-    thick = _candidates([0.30, 0.10], evidence=1000.0)
+    thin = _candidates([0.20, 0.19], correction_sd=0.2)
+    thick = _candidates([0.30, 0.10], correction_sd=0.02)
     assert decide(thin, "sfw", "r", CONFIG).confidence == "low"
     assert decide(thick, "sfw", "r", CONFIG).confidence == "high"
 
@@ -70,7 +70,10 @@ pctrs = st.lists(st.floats(0.001, 0.999), min_size=1, max_size=12)
 def test_policy_invariants(values: list[float], family: list[bool], request_id: str) -> None:
     candidates = [
         Candidate(
-            candidate_id=f"c{i}", advertiser_id="family" if family[i] else "other", campaign_id="x", pctr=p, evidence=50
+            candidate_id=f"c{i}",
+            advertiser_id="family" if family[i] else "other",
+            pctr=p,
+            correction_sd=0.1,
         )
         for i, p in enumerate(values)
     ]
@@ -93,8 +96,8 @@ def test_policy_invariants(values: list[float], family: list[bool], request_id: 
 
 def test_calibration_ties_are_broken_by_the_raw_logit() -> None:
     candidates = [
-        Candidate(candidate_id="a", advertiser_id="x", campaign_id="c", pctr=0.12, logit=-2.0, evidence=500),
-        Candidate(candidate_id="b", advertiser_id="x", campaign_id="c", pctr=0.12, logit=-1.9, evidence=500),
+        Candidate(candidate_id="a", advertiser_id="x", pctr=0.12, logit=-2.0),
+        Candidate(candidate_id="b", advertiser_id="x", pctr=0.12, logit=-1.9),
     ]
     decision = decide(candidates, "sfw", "r", PolicyConfig(exploration_rate=0.0))
     assert decision.chosen_id == "b"
@@ -114,8 +117,8 @@ def test_logged_propensities_match_empirical_selection_frequencies() -> None:
     """Recovery test: the logged probability of each candidate equals how often the policy serves it."""
     config = PolicyConfig(exploration_rate=0.3, exploration_sharpness=2.0)
     candidates = [
-        Candidate(candidate_id=f"c{i}", advertiser_id="a", campaign_id="x", pctr=p, evidence=e)
-        for i, (p, e) in enumerate([(0.30, 1000), (0.25, 20), (0.20, 200), (0.10, 50), (0.05, 1000)])
+        Candidate(candidate_id=f"c{i}", advertiser_id="a", pctr=p, correction_sd=sd)
+        for i, (p, sd) in enumerate([(0.30, 0.03), (0.25, 0.2), (0.20, 0.07), (0.10, 0.14), (0.05, 0.03)])
     ]
     logged = {r.candidate_id: r.propensity for r in decide(candidates, "sfw", "any", config).ranked}
     assert sum(logged.values()) == pytest.approx(1.0)
@@ -129,8 +132,7 @@ def test_identical_candidates_get_unbiased_propensities() -> None:
     """The reviewer's reproduction: 100 identical candidates, full exploration -> exactly 1 % each."""
     config = PolicyConfig(exploration_rate=1.0)
     candidates = [
-        Candidate(candidate_id=f"c{i:03d}", advertiser_id="a", campaign_id="x", pctr=0.2, evidence=500)
-        for i in range(100)
+        Candidate(candidate_id=f"c{i:03d}", advertiser_id="a", pctr=0.2, correction_sd=0.05) for i in range(100)
     ]
     decisions = [decide(candidates, "sfw", f"r{i}", config) for i in range(200)]
     assert all(d.propensity == pytest.approx(0.01) for d in decisions)

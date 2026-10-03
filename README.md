@@ -12,9 +12,10 @@ flowchart LR
     end
     subgraph online["Online (per request, p99 < 50 ms)"]
         req[POST /v1/rank<br/>context + N ads] --> feat2[charade.features<br/>same code]
-        store[(Redis<br/>user history)] --> feat2
+        store[(Redis<br/>user history +<br/>pair corrections)] --> feat2
         bundle --> score[ONNX score<br/>+ calibrate]
-        feat2 --> score --> policy[gates → rank →<br/>greedy / 5% explore]
+        store --> policy
+        feat2 --> score --> policy[gates → correct → rank →<br/>greedy / 5% explore]
         policy --> resp[ranked ads<br/>+ propensity]
     end
     resp --> log[(decision logs<br/>+ clicks)] --> raw
@@ -33,6 +34,7 @@ cp /path/to/{impressions,characters}.csv .     # raw data, gitignored
 uv run poe mlcheck-data                        # check the data contract
 uv run poe train                               # train + calibrate + evaluate + export (~1 min on a GTX 1660)
 uv run poe ope && uv run poe parity            # ranking-policy evaluation, train/serve parity
+uv run poe correction                          # live (campaign, genre) correction: select on val, confirm on test
 uv run mlcheck .                               # all 44 ML release gates against the run
 uv run poe serve                               # API on http://127.0.0.1:8000 (docs at /docs)
 docker compose up --build                      # or: API (8 workers) + Redis, bundle mounted
