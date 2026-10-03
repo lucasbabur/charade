@@ -1,7 +1,7 @@
 ---
 title: "Documentation index"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # Documentation index
@@ -37,7 +37,6 @@ Start with [00-summary.md](00-summary.md). Freshness is in each doc's frontmatte
 | [07-serving-operations.md](07-serving-operations.md) | Request path, latency, failure modes; Terraform sketch, delivery, alarms, runbooks |
 | [08-next-steps.md](08-next-steps.md) | The three next investments |
 | [mlcheck.md](mlcheck.md) | The 44 ML release gates and their artifact contract |
-| [adr/](adr/) | One decision per file |
 | [api/openapi.json](api/openapi.json) | Generated API contract (CI fails if stale) |
 | [recording-outline.md](recording-outline.md) | Video walkthrough script |
 
@@ -75,10 +74,10 @@ One folder per experiment in [experiments/](../experiments/): `README.md` (front
 
 | Task | Read, in order |
 |---|---|
-| Review the project in 10 minutes | 00-summary → hypotheses → 04 → 05 → adr/ |
+| Review the project in 10 minutes | 00-summary (headline results, decisions, limits) → hypotheses → 03 → 04 |
 | Change a feature | AGENTS.md invariants 2–4 → 02 → `src/charade/features/` |
-| Train or compare models | 04 → mlcheck.md (model stage) → `[tool.charade.model]` |
-| Touch the ranking policy | 05 → mlcheck.md (policy stage) |
-| Touch the API or latency | 08 → AGENTS.md invariant 5 |
+| Train or compare models | 03 → mlcheck.md (model stage) → `[tool.charade.model]` |
+| Touch the ranking policy | 04 → mlcheck.md (policy stage) |
+| Touch the API or latency | 07 → AGENTS.md invariant 5 |
 | Add an ML gate | tools/mlcheck/AGENTS.md → mlcheck.md |
-| Infrastructure | 09 → `infra/terraform/` |
+| Infrastructure | 07 → `infra/terraform/` |

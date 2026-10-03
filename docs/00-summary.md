@@ -1,7 +1,7 @@
 ---
 title: "Summary"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 00 — Summary
@@ -37,13 +37,28 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 4. **The anonymised C-columns hide the ad hierarchy:** creative → campaign → advertiser. That defines what a candidate is and where brand safety and caps attach.
 5. **Conversation turn and session length are noise** (CTR flat everywhere; ablation CI includes 0). Dropped.
 
+## Decisions
+
+One line each; the reasoning and the numbers live in the linked page.
+
+| Decision | Why | Evidence |
+|---|---|---|
+| Split by time: train 10-21..27, validate 10-28, test 10-29/30 read only to confirm; tune on an inner split (select on 10-27) | Production predicts the future; random splits leak hours, users and creatives | [01](01-data.md), [03](03-models-evaluation.md) |
+| A candidate is a creative (`banner_pos`, C14) with its campaign (C17) and advertiser (C21) | The C-columns are a deterministic hierarchy; brand safety attaches to the advertiser, caps and evidence to the campaign | [01](01-data.md) |
+| Normalized entropy is the primary metric, with AUC, pred/obs and ECE; every comparison gets a paired hour-block bootstrap CI | Ads are priced on calibrated probabilities, not just ordering; rows within an hour are correlated | [03](03-models-evaluation.md) |
+| Ship a 3-seed DCN-v2 ensemble in one ONNX graph, uncalibrated (identity); LightGBM and logistic trained with equal effort as yardsticks | Best ensemble result, explicit feature crosses, cheap to serve; the architecture-alone advantage is not established (E004, E010) | [03](03-models-evaluation.md) |
+| No character ID, no conversation features, no description text | Each was ablated with two seed sets and did not help (text hurt) | [02](02-features.md), [03](03-models-evaluation.md) |
+| Gate (brand safety, frequency cap), rank by pCTR × bid, serve greedy on 95 %, explore 5 % from a known distribution, log every candidate's exact propensity | Hard business rules never lose to a score; exact propensities make every decision usable for off-policy evaluation | [04](04-ranking-policy.md) |
+| One feature implementation shared by training and serving; serving never imports torch, LightGBM or sklearn | Train/serve skew is the classic failure; a light serving image keeps p99 low | [02](02-features.md), [07](07-serving-operations.md) |
+| Organise code by ML concern and gate releases with mlcheck, not with clean-architecture layers | The risks here are leakage, skew and irreproducibility, not swapping databases | [mlcheck.md](mlcheck.md) |
+| Retrain daily on a rolling window; no online recalibration | A frozen model loses ~0.003 NE per day; recalibration did not help on the validation day | [06](06-drift-adaptation.md) |
+
 ## How it is built
 
 - **Code:** `src/charade/` is organised by ML concern. `tools/mlcheck` holds 44 release gates (leakage, reproducibility, recomputed model quality with CIs, parity, latency, policy invariants, drift).
 - **Settings:** all in `pyproject.toml`; tasks via `uv run poe`.
-- **Decisions:** nine short ADRs in [adr/](adr/).
 - **Delivery:**
-  - CI on every PR: lint, strict types, about 180 tests at ≥ 85 % coverage, mlcheck, OpenAPI drift, Terraform validate/tflint/checkov, hadolint/shellcheck, image build and smoke test.
+  - CI on every PR: lint, strict types, import layers, dead code, 222 tests at ≥ 85 % coverage plus 110 for mlcheck, mlcheck, OpenAPI drift, Terraform validate/tflint/checkov, hadolint/shellcheck, image build and smoke test.
   - Every change landed through a PR into `main`, with every commit passing on its own.
   - A Terraform sketch of the AWS serving environment, validated not applied; retraining and promotion as scripts ([07](07-serving-operations.md)).
 
@@ -63,6 +78,7 @@ It does this in **p99 25 ms at 400 rps** for 100 candidates, measured on one des
 - **Holdout discipline is not enforced by a gate.** Choices are made on validation and test only confirms; where that was violated and redone, docs/03 says so. An earlier ledger-based budget gate was removed because it did not track every analysis that read test.
 - **Feedback events are at-least-once.** The API re-emits an event when a retried write finds it already stored, and the row builder deduplicates; a transactional outbox (append to a Redis stream inside the same MULTI, delivered by a separate consumer) is the production version.
 - **Synthetic layer.** The genre-driven findings come from a synthetic character layer on Avazu; they will not transfer as-is to real companion conversations. The ablation procedure is what transfers.
+- **The full Kaggle Avazu file was used once, after every decision** (E010), to check whether the model family holds up with 9x the data. Nothing shipped was trained, tuned or selected on it; it covers the same ten days, so training on it would leak the test window.
 - **This is not Simula's core problem.** Avazu ads are anonymous ids and the characters are templates, so nothing here can test *semantic* matching: a toy-rocket ad next to a space-ranger character, or an ad that fits what the user is talking about right now. The model learns id-level affinities (genre × campaign) instead. Charade demonstrates the pipeline around such a model (split discipline, calibrated scoring, gated ranking with exact propensities, feedback, serving); the matching itself needs ad content and conversation embeddings ([08](08-next-steps.md)).
 
 Next steps: [08-next-steps.md](08-next-steps.md).
