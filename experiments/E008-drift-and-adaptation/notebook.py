@@ -41,7 +41,7 @@ tables = drift.run(ctx.settings, ctx.data_dir, ctx.reports / "drift")
 tables["Daily mix and churn"]
 
 # %%
-stale = tables["Staleness: frozen models scored on later days (1 seed each)"]
+stale = tables[drift.STALE_TITLE]
 _, ax = plt.subplots(figsize=(6, 4))
 for (day,), part in stale.group_by("scored_day", maintain_order=True):
     ax.plot(part["age_days"], part["ne"], "o-", label=str(day))
@@ -56,12 +56,12 @@ Markdown((ctx.reports / "drift" / "adaptation.md").read_text())
 # %% [markdown]
 # ## Reading
 # - The CTR level moves for every genre together; character preferences are stable.
-# - NE worsens with model age on every scored day, hence daily retraining.
+# - With equal 3-day training windows, NE does not worsen with model age within a week; the calibration ratio does (about +1.2 % per day). Daily retraining is for calibration and new creatives, not ranking decay.
 # - lambda is chosen on the validation day by the pre-registered rule; the test days only confirm it.
 # - The replay uses logged exposure history, so it can show "no CTR loss" but never a fatigue benefit.
 
 # %% [markdown]
 # ## Conclusion
-# Ads rotate fast (13-37 % new creatives a day) and a frozen model loses ~0.003 NE per day, so retrain daily; online recalibration slightly worsens NE on the validation day; the exposure penalty selected on the validation day by a pre-registered non-inferiority rule (lambda = 2) cuts cohort HHI 24 % on test at +0.06 pp CTR [-0.60, +0.74], which does not confirm non-inferiority at the 0.2 pp margin.
+# Ads rotate fast (13-37 % new creatives a day) and a frozen model keeps its ranking quality for a week but its calibration drifts (+1.2 % pred/obs per day of age), so retrain daily; online recalibration slightly worsens NE on the validation day; the exposure penalty selected on the validation day by a pre-registered non-inferiority rule (lambda = 2) cuts cohort HHI 24 % on test at +0.06 pp CTR [-0.60, +0.74], which does not confirm non-inferiority at the 0.2 pp margin.
 #
 # **Decision:** Daily retraining with gated promotion; no online recalibration; exposure penalty at lambda = 2 (chosen on validation) is a candidate for an online A/B test, not shipped: test does not confirm non-inferiority.

@@ -1,12 +1,12 @@
 ---
 title: "Drift and adaptation"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 06 — Drift and adaptation
 
-**Bottom line:** the CTR level shifts daily and ads rotate fast (13–37 % new creatives per day); a frozen model loses ~0.003 NE per day, so retrain daily. Online recalibration adds nothing. An exposure penalty selected on the validation day (λ = 2) cuts cohort concentration 24 % on the test days; test cannot rule out a CTR loss beyond the 0.2 pp margin, so it awaits an online test ([drift.md](../reports/drift/drift.md), [adaptation.md](../reports/drift/adaptation.md)).
+**Bottom line:** the CTR level shifts daily and ads rotate fast (13–37 % new creatives per day); a frozen model keeps its ranking quality for a week but its calibration drifts (+1.2 % pred/obs per day of age), so retrain daily. Online recalibration adds nothing. An exposure penalty selected on the validation day (λ = 2) cuts cohort concentration 24 % on the test days; test cannot rule out a CTR loss beyond the 0.2 pp margin, so it awaits an online test ([drift.md](../reports/drift/drift.md), [adaptation.md](../reports/drift/adaptation.md)).
 
 ## What shifts (daily, train → test)
 
@@ -36,14 +36,19 @@ updated-at: 2026-10-02
 
 ## What it costs: staleness backtest
 
-Each model is trained on the days before day d, early-stopped on day d, and scored on every later day (shipped configuration, 1 seed per model):
+Each model is trained on the **3 days** before day d, early-stopped on day d, and scored on every later day (shipped configuration, 2 seeds averaged). Every model sees the same amount of data, so age is not confounded with training volume:
 
 | Scored day | Age 2 | Age 3 | Age 4 | Age 5 | Age 6 | Age 7 |
 |---|---|---|---|---|---|---|
-| 10-29 | 0.8912 | 0.8906 | 0.8934 | 0.8978 | 0.9031 | — |
-| 10-30 | 0.8879 | 0.8898 | 0.8924 | 0.8957 | 0.8978 | 0.9035 |
+| 10-29 NE | 0.8993 | 0.8968 | 0.8972 | 0.8955 | 0.9009 | — |
+| 10-30 NE | 0.8936 | 0.9130 | 0.9019 | 0.9069 | 0.8925 | 0.9011 |
+| 10-30 pred/obs | 0.969 | 1.069 | 1.054 | 1.032 | 1.056 | 1.115 |
 
-Age counts from the last training day (age 2 = the day after the early-stopping day). NE worsens by about 0.003 per day, and the calibration ratio wanders up to 1.10 at age 7. Decision: **retrain daily**. Training takes under a minute on one GPU, so the cost is negligible. The early-stopping and calibration day should be the most recent complete day. Promotion is gated by mlcheck ([07-serving-operations.md](07-serving-operations.md)).
+Age counts from the last training day (age 2 = the day after the early-stopping day). Within each scored day, NE changes by **+0.00002 per day of age**: no measurable loss of ranking quality within a week. The calibration ratio does drift, **+0.012 per day** (over-prediction grows), which matters because the auction prices pCTR × bid.
+
+**Correction.** An earlier version trained each model on *all* days before its cutoff, so older models had less data, and reported "about 0.003 NE per day". That slope was a data-volume effect, not staleness.
+
+Decision: **retrain daily**, for calibration and to give new creatives their own embedding (43 % of test impressions show a creative unseen in training), not because ranking decays. Training takes under a minute on one GPU, so the cost is negligible. The early-stopping and calibration day should be the most recent complete day. Promotion is gated by mlcheck ([07-serving-operations.md](07-serving-operations.md)).
 
 ## Adaptation 1: online recalibration (tested, not shipped)
 
