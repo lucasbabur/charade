@@ -159,3 +159,10 @@ def test_summary_gate_line_matches_mlcheck_on_the_current_bundle() -> None:
     claimed = re.search(r"(\d+) checks, (\d+) pass, (\d+) fail, (\d+) warn", (ROOT / "docs/00-summary.md").read_text())
     assert claimed
     assert claimed.groups() == totals.groups(), f"summary says {claimed.groups()}, mlcheck says {totals.groups()}"
+
+
+def test_generated_doc_numbers_match_reports() -> None:
+    """Numbers marked `<!--n:key-->…<!--/n-->` are generated from reports/; edit the report, not the doc."""
+    from charade.analysis import docnumbers  # noqa: PLC0415
+
+    assert not docnumbers.stale(ROOT), "doc numbers drifted from reports: run `uv run poe docs-numbers`"
