@@ -3,9 +3,9 @@ id: E005
 title: "Feature-group ablations"
 hypotheses: [H2, H3, H4, H7]
 status: concluded
-conclusion: "Character metadata is worth +0.0032 log loss and user history +0.0009; character ID and conversation features are within noise and were dropped; text features hurt (+0.0008)."
+conclusion: "Character metadata is worth +0.0035 log loss and user history +0.0012; character ID and conversation features are within noise and were dropped; text features hurt (+0.0005 to +0.0007)."
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # E005 — Feature-group ablations

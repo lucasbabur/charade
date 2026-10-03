@@ -1,7 +1,7 @@
 ---
 title: "Data"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 01 — Data
@@ -35,7 +35,7 @@ updated-at: 2026-10-02
 | Users seen before: 15–17 % vs 19.1 % first-time | User-history counters (H4) |
 | Same-hour user impression count: 19.3 % at 1 → 9.8–14 % at ≥ 2 | **Leak**: the hour's total is only known after the hour. Counters use strictly earlier hours (H5) |
 | Repeat exposure to a campaign: 19.5 % first → 13–15 % after | Fatigue feature and ranking penalty (H6) |
-| Test OOV: C14 45 %, C17 42 %, C21 12 % of test rows; characters 3 % | Ad rotation is fast. The hierarchy gives backoff: a new creative still has a known size, campaign or advertiser most of the time; tracked in drift |
+| Unseen in training: C14 43 % (45 % below the vocabulary cutoff), C17 42 %, C21 12 % of test rows; characters 3 % | Ad rotation is fast. The hierarchy gives backoff: a new creative still has a known size, campaign or advertiser most of the time; tracked in drift |
 
 ## Split
 

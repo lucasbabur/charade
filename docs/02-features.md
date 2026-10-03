@@ -1,7 +1,7 @@
 ---
 title: "Features"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 02 — Features
@@ -12,19 +12,19 @@ updated-at: 2026-10-02
 
 | Group (ablation Δ log loss if removed) | Fields | Definition and source | Leakage / serving notes |
 |---|---|---|---|
-| Context (not ablated: core) | `hour_of_day`, `site_id`, `site_domain`, `site_category`, `app_id`, `app_domain`, `app_category`, `C1`, `C20` | Raw request fields; hour from the request timestamp | Strongest single features: `site_id` AUC 0.671, `site_domain` 0.660. C1 and C20 vary within a creative, so they belong to context ([ADR 0002](adr/0002-candidate-is-creative-hierarchy.md)) |
-| Device (+0.0019 [+0.0015, +0.0026]) | `device_model`, `device_type`, `device_conn_type`, `device_id_real` | `device_id_real` maps the placeholder `a99f214a` to its own token; real ids need ≥ 20 training rows | Placeholder on 82 % of rows ([01](01-data.md)) |
-| Ad (candidate side; not ablated: core) | `banner_pos`, `C14`–`C19`, `C21` | From each candidate in the request | 45 % of test creatives are new to training: OOV for C14, backoff through C17 and C21 |
-| Character metadata (+0.0032 [+0.0027, +0.0037]) | `genre`, `safety_tier`, `creator_type`, `interactions_bucket` (log2 of `num_interactions`), dense `log_num_interactions`, `log_character_age_days` | Character table; genre = name prefix; age = impression time − `created_at` | `num_interactions` is a snapshot (possible future information); its standalone AUC is 0.503, so it carries no leak worth worrying about |
-| User history (+0.0009 [+0.0004, +0.0013]) | `user_seen`, `log_user_imps`, `log_user_clicks`, `user_ctr_logit` (Beta(0.72, 3.28)-smoothed), `log_user_imps_24h`, `log_user_clicks_24h`, `log_hours_since_last`, `log_user_campaign_imps` (per candidate) | User = real device id, else `device_ip \| device_model`. **Strictly earlier hours only** | Same-hour counts are the known Avazu leak (H5) and are excluded. Offline (polars) and online (`UserHistory`, Redis) definitions are parity-tested, including hypothesis-generated event orders |
+| Context (not ablated: core) | `hour_of_day`, `site_id`, `site_domain`, `site_category`, `app_id`, `app_domain`, `app_category`, `C1`, `C20` | Raw request fields; hour from the request timestamp | Strongest single features: `site_id` AUC 0.671, `site_domain` 0.660. C1 and C20 vary within a creative, so they belong to context ([01](01-data.md)) |
+| Device (+0.0020 [+0.0015, +0.0027]) | `device_model`, `device_type`, `device_conn_type`, `device_id_real` | `device_id_real` maps the placeholder `a99f214a` to its own token; real ids need ≥ 20 training rows | Placeholder on 82 % of rows ([01](01-data.md)) |
+| Ad (candidate side; not ablated: core) | `banner_pos`, `C14`–`C19`, `C21` | From each candidate in the request | 43 % of test rows show a creative never seen in training (45 % fall below the vocabulary cutoff): OOV for C14, backoff through C17 and C21 |
+| Character metadata (+0.0035 [+0.0027, +0.0043]) | `genre`, `safety_tier`, `creator_type`, `interactions_bucket` (log2 of `num_interactions`), dense `log_num_interactions`, `log_character_age_days` | Character table; genre = name prefix; age = impression time − `created_at` | `num_interactions` is a snapshot (possible future information); its standalone AUC is 0.503, so it carries no leak worth worrying about |
+| User history (+0.0012 [+0.0004, +0.0018]) | `user_seen`, `log_user_imps`, `log_user_clicks`, `user_ctr_logit` (Beta(0.72, 3.28)-smoothed), `log_user_imps_24h`, `log_user_clicks_24h`, `log_hours_since_last`, `log_user_campaign_imps` (per candidate) | User = real device id, else `device_ip \| device_model`. **Strictly earlier hours only** | Same-hour counts are the known Avazu leak (H5) and are excluded. Offline (polars) and online (`UserHistory`, Redis) definitions are parity-tested, including hypothesis-generated event orders |
 
 ## Built and rejected
 
 | Group | Fields | Ablation | Why rejected |
 |---|---|---|---|
 | Character ID | `character_id` embedding (min count 20, 8 % ID dropout) | −0.0000 [−0.0002, +0.0002] | No character-level signal beyond genre × tier ([05](05-cold-start.md)) |
-| Conversation | `turn_bucket`, `session_bucket`, `log_turn`, `turn_position` | +0.0001 [−0.0000, +0.0003] | CTR is flat across turns. `session_msg_count` ("total messages in session") may also not be known mid-session |
-| Text | 16-dim PCA of Qwen3 or TF-IDF description embeddings | +0.0008 [+0.0006, +0.0011] (worse) | Templated descriptions ([03](03-models-evaluation.md)) |
+| Conversation | `turn_bucket`, `session_bucket`, `log_turn`, `turn_position` | +0.0002 [−0.0000, +0.0004] | CTR is flat across turns. `session_msg_count` ("total messages in session") may also not be known mid-session |
+| Text | 16-dim PCA of Qwen3 or TF-IDF description embeddings | +0.0005 (TF-IDF) to +0.0007 (Qwen3), both CIs above 0 (worse) | Templated descriptions ([03](03-models-evaluation.md)) |
 
 ## Encoding rules
 
