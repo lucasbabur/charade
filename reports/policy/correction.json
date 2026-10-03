@@ -1,0 +1,24 @@
+{
+  "prior": 80.0,
+  "half_life_hours": null,
+  "test": {
+    "prior": 80.0,
+    "half_life_h": Infinity,
+    "z": 0.0,
+    "dr_delta_vs_greedy_pp": 0.49323601358386654,
+    "ci_low_pp": -0.06538567993091936,
+    "ci_high_pp": 1.0190454613508955,
+    "logloss_adj_minus_model": -0.0005357171208380796,
+    "ll_ci_low": -0.0008730452104248016,
+    "ll_ci_high": -0.00021716827621248496,
+    "ne_model": 0.8842318166796227,
+    "ne_adj": 0.8830659763620524,
+    "pred_obs_model_cold": 0.9365887355322653,
+    "pred_obs_adj_cold": 0.9510063960034062,
+    "graduated_share_last_hour": 0.22812234494477485,
+    "cohort_dominance": 0.07581050549410666,
+    "cohort_hhi": 0.027541740463187622,
+    "repeat_exposure": 0.09844023627834388
+  },
+  "bundle_sha256": "d2e053b514ca071a6a73c172fa8ac593e2cbefa30a61c56c2435689dcb48d28d"
+}

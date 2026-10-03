@@ -150,6 +150,7 @@ loadtest = { shell = "python -m charade.analysis.loadtest && locust -f tests/loa
 samples = { cmd = "python -m charade.analysis.samples", help = "Rank two example chat contexts through the API; writes reports/sample_rankings.json" }
 coldstart = { cmd = "python -m charade.analysis.coldstart", help = "Cold-start signal, priors and graduation analysis; writes reports/coldstart/" }
 drift = { cmd = "python -m charade.analysis.drift", help = "PSI, churn, staleness backtest, online recalibration; writes drift.json and reports/drift/" }
+correction = { cmd = "python -m charade.analysis.correction", help = "Live (campaign, genre) correction replay: select on val, confirm on test; writes reports/policy/correction.md and reports/coldstart/graduation.csv" }
 adapt = { cmd = "python -m charade.analysis.adaptation", help = "Cohort-exposure adaptation layer replay; writes reports/drift/adaptation.md" }
 fixture = { cmd = "python -m charade.analysis.fixture", help = "Rebuild tests/fixtures from the raw CSVs" }
 docs-numbers = { cmd = "python -m charade.analysis.docnumbers", help = "Fill the <!--n:key--> numbers in docs from reports/ (tests/docs fails when they drift)" }
