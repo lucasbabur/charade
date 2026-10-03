@@ -128,6 +128,17 @@ def test_ops_endpoints(bundle: Settings) -> None:
         assert b"charade_request_seconds" in client.get("/metrics").content
 
 
+def test_latency_is_labelled_by_route_not_raw_path(bundle: Settings) -> None:
+    """Unknown paths share one label, so a scanner cannot create unbounded metric series."""
+    with _client(bundle) as client:
+        for i in range(5):
+            assert client.get(f"/probe-{i}/x").status_code == 404
+        exposed = client.get("/metrics").text
+    assert 'route="unmatched"' in exposed
+    assert "probe-" not in exposed
+    assert 'route="/ready"' in exposed or 'route="/metrics"' in exposed
+
+
 def test_decisions_are_logged_as_json_events(
     bundle: Settings, sample_body: dict[str, object], capsys: pytest.CaptureFixture[str]
 ) -> None:
