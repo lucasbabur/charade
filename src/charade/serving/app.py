@@ -177,7 +177,7 @@ async def _correction(
     pairs = [PairState() for _ in campaigns]
     if not degraded:
         try:
-            pairs = await runtime.store.pairs([pair_key(runtime.model_version, c, genre) for c in campaigns])
+            pairs = await runtime.store.pairs(runtime.model_version, [pair_key(c, genre) for c in campaigns])
         except StoreUnavailableError:
             degraded = True
             metrics.DEGRADED.inc()

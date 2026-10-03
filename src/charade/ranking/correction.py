@@ -28,13 +28,9 @@ class PairState(BaseModel):
     clicks: float = 0.0
 
 
-def pair_key(model_version: str, campaign: str, genre: str) -> str:
-    """Store key of a pair, per model version.
-
-    The sums compare clicks with one model's pCTR, so each bundle starts its own from empty, as the E012
-    replay that chose `prior` starts each day from empty.
-    """
-    return f"{model_version}:{campaign}|{genre}"
+def pair_key(campaign: str, genre: str) -> str:
+    """Store key of a pair."""
+    return f"{campaign}|{genre}"
 
 
 def posterior(expected: Floats, clicks: Floats, prior: float) -> tuple[Floats, Floats]:

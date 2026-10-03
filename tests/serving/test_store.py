@@ -135,7 +135,8 @@ async def test_impressions_and_clicks_feed_the_pair_correction_once(make: int) -
     assert (await store.record_impression("i", "r"))[0] is Outcome.DUPLICATE
     assert await store.record_click("i") is Outcome.RECORDED
     assert await store.record_click("i") is Outcome.DUPLICATE
-    state, other, retrained = await store.pairs(["m1:camp|romance", "m1:camp|horror", "m2:camp|romance"])
+    state, other = await store.pairs("m1", ["camp|romance", "camp|horror"])
+    (retrained,) = await store.pairs("m2", ["camp|romance"])
     assert (state.expected, state.clicks) == (pytest.approx(0.25), 1.0)
     assert (other.expected, other.clicks) == (0.0, 0.0)
     assert (retrained.expected, retrained.clicks) == (0.0, 0.0)
@@ -147,7 +148,7 @@ async def test_decisions_without_genre_or_pctr_leave_the_correction_alone(make: 
     store = _stores()[make]
     await _serve(store, "i1", campaign="camp")
     await store.record_click("i1")
-    (state,) = await store.pairs(["m1:camp|romance"])
+    (state,) = await store.pairs("m1", ["camp|romance"])
     assert (state.expected, state.clicks) == (0.0, 0.0)
 
 
@@ -171,6 +172,6 @@ async def test_concurrent_pair_updates_lose_nothing() -> None:
 
     await asyncio.gather(*(serve(i) for i in range(100)))
     await asyncio.gather(*(click(i) for i in range(0, 100, 2)))
-    (state,) = await store.pairs(["m1:camp|g"])
+    (state,) = await store.pairs("m1", ["camp|g"])
     assert state.expected == pytest.approx(50.0)
     assert state.clicks == 50.0

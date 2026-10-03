@@ -4,11 +4,12 @@ Four kinds of key:
     charade:dec:<request>      Served {user, hour, candidate, campaign, genre, pctr, model_version}, once, 48 h
     charade:user:<user>        UserHistory JSON (counters; per-campaign exposure totals, hourly detail for 48 h)
     charade:imp:<impression>   Impression {request_id, served fields, clicked}, kept 48 h
-    charade:pair:<version>:<campaign>|<genre>
-                               hash {expected, clicks}: the live correction's evidence for the model version
-                               that served, kept 48 h after its last event. An impression adds the served pCTR
-                               to `expected`, a click adds 1 to `clicks`, as atomic increments queued in that
-                               event's transaction.
+    charade:pairs:<version>    hash {<campaign>|<genre>:expected, ...:clicks}: the live correction's evidence
+                               for one model version, kept 48 h after its last event. An impression adds the
+                               served pCTR to `expected`, a click adds 1 to `clicks`, as atomic increments
+                               queued in that event's transaction. The sums compare clicks with one model's
+                               pCTR, so each bundle starts from empty, as the E012 replay that chose the prior
+                               starts each day from empty. One hash per version makes a request's read one HMGET.
 
 One canonical identity per event. A decision is immutable: re-recording the same request id with the
 same content is a duplicate, with different content a conflict. An impression event names only its
@@ -50,7 +51,7 @@ from charade.ranking.correction import PairState, pair_key
 DECISION_PREFIX = "charade:dec:"
 USER_PREFIX = "charade:user:"
 IMPRESSION_PREFIX = "charade:imp:"
-PAIR_PREFIX = "charade:pair:"
+PAIRS_PREFIX = "charade:pairs:"
 USER_TTL_SECONDS = 14 * 24 * 3600
 IMPRESSION_TTL_SECONDS = CLICK_WINDOW_HOURS * 3600
 """Decisions, impressions and pair sums live as long as a click can still be attributed (the label maturity window)."""
@@ -86,11 +87,11 @@ class Served(BaseModel):
     """Character genre, the model's pCTR of the served ad and the model that scored it. All three feed the
     (campaign, genre) correction; when any is missing (history replays) the correction is left untouched."""
 
-    def pair(self) -> str | None:
-        """Correction key this decision updates, if it carries what the correction needs."""
+    def pair(self) -> tuple[str, str] | None:
+        """(model version, pair key) this decision updates, if it carries what the correction needs."""
         if self.genre is None or self.pctr is None or self.model_version is None:
             return None
-        return pair_key(self.model_version, self.campaign, self.genre)
+        return self.model_version, pair_key(self.campaign, self.genre)
 
 
 class Impression(BaseModel):
@@ -124,8 +125,8 @@ class FeatureStore(Protocol):
         """Count a click once, attributed to its impression's user and hour."""
         ...
 
-    async def pairs(self, keys: list[str]) -> list[PairState]:
-        """Correction evidence per key (empty state when unseen). Raises StoreUnavailableError."""
+    async def pairs(self, model_version: str, keys: list[str]) -> list[PairState]:
+        """One model version's correction evidence per pair key (empty when unseen). Raises StoreUnavailableError."""
         ...
 
     async def ping(self) -> bool:
@@ -150,7 +151,7 @@ class MemoryStore:
         self.decisions: dict[str, Served] = {}
         self.users: dict[str, UserHistory] = {}
         self.impressions: dict[str, Impression] = {}
-        self.pair_states: dict[str, PairState] = {}
+        self.pair_states: dict[tuple[str, str], PairState] = {}
 
     async def get(self, user: str) -> UserHistory | None:
         """History or None."""
@@ -191,9 +192,9 @@ class MemoryStore:
             self.pair_states.setdefault(pair, PairState()).clicks += 1.0
         return Outcome.RECORDED
 
-    async def pairs(self, keys: list[str]) -> list[PairState]:
+    async def pairs(self, model_version: str, keys: list[str]) -> list[PairState]:
         """Evidence per key."""
-        return [self.pair_states.get(k, PairState()).model_copy() for k in keys]
+        return [self.pair_states.get((model_version, k), PairState()).model_copy() for k in keys]
 
     async def ping(self) -> bool:
         """Always reachable."""
@@ -234,7 +235,6 @@ class RedisStore:
         served = None if raw_dec is None else Served.model_validate_json(raw_dec)
         user_key = USER_PREFIX + (served.user if served else "")
         pair = served.pair() if served else None
-        pair_k = PAIR_PREFIX + (pair or "")
         found: list[Impression] = []
 
         async def attempt(pipe: Any) -> Outcome:
@@ -251,8 +251,9 @@ class RedisStore:
             pipe.set(imp_key, impression.model_dump_json(), ex=IMPRESSION_TTL_SECONDS)
             pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             if pair:
-                pipe.hincrbyfloat(pair_k, "expected", served.pctr or 0.0)
-                pipe.expire(pair_k, IMPRESSION_TTL_SECONDS)
+                version, key = pair
+                pipe.hincrbyfloat(PAIRS_PREFIX + version, f"{key}:expected", served.pctr or 0.0)
+                pipe.expire(PAIRS_PREFIX + version, IMPRESSION_TTL_SECONDS)
             await pipe.execute()
             found.append(impression)
             return Outcome.RECORDED
@@ -269,7 +270,6 @@ class RedisStore:
         served = Impression.model_validate_json(raw_imp).served
         user_key = USER_PREFIX + served.user
         pair = served.pair()
-        pair_k = PAIR_PREFIX + (pair or "")
 
         async def attempt(pipe: Any) -> Outcome:
             current = await pipe.get(imp_key)
@@ -287,22 +287,24 @@ class RedisStore:
                 history.record_click(impression.served.hour)
                 pipe.set(user_key, history.model_dump_json(), ex=USER_TTL_SECONDS)
             if pair:
-                pipe.hincrbyfloat(pair_k, "clicks", 1.0)
-                pipe.expire(pair_k, IMPRESSION_TTL_SECONDS)
+                version, key = pair
+                pipe.hincrbyfloat(PAIRS_PREFIX + version, f"{key}:clicks", 1.0)
+                pipe.expire(PAIRS_PREFIX + version, IMPRESSION_TTL_SECONDS)
             await pipe.execute()
             return Outcome.RECORDED
 
         return await self._transact([imp_key, user_key], attempt)
 
-    async def pairs(self, keys: list[str]) -> list[PairState]:
-        """One pipelined round trip of HMGETs, bounded by the timeout."""
+    async def pairs(self, model_version: str, keys: list[str]) -> list[PairState]:
+        """One HMGET on the version's hash, bounded by the timeout."""
         if not keys:
             return []
-        async with self.redis.pipeline(transaction=False) as pipe:
-            for k in keys:
-                pipe.hmget(PAIR_PREFIX + k, ["expected", "clicks"])
-            rows = await self._call(pipe.execute())
-        return [PairState(expected=float(e or 0.0), clicks=float(c or 0.0)) for e, c in rows]
+        fields = [f"{k}:{total}" for k in keys for total in ("expected", "clicks")]
+        raw = await self._call(self.redis.hmget(PAIRS_PREFIX + model_version, fields))
+        return [
+            PairState(expected=float(e or 0.0), clicks=float(c or 0.0))
+            for e, c in zip(raw[::2], raw[1::2], strict=True)
+        ]
 
     async def _transact(self, keys: list[str], attempt: Callable[[Any], Awaitable[Outcome]]) -> Outcome:
         try:
