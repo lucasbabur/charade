@@ -52,12 +52,15 @@ def test_importance_covers_every_feature_with_intervals(tmp_path: Path) -> None:
     assert (tmp_path / "importance.csv").is_file()
 
 
-def test_fullscale_compares_both_models_on_both_datasets(tmp_path: Path) -> None:
+def test_fullscale_scores_both_volumes_on_the_same_test_rows(tmp_path: Path) -> None:
     """The fixture stands in for the full file: extra columns are ignored, the split and groups apply."""
-    report = fullscale.run(FIXTURES / "impressions.csv", _settings(tmp_path), tmp_path / "fullscale.json", user_share=2)
-    sample, larger = report["results"]  # pyright: ignore[reportGeneralTypeIssues]
-    assert larger["rows"]["train"] < sample["rows"]["train"]  # half the users
-    assert {"dcn_v2", "lightgbm"} <= set(sample)
+    report = fullscale.run(
+        FIXTURES / "impressions.csv", _settings(tmp_path), tmp_path / "fullscale.json", user_share=1, small_share=2
+    )
+    small, large = report["shared_test"]  # pyright: ignore[reportGeneralTypeIssues]
+    assert small["rows"]["test"] == large["rows"]["test"]
+    assert small["rows"]["train"] < large["rows"]["train"]
+    assert {"dcn_v2", "lightgbm"} <= set(report["sample_baseline"])  # pyright: ignore[reportArgumentType]
     assert (tmp_path / "fullscale.json").is_file()
 
 

@@ -34,6 +34,8 @@ from charade.models.trainer import predict_logits
 OUT = Path("reports/models/fullscale.json")
 TEST_END = datetime(2014, 10, 30, 5)
 USER_SHARE = 4
+SMALL_SHARE = 36
+"""1 in 36 users gives ~0.74M training rows, about the 1M sample's training size."""
 """The full 40M rows need ~150 GB in this in-memory pipeline; every impression of 1 in 4 users (~9M rows,
 9x the sample) fits in ~25 GB and keeps each kept user's history, and so the counters, exact."""
 GROUPS = {Group.CONTEXT, Group.DEVICE, Group.AD, Group.USER_HISTORY}
@@ -68,9 +70,9 @@ def _frame(path: Path, settings: Settings, user_share: int = 1) -> pl.DataFrame:
     return assign_split(derive(frame), settings.train_end, settings.val_end, settings.test_end).sort(["ts", "id"])
 
 
-def _evaluate(name: str, path: Path, settings: Settings, user_share: int = 1) -> dict[str, object]:
+def _evaluate(name: str, frame: pl.DataFrame, settings: Settings) -> dict[str, object]:
     started = time.monotonic()
-    prep = prepare(_frame(path, settings, user_share), GROUPS, text=False)
+    prep = prepare(frame, GROUPS, text=False)
     seed = settings.model.dcn.seeds[0]
     dcn = train_dcn(prep, settings.model.dcn, seed)
     gbdt = train_gbdt(
@@ -92,18 +94,38 @@ def _evaluate(name: str, path: Path, settings: Settings, user_share: int = 1) ->
 
 
 def run(
-    full_path: Path, settings: Settings | None = None, out: Path = OUT, user_share: int = USER_SHARE
+    full_path: Path,
+    settings: Settings | None = None,
+    out: Path = OUT,
+    user_share: int = USER_SHARE,
+    small_share: int = SMALL_SHARE,
 ) -> dict[str, object]:
-    """Train both models on the 1M sample and on the full file (no character features); write the comparison."""
+    """Volume effect on one shared test set, plus the sample baseline on the sample's own test set.
+
+    From the full file (1 in `user_share` users), two models are trained: one on 1 in `small_share`
+    users' train and validation rows (about the sample's size), one on all of them. Both are scored on
+    the same test rows, so the difference is the volume effect alone. `small_share` must be a multiple
+    of `user_share` so the small run's users are a subset of the large run's.
+    """
+    if small_share % user_share:
+        raise ValueError("small_share must be a multiple of user_share")
     # The sample ends at 2014-10-30 05:00; cut the full file at the same hour so both tests cover the same window.
     settings = (settings or get_settings()).model_copy(update={"test_end": TEST_END})
+    full = _frame(full_path, settings, user_share)
+    small = full.filter((pl.col("split") == "test") | (pl.col("user").hash(seed=settings.seed) % small_share == 0))
     report: dict[str, object] = {
         "groups": sorted(str(g) for g in GROUPS),
         "seed": settings.model.dcn.seeds[0],
         "user_share": user_share,
-        "results": [
-            _evaluate("1M sample", settings.data_dir / "impressions.csv", settings),
-            _evaluate(f"full Avazu, 1 in {user_share} users", full_path, settings, user_share),
+        "small_share": small_share,
+        "sample_baseline": _evaluate(
+            "1M sample, no character layer (sample test set)",
+            _frame(settings.data_dir / "impressions.csv", settings),
+            settings,
+        ),
+        "shared_test": [
+            _evaluate(f"full Avazu, 1 in {small_share} users", small, settings),
+            _evaluate(f"full Avazu, 1 in {user_share} users", full, settings),
         ],
     }
     out.parent.mkdir(parents=True, exist_ok=True)
