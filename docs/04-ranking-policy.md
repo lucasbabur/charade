@@ -6,7 +6,7 @@ updated-at: 2026-10-03
 
 # 04 — Candidate ranking
 
-**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **+1.46 pp CTR (DR, [+0.50, +2.38])**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)). Since E012 the score carries a live (campaign, genre) correction learned from outcomes (below).
+**Bottom line:** the policy gates, ranks by pCTR × bid, serves the top ad on 95 % of traffic and explores on 5 % with a known distribution, and logs every candidate's exact selection probability. Under reconstructed candidate sets and frequency-share logging propensities, the shipped policy's estimated lift over the logging policy is **<!--n:ope_shipped_dr-->+1.47 pp [+0.51, +2.40]<!--/n--> CTR (DR)**. This is an offline estimate under assumptions, not a measured production lift ([ope.md](../reports/policy/ope.md)). Since E012 the score carries a live (campaign, genre) correction learned from outcomes (below).
 
 ## Pipeline per request (`charade.ranking.policy.decide`)
 
