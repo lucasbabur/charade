@@ -1,7 +1,7 @@
 ---
 title: "Cold start"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 05 — Cold start
@@ -41,7 +41,7 @@ For both kinds of cold entity, the publisher surface and the character's genre c
 
 ## Users, by the same logic
 
-User history passes the ablation test (+0.0009 log loss when removed, CI excludes 0). Users therefore graduate continuously, through counters rather than through an ID: every impression updates them, and `user_seen` switches the model's regime from the first repeat visit on.
+User history passes the ablation test (+0.0012 log loss when removed, CI excludes 0). Users therefore graduate continuously, through counters rather than through an ID: every impression updates them, and `user_seen` switches the model's regime from the first repeat visit on.
 
 ## Cold ads
 

@@ -1,7 +1,7 @@
 ---
 title: "mlcheck — ML release gates"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # mlcheck — ML release gates
@@ -118,7 +118,7 @@ Pydantic models in `mlcheck.contract`; the training pipeline writes them with `M
 Gates that pass with margin:
 - leakage (shuffled-label AUC 0.472; strongest single feature 0.671);
 - beats baseline, CI excluding zero;
-- calibration 1.012 and ECE 0.005;
+- calibration 1.002 and ECE 0.005;
 - exact train/serve parity, ONNX within 1.9e-6;
 - p99 25 ms at 400 rps over 90 s;
 - every evidence report (parity, OPE, latency) names the shipped bundle's digest (model files only: serving code and policy settings are not part of it);

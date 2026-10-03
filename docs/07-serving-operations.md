@@ -1,7 +1,7 @@
 ---
 title: "Serving and operations"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 07 — Serving and operations (< 50 ms p99)
@@ -154,7 +154,7 @@ scripts/retrain.sh (run by hand or any scheduler): pull exports → rolling wind
 ### Latency
 1. Read `charade_rank_stage_seconds` by stage: `fetch` (Redis), `assemble`, `score`, `policy`.
 2. If `fetch` is high, check the Redis CPU and connection count, or a failover in progress. Raising `store_timeout_ms` trades latency for fewer degraded responses.
-3. If CPU is high and the stages are flat, it is queueing: check the autoscaling activity and `max_tasks`. Measured capacity is ~750 rps per task at p99 75 ms.
+3. If CPU is high and the stages are flat, it is queueing: check the autoscaling activity and `max_tasks`. The load-tested point is 400 rps per task at p99 25 ms.
 4. If a new release coincides, roll back (the circuit breaker does this for failed health checks).
 
 ### Errors

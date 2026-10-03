@@ -5,14 +5,14 @@ hypotheses: []
 status: concluded
 conclusion: "Equal effort (60 trials each). Best inner-split NE: DCN-v2 0.8746 (24-dim embeddings, 2 cross layers, 256-128 MLP, dropout 0.3, lr 2.9e-3, batch 2048) vs LightGBM 0.8741 (254 leaves, lr 0.014, feature fraction 0.40). Single tuned models are tied; both configs ship in [tool.charade.model]."
 created-at: 2026-10-01
-updated-at: 2026-10-01
+updated-at: 2026-10-03
 ---
 
 # E003 — Hyperparameter search for DCN-v2 and LightGBM
 
 **Question:** Which configurations to carry into the model comparison, chosen without touching the validation day?
 
-**Method:** Optuna TPE, 60 DCN-v2 and 40 LightGBM trials, trained on 10-21..10-26 and selected on 10-27 NE. The validation day (10-28) stays clean for early stopping, calibration and comparisons.
+**Method:** Optuna TPE, 60 DCN-v2 and 60 LightGBM trials, trained on 10-21..10-26 and selected on 10-27 NE. The validation day (10-28) stays clean for early stopping, calibration and comparisons.
 
 **Decision:** Copy the best trials into `[tool.charade.model]` (done by hand, citing the CSVs).
 

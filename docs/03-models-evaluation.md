@@ -1,7 +1,7 @@
 ---
 title: "Models and evaluation"
 created-at: 2026-10-01
-updated-at: 2026-10-02
+updated-at: 2026-10-03
 ---
 
 # 03 — Models and evaluation
@@ -26,7 +26,7 @@ updated-at: 2026-10-02
 |---|---|---|---|---|---|---|
 | Logistic regression (same inputs, one weight per value) | 0.9110 | 0.4174 | 0.709 | 0.985 | 0.0076 | identity |
 | LightGBM, 3-seed ensemble (60 Optuna trials) | 0.8942 | 0.4098 | 0.729 | 0.979 | 0.0111 | Platt |
-| **DCN-v2, 3-seed ensemble (60 Optuna trials)** | **0.8855** | **0.4058** | **0.737** | 1.002 | 0.0053 | identity |
+| **DCN-v2, 3-seed ensemble (60 Optuna trials)** | **0.8855** | **0.4056** | **0.737** | 1.002 | 0.0053 | identity |
 
 | Comparison (test, paired hour-block bootstrap) | Δ log loss [95 % CI] |
 |---|---|
@@ -52,7 +52,7 @@ The bootstrap over hours measures data noise only, so every comparison is run tw
 | − character metadata (genre, tier, creator, popularity, age) | 0.8795 | +0.0035 [+0.0027, +0.0043] | +0.0032 / +0.0037 | worse → keep |
 | − character ID | 0.8716 | −0.0001 [−0.0006, +0.0002] | −0.0000 / −0.0002 | noise → **drop** |
 | − all character features | 0.8944 | +0.0101 [+0.0089, +0.0114] | +0.0104 / +0.0099 | worse → keep the character layer |
-| − user history counters | 0.8744 | +0.0012 [+0.0004, +0.0019] | +0.0009 / +0.0015 | worse → keep |
+| − user history counters | 0.8744 | +0.0012 [+0.0004, +0.0018] | +0.0009 / +0.0015 | worse → keep |
 | − conversation (turn, session length) | 0.8722 | +0.0002 [−0.0000, +0.0004] | +0.0001 / +0.0002 | noise → **drop** |
 | − device | 0.8762 | +0.0020 [+0.0015, +0.0027] | +0.0020 / +0.0020 | worse → keep |
 | + description text (Qwen3) | 0.8733 | +0.0007 [+0.0003, +0.0011] | +0.0008 / +0.0005 | worse → **reject** |
@@ -106,7 +106,7 @@ Paid embedding APIs (OpenAI, Gemini, Voyage) were not run (no usable keys); with
 
 - **Shuffled-label retrain:** validation AUC 0.472, inside the chance band. This shows the model cannot reach the label through the prepared features. It does not certify that every feature was available at serve time, nor any fitting done before features are prepared: labels are permuted after preparation. Availability is covered separately by the causal counters (property-tested) and the train-only fits in [02](02-features.md).
 - **Single features:** the strongest feature on its own is `site_id` at AUC 0.671. No near-perfect single feature exists.
-- **Adversarial validation: train vs test AUC 0.959 (WARN).** The separating features are C14, C17 and C19 (creatives and campaigns rotate: 45 % of test rows show a creative absent from training), then the character ID and the cumulative counters, which grow with time by construction. This is real ad rotation, not leakage. It is why the ad hierarchy (creative → campaign → advertiser) and daily retraining matter; see [06-drift-adaptation.md](06-drift-adaptation.md).
+- **Adversarial validation: train vs test AUC 0.959 (WARN).** The separating features are C14, C17 and C19 (creatives and campaigns rotate: 43 % of test rows show a creative absent from training), then the character ID and the cumulative counters, which grow with time by construction. This is real ad rotation, not leakage. It is why the ad hierarchy (creative → campaign → advertiser) and daily retraining matter; see [06-drift-adaptation.md](06-drift-adaptation.md).
 
 ## Honesty notes
 
