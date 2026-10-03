@@ -258,3 +258,8 @@ def test_a_changed_bundle_fails_evidence_binding(project: Path, run: Runner) -> 
 def test_a_short_load_test_does_not_settle_p99(project: Path, run: Runner) -> None:
     edit_json(project / ART / "latency.json", lambda r: r.update(duration_s=20, requests=4000))
     assert run(project, "MLV003").status is Status.FAIL
+
+
+def test_shuffled_label_auc_below_chance_is_noise_not_failure(project: Path, run: Runner) -> None:
+    edit_json(project / ART / "leakage.json", lambda r: r.update(shuffled_label_auc=0.46))
+    assert run(project, "MLL004").status is Status.PASS
