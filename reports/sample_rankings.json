@@ -123,100 +123,109 @@
     "response": {
       "request_id": "sample-romance-mature-returning",
       "chosen_id": "4687@1",
-      "propensity": 0.9662171520891618,
+      "propensity": 0.9669627849261955,
       "explored": false,
-      "confidence": "high",
+      "confidence": "low",
       "degraded": false,
       "cold_start": {
         "character": false,
-        "user": false
+        "user": false,
+        "pairs_cold": 8
       },
       "warnings": [],
-      "model_version": "20261001T211111Z-2ebb5bfe",
+      "model_version": "20261003T172950Z-174b7c7f",
       "ranked": [
         {
           "candidate_id": "4687@1",
           "rank": 1,
           "pctr": 0.19899710087341602,
-          "pctr_low": 0.1782389204583968,
-          "pctr_high": 0.2197552812884352,
+          "correction": 1.0,
+          "pctr_low": 0.16239823243217247,
+          "pctr_high": 0.23559596931465956,
           "value": 0.19899710087341602,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.9662171520891618
+          "propensity": 0.9669627849261955
         },
         {
           "candidate_id": "16208@1",
           "rank": 2,
           "pctr": 0.15852892030848437,
-          "pctr_low": 0.1395390188271097,
-          "pctr_high": 0.17751882178985903,
+          "correction": 1.0,
+          "pctr_low": 0.12937282168675976,
+          "pctr_high": 0.18768501893020897,
           "value": 0.15852892030848437,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.010582414322997015
+          "propensity": 0.010765164250494171
         },
         {
           "candidate_id": "20108@0",
           "rank": 3,
           "pctr": 0.12399687531137935,
-          "pctr_low": 0.10686096968060868,
-          "pctr_high": 0.14113278094215004,
+          "correction": 1.0,
+          "pctr_low": 0.1011917926909385,
+          "pctr_high": 0.1468019579318202,
           "value": 0.12399687531137935,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.006688854450046192
+          "propensity": 0.0065860517567366056
         },
         {
           "candidate_id": "15705@0",
           "rank": 4,
           "pctr": 0.11258237657801648,
-          "pctr_low": 0.09614819450141043,
-          "pctr_high": 0.12901655865462253,
+          "correction": 1.0,
+          "pctr_low": 0.09187660965429441,
+          "pctr_high": 0.13328814350173857,
           "value": 0.11258237657801648,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.005589678822323445
+          "propensity": 0.005429308023632089
         },
         {
           "candidate_id": "21611@0",
           "rank": 5,
           "pctr": 0.09989674661276449,
-          "pctr_low": 0.0843058640036217,
-          "pctr_high": 0.11548762922190728,
+          "correction": 1.0,
+          "pctr_low": 0.0815240775088337,
+          "pctr_high": 0.11826941571669528,
           "value": 0.09989674661276449,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.0044788537308032
+          "propensity": 0.004274706937990976
         },
         {
           "candidate_id": "21191@0",
           "rank": 6,
           "pctr": 0.08584806671307495,
-          "pctr_low": 0.07128263658299797,
-          "pctr_high": 0.10041349684315193,
+          "correction": 1.0,
+          "pctr_low": 0.07005918292644356,
+          "pctr_high": 0.10163695049970634,
           "value": 0.08584806671307495,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.0033859468007251085
+          "propensity": 0.0031569281349910897
         },
         {
           "candidate_id": "21189@0",
           "rank": 7,
           "pctr": 0.08121040938215435,
-          "pctr_low": 0.06700797646777684,
-          "pctr_high": 0.09541284229653185,
+          "correction": 1.0,
+          "pctr_low": 0.0662744677227447,
+          "pctr_high": 0.096146351041564,
           "value": 0.08121040938215435,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.003057099783943157
+          "propensity": 0.0028250559699595904
         },
         {
           "candidate_id": "19772@1",
           "rank": null,
           "pctr": 0.171610197502485,
-          "pctr_low": 0.15200650953798298,
-          "pctr_high": 0.191213885466987,
+          "correction": 1.0,
+          "pctr_low": 0.14004823497135993,
+          "pctr_high": 0.20317216003361005,
           "value": 0.171610197502485,
           "gated": true,
           "gate_reasons": [
@@ -357,104 +366,113 @@
     "response": {
       "request_id": "sample-new-mentor-character",
       "chosen_id": "15705@0",
-      "propensity": 0.00863005032228752,
+      "propensity": 0.008802357823947891,
       "explored": true,
       "confidence": "low",
       "degraded": false,
       "cold_start": {
         "character": true,
-        "user": true
+        "user": true,
+        "pairs_cold": 8
       },
       "warnings": [],
-      "model_version": "20261001T211111Z-2ebb5bfe",
+      "model_version": "20261003T172950Z-174b7c7f",
       "ranked": [
         {
           "candidate_id": "4687@1",
           "rank": 1,
           "pctr": 0.12268366090461756,
-          "pctr_low": 0.1056259662531217,
-          "pctr_high": 0.13974135555611342,
+          "correction": 1.0,
+          "pctr_low": 0.10012010020131658,
+          "pctr_high": 0.14524722160791853,
           "value": 0.12268366090461756,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.9590110753125508
+          "propensity": 0.9592208630460353
         },
         {
           "candidate_id": "15705@0",
           "rank": 2,
           "pctr": 0.11986722482741104,
-          "pctr_low": 0.10297942059680074,
-          "pctr_high": 0.13675502905802134,
+          "correction": 1.0,
+          "pctr_low": 0.09782165344661994,
+          "pctr_high": 0.14191279620820213,
           "value": 0.11986722482741104,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.00863005032228752
+          "propensity": 0.008802357823947891
         },
         {
           "candidate_id": "16208@1",
           "rank": 3,
           "pctr": 0.11478040428800042,
-          "pctr_low": 0.09820713266446898,
-          "pctr_high": 0.13135367591153185,
+          "correction": 1.0,
+          "pctr_low": 0.09367038360060627,
+          "pctr_high": 0.13589042497539458,
           "value": 0.11478040428800042,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.007961798420146833
+          "propensity": 0.008071116536797747
         },
         {
           "candidate_id": "20108@0",
           "rank": 4,
           "pctr": 0.11431012267308817,
-          "pctr_low": 0.09776644539865013,
-          "pctr_high": 0.1308537999475262,
+          "correction": 1.0,
+          "pctr_low": 0.0932865945771889,
+          "pctr_high": 0.13533365076898746,
           "value": 0.11431012267308817,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.007901315320434123
+          "propensity": 0.00800511360152402
         },
         {
           "candidate_id": "19772@1",
           "rank": 5,
           "pctr": 0.10300004106430466,
-          "pctr_low": 0.08719615922078995,
-          "pctr_high": 0.11880392290781934,
+          "correction": 1.0,
+          "pctr_low": 0.08405662462351389,
+          "pctr_high": 0.12194345750509543,
           "value": 0.10300004106430466,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.006513107981310551
+          "propensity": 0.006499394723446847
         },
         {
           "candidate_id": "21189@0",
           "rank": 6,
           "pctr": 0.07244827494036282,
-          "pctr_low": 0.05897007306946012,
-          "pctr_high": 0.08592647681126553,
+          "correction": 1.0,
+          "pctr_low": 0.05912383517867986,
+          "pctr_high": 0.08577271470204578,
           "value": 0.07244827494036282,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.0034070674071902864
+          "propensity": 0.0032155422164206107
         },
         {
           "candidate_id": "21191@0",
           "rank": 7,
           "pctr": 0.07197189657278938,
-          "pctr_low": 0.058534630981359886,
-          "pctr_high": 0.08540916216421887,
+          "correction": 1.0,
+          "pctr_low": 0.05873507069656782,
+          "pctr_high": 0.08520872244901094,
           "value": 0.07197189657278938,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.0033661668523568434
+          "propensity": 0.0031733941160032825
         },
         {
           "candidate_id": "21611@0",
           "rank": 8,
           "pctr": 0.07012035984952784,
-          "pctr_low": 0.056843838411558566,
-          "pctr_high": 0.08339688128749713,
+          "correction": 1.0,
+          "pctr_low": 0.057224062295836396,
+          "pctr_high": 0.08301665740321928,
           "value": 0.07012035984952784,
           "gated": false,
           "gate_reasons": [],
-          "propensity": 0.0032094183837229964
+          "propensity": 0.0030122179358242377
         }
       ]
     }
