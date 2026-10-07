@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">03 · Evidence adjusts a live multiplier</title><desc id="desc">One correction state per model version × campaign × genre — not per user. Gamma changes live scores; DR estimates offline policy reward. Neither retrains the neural net. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">03 · Evidence adjusts a live multiplier</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">One correction state per model version × campaign × genre — not per user.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Gamma changes live scores; DR estimates offline policy reward. Neither retrains the neural net.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Illustrative example, not measured Charade results.</text>
+<rect x="50" y="186" width="390" height="211" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>The prior</title></rect>
+<line x1="51" y1="204" x2="51" y2="379" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="224" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">The prior</text>
+<text x="70" y="262" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">a = 80 expected clicks</text>
+<text x="70" y="293" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Gamma(shape 80, rate 80)</text>
+<text x="70" y="324" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Prior mean multiplier = 1</text>
+<rect x="490" y="186" width="440" height="211" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>The evidence</title></rect>
+<line x1="491" y1="204" x2="491" y2="379" stroke="#eb6834" stroke-width="4"/>
+<text x="510" y="224" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">The evidence</text>
+<text x="510" y="262" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">800 impressions × raw 0.10</text>
+<text x="510" y="293" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">E = 80 expected clicks</text>
+<text x="510" y="324" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">K = 40 observed clicks</text>
+<rect x="980" y="186" width="410" height="211" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Posterior multiplier</title></rect>
+<line x1="981" y1="204" x2="981" y2="379" stroke="#1baf7a" stroke-width="4"/>
+<text x="1000" y="224" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Posterior multiplier</text>
+<text x="1000" y="262" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Gamma(shape 120, rate 160)</text>
+<text x="1000" y="293" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Mean = 120 / 160 = 0.75</text>
+<text x="1000" y="324" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">SD = √120 / 160 = 0.0685</text>
+<line x1="444" y1="291" x2="484" y2="291" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="934" y1="291" x2="974" y2="291" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="50" y="445" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Equal evidence weight at E = a = 80</text>
+<rect x="50" y="473" width="380" height="24" rx="0" fill="#2a78d6" stroke="none" stroke-width="1.5"><title>Prior weight: 80</title></rect>
+<rect x="430" y="473" width="380" height="24" rx="0" fill="#eb6834" stroke="none" stroke-width="1.5"><title>Evidence weight: 80</title></rect>
+<text x="50" y="532" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Prior: 80 × 1.0</text>
+<text x="460" y="532" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Evidence: 80 × (40 / 80)</text>
+<rect x="880" y="431" width="510" height="134" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Graduated at E ≥ 80</title></rect>
+<text x="900" y="469" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Graduated at E ≥ 80</text>
+<text x="900" y="507" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">E = 80 qualifies, inclusively.</text>
+<text x="900" y="538" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">This is volume, not accuracy.</text>
+<rect x="50" y="589" width="340" height="121" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Raw pCTR</title></rect>
+<line x1="51" y1="607" x2="51" y2="692" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="627" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Raw pCTR</text>
+<text x="70" y="665" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">0.10</text>
+<line x1="395" y1="650" x2="449" y2="650" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="455" y="589" width="425" height="121" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>× posterior mean 0.75</title></rect>
+<line x1="456" y1="607" x2="456" y2="692" stroke="#1baf7a" stroke-width="4"/>
+<text x="475" y="627" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">× posterior mean 0.75</text>
+<text x="475" y="665" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Corrected probability = 0.075</text>
+<line x1="885" y1="650" x2="939" y2="650" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="945" y="589" width="445" height="121" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Then choose an ad</title></rect>
+<text x="965" y="627" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Then choose an ad</text>
+<text x="965" y="665" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Apply bid, pacing and selection</text>
+<text x="50" y="760" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Each impression adds RAW pCTR to E; each click adds 1 to K.</text>
+<text x="50" y="793" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Clicks can arrive later. No decay is shipped; Redis TTLs limit retention.</text>
+<text x="50" y="826" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">The SD describes this multiplier, not uncertainty of the whole model.</text>
+</g></svg>

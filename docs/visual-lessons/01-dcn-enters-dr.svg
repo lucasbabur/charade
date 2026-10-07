@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">01 · Where do DCN numbers enter DR?</title><desc id="desc">Two click predictors, two jobs: making choices and evaluating those choices. DCN defines choices and π; LightGBM estimates rewards for those choices. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">01 · Where do DCN numbers enter DR?</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">Two click predictors, two jobs: making choices and evaluating those choices.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">DCN defines choices and π; LightGBM estimates rewards for those choices.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Illustrative example, not measured Charade results.</text>
+<text x="50" y="189" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">LIVE POLICY LANE → target selection probabilities π</text>
+<rect x="50" y="210" width="240" height="154" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>DCN scores</title></rect>
+<line x1="51" y1="228" x2="51" y2="346" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="248" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">DCN scores</text>
+<text x="70" y="286" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Ad A   pCTR 0.10</text>
+<text x="70" y="317" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Ad B   pCTR 0.08</text>
+<line x1="294" y1="288" x2="326" y2="288" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="330" y="210" width="270" height="154" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Live correction</title></rect>
+<line x1="331" y1="228" x2="331" y2="346" stroke="#1baf7a" stroke-width="4"/>
+<text x="350" y="248" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Live correction</text>
+<text x="350" y="286" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">A × 0.75 → 0.075</text>
+<text x="350" y="317" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">B × 1.50 → 0.120</text>
+<line x1="605" y1="288" x2="637" y2="288" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="640" y="210" width="270" height="154" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Greedy chooses B</title></rect>
+<text x="660" y="248" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Greedy chooses B</text>
+<text x="660" y="286" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">bid = pacing = 1</text>
+<text x="660" y="317" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">B has higher value</text>
+<line x1="915" y1="288" x2="947" y2="288" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="950" y="210" width="440" height="154" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Selection probabilities</title></rect>
+<line x1="951" y1="228" x2="951" y2="346" stroke="#2a78d6" stroke-width="4"/>
+<text x="970" y="248" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Selection probabilities</text>
+<text x="970" y="286" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">π(A) = 0</text>
+<text x="970" y="317" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">π(B) = 1</text>
+<text x="50" y="398" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Teaching target: greedy with exploration disabled. Shipped policy is lesson 4.</text>
+<text x="50" y="450" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">OFFLINE EVIDENCE LANE</text>
+<rect x="50" y="473" width="390" height="156" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Separate LightGBM</title></rect>
+<line x1="51" y1="491" x2="51" y2="611" stroke="#eb6834" stroke-width="4"/>
+<text x="70" y="511" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Separate LightGBM</text>
+<text x="70" y="549" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">m(A) = 0.09</text>
+<text x="70" y="580" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">m(B) = 0.11</text>
+<rect x="50" y="646" width="390" height="165" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Historical opportunity</title></rect>
+<text x="70" y="684" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Historical opportunity</text>
+<text x="70" y="722" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">μ(A) = 0.8; μ(B) = 0.2</text>
+<text x="70" y="753" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Logged ad B; click y = 1</text>
+<rect x="500" y="500" width="390" height="160" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Model term: Σ π × m</title></rect>
+<line x1="501" y1="518" x2="501" y2="642" stroke="#2a78d6" stroke-width="4"/>
+<text x="520" y="538" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Model term: Σ π × m</text>
+<text x="520" y="576" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">0 × 0.09 + 1 × 0.11</text>
+<text x="520" y="607" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">= 0.11</text>
+<rect x="945" y="500" width="445" height="160" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Residual: π(shown) / μ(shown)</title></rect>
+<line x1="946" y1="518" x2="946" y2="642" stroke="#2a78d6" stroke-width="4"/>
+<text x="965" y="538" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Residual: π(shown) / μ(shown)</text>
+<text x="965" y="576" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">(1 / 0.2) × (1 − 0.11)</text>
+<text x="965" y="607" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">= 4.45</text>
+<path d="M 1050 364 V 423 H 695 V 494" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"><title>π(A)=0 and π(B)=1 feed the model sum</title></path>
+<text x="720" y="470" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">π(A) = 0, π(B) = 1</text>
+<path d="M 1220 364 V 494" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"><title>π(B)=1 feeds the shown-ad weight</title></path>
+<text x="1000" y="478" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">π(shown B) = 1</text>
+<line x1="440" y1="565" x2="493" y2="565" stroke="#eb6834" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M 440 728 H 468 V 680 H 925 V 615 H 938" fill="none" stroke="#eb6834" stroke-width="2" marker-end="url(#arrow)"></path>
+<text x="500" y="716" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">0.11 + (1 / 0.2) × (1 − 0.11) = 4.56</text>
+<text x="500" y="746" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Weighted per-row contribution, NOT 456% CTR.</text>
+<text x="500" y="775" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Average many opportunities; individual terms can exceed 1.</text>
+<text x="500" y="804" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">DR estimates policy reward; it is not a new prediction model.</text>
+<text x="50" y="839" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">LightGBM stays offline: no serving or reranking, and no guarantee it predicts better.</text>
+</g></svg>

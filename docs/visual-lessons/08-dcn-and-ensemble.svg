@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">08 · Cross features, then average fitted models</title><desc id="desc">DCN = Deep &amp; Cross Network. Cross layers mix fields; an ensemble combines separate fits. The ensemble averages LOGITS, then applies the saved calibration map to obtain pCTR. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">08 · Cross features, then average fitted models</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">DCN = Deep &amp; Cross Network. Cross layers mix fields; an ensemble combines separate fits.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">The ensemble averages LOGITS, then applies the saved calibration map to obtain pCTR.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Charade implementation guide · Readable text counterpart in the local gallery.</text>
+<text x="50" y="190" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">INSIDE ONE DCN</text>
+<rect x="50" y="215" width="275" height="143" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>25 category IDs</title></rect>
+<line x1="51" y1="233" x2="51" y2="340" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="253" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">25 category IDs</text>
+<text x="70" y="291" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Learned embeddings</text>
+<text x="70" y="322" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">+ 10 dense features</text>
+<line x1="330" y1="285" x2="359" y2="285" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="365" y="215" width="260" height="143" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Join → x₀</title></rect>
+<text x="385" y="253" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Join → x₀</text>
+<text x="385" y="291" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Concatenate inputs</text>
+<text x="385" y="322" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">All fields remain</text>
+<line x1="630" y1="285" x2="659" y2="285" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="665" y="215" width="265" height="143" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Low-rank cross</title></rect>
+<line x1="666" y1="233" x2="666" y2="340" stroke="#1baf7a" stroke-width="4"/>
+<text x="685" y="253" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Low-rank cross</text>
+<text x="685" y="291" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">V: d → r</text>
+<text x="685" y="322" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">U: r → d</text>
+<line x1="935" y1="285" x2="964" y2="285" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="970" y="215" width="420" height="143" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>MLP → logit → probability</title></rect>
+<text x="990" y="253" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">MLP → logit → probability</text>
+<text x="990" y="291" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">MLP: neural layers</text>
+<text x="990" y="322" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Sigmoid converts a single logit</text>
+<text x="50" y="411" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">One cross block: x_next = x₀ ⊙ U(V(x)) + x</text>
+<text x="50" y="449" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">⊙ means elementwise multiply; U includes its learned bias.</text>
+<rect x="750" y="382" width="640" height="112" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"></rect>
+<text x="775" y="419" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">V compresses; U expands back to all d coordinates.</text>
+<text x="775" y="459" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">About 2dr weights instead of d² (plus bias).</text>
+<path d="M 735 215 V 202 H 943 V 338 H 930" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"><title>Residual x bypasses the low-rank transform and is added at the cross-block output</title></path>
+<text x="50" y="492" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Residual arrow: the block input x bypasses the transform.</text>
+<text x="50" y="535" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Not attention, explicit pair enumeration or removing fields. No text embeddings shipped.</text>
+<line x1="50" y1="559" x2="1390" y2="559" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="602" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">SHIPPED ENSEMBLE · three separately seeded fitted DCNs</text>
+<rect x="50" y="629" width="360" height="52" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Independently fitted DCN seed 1</title></rect>
+<text x="70" y="663" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">DCN seed 1 → logit z1</text>
+<path d="M 410 655 H 455 V 724 H 495" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"></path>
+<rect x="50" y="697" width="360" height="52" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Independently fitted DCN seed 2</title></rect>
+<text x="70" y="731" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">DCN seed 2 → logit z2</text>
+<path d="M 410 723 H 455 V 724 H 495" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"></path>
+<rect x="50" y="765" width="360" height="52" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Independently fitted DCN seed 3</title></rect>
+<text x="70" y="799" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">DCN seed 3 → logit z3</text>
+<path d="M 410 791 H 455 V 724 H 495" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"></path>
+<rect x="500" y="663" width="270" height="130" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>AVERAGE LOGITS</title></rect>
+<line x1="501" y1="681" x2="501" y2="775" stroke="#2a78d6" stroke-width="4"/>
+<text x="520" y="701" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">AVERAGE LOGITS</text>
+<text x="520" y="739" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">(z1 + z2 + z3) / 3</text>
+<text x="520" y="770" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Not probabilities</text>
+<line x1="775" y1="724" x2="799" y2="724" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="805" y="663" width="310" height="130" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Saved calibration</title></rect>
+<text x="825" y="701" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Saved calibration</text>
+<text x="825" y="739" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Identity is shipped</text>
+<text x="825" y="770" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Identity → sigmoid</text>
+<line x1="1120" y1="724" x2="1144" y2="724" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1150" y="663" width="240" height="130" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>pCTR</title></rect>
+<line x1="1151" y1="681" x2="1151" y2="775" stroke="#1baf7a" stroke-width="4"/>
+<text x="1170" y="701" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">pCTR</text>
+<text x="1170" y="739" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Live Gamma next</text>
+<text x="1170" y="770" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No weight update</text>
+<text x="50" y="839" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Fixed inference is deterministic. Less-correlated errors can help; shared bias remains.</text>
+</g></svg>

@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">06 · Move whole hours, compare models together</title><desc id="desc">A traffic shock can affect many impressions in an hour; rows are not independent surprises. Resample the same whole hours for both models to preserve a paired comparison. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">06 · Move whole hours, compare models together</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">A traffic shock can affect many impressions in an hour; rows are not independent surprises.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Resample the same whole hours for both models to preserve a paired comparison.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Illustrative example, not measured Charade results.</text>
+<text x="50" y="194" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Original hours</text>
+<rect x="50" y="215" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H1: 4 schematic impression tokens</title></rect>
+<text x="65" y="247" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H1</text>
+<circle cx="70" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="93" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="116" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="139" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="288" y="215" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H2: 7 schematic impression tokens</title></rect>
+<text x="303" y="247" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H2</text>
+<circle cx="308" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="331" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="354" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="377" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="400" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="423" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="446" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="526" y="215" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H3: 3 schematic impression tokens</title></rect>
+<text x="541" y="247" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H3</text>
+<circle cx="546" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="569" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="592" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="764" y="215" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H4: 5 schematic impression tokens</title></rect>
+<text x="779" y="247" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H4</text>
+<circle cx="784" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="807" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="830" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="853" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="876" cy="281" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<text x="1035" y="250" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Each dot = an impression</text>
+<text x="1035" y="283" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Different hour volumes</text>
+<text x="1035" y="314" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">stay intact.</text>
+<line x1="490" y1="317" x2="490" y2="357" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="50" y="389" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Sample 1</text>
+<rect x="260" y="351" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H3: 3 schematic impression tokens</title></rect>
+<text x="275" y="383" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H3</text>
+<circle cx="280" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="303" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="326" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="495" y="351" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H1: 4 schematic impression tokens</title></rect>
+<text x="510" y="383" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H1</text>
+<circle cx="515" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="538" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="561" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="584" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="730" y="351" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H3: 3 schematic impression tokens</title></rect>
+<text x="745" y="383" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H3</text>
+<circle cx="750" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="773" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="796" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="965" y="351" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H4: 5 schematic impression tokens</title></rect>
+<text x="980" y="383" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H4</text>
+<circle cx="985" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1008" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1031" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1054" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1077" cy="417" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<text x="50" y="510" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Sample 2</text>
+<rect x="260" y="472" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H2: 7 schematic impression tokens</title></rect>
+<text x="275" y="504" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H2</text>
+<circle cx="280" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="303" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="326" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="349" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="372" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="395" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="418" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="495" y="472" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H2: 7 schematic impression tokens</title></rect>
+<text x="510" y="504" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H2</text>
+<circle cx="515" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="538" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="561" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="584" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="607" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="630" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="653" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="730" y="472" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H4: 5 schematic impression tokens</title></rect>
+<text x="745" y="504" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H4</text>
+<circle cx="750" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="773" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="796" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="819" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="842" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<rect x="965" y="472" width="200" height="96" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>H1: 4 schematic impression tokens</title></rect>
+<text x="980" y="504" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">H1</text>
+<circle cx="985" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1008" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1031" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<circle cx="1054" cy="538" r="6" fill="#2a78d6"><title>Impression token</title></circle>
+<text x="1190" y="385" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No retraining.</text>
+<text x="1190" y="412" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No new data.</text>
+<text x="1190" y="439" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No bias repair.</text>
+<text x="1190" y="466" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No leakage</text>
+<text x="1190" y="493" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">prevention.</text>
+<text x="1190" y="520" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Cross-hour</text>
+<text x="1190" y="547" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">dependence stays.</text>
+<text x="50" y="609" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">WITH replacement: hours may repeat or be absent. Both models get the SAME sample.</text>
+<rect x="50" y="642" width="620" height="183" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>One paired result per resample</title></rect>
+<text x="70" y="680" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">One paired result per resample</text>
+<text x="70" y="718" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Σ (model A loss − model B loss)</text>
+<text x="70" y="749" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">÷ Σ impression counts</text>
+<text x="70" y="780" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Not an unweighted mean of hour means.</text>
+<line x1="676" y1="725" x2="726" y2="725" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="755" y="657" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">1,000 resamples → schematic distribution</text>
+<rect x="775" y="789" width="23" height="8" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="812" y="779" width="23" height="18" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="849" y="767" width="23" height="30" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="886" y="747" width="23" height="50" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="923" y="727" width="23" height="70" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="960" y="703" width="23" height="94" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="997" y="685" width="23" height="112" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1034" y="692" width="23" height="105" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1071" y="707" width="23" height="90" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1108" y="733" width="23" height="64" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1145" y="754" width="23" height="43" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1182" y="771" width="23" height="26" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1219" y="784" width="23" height="13" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<rect x="1256" y="791" width="23" height="6" rx="0" fill="#e1e0d9" stroke="none" stroke-width="1.5"><title>Schematic bootstrap frequency</title></rect>
+<line x1="785" y1="679" x2="785" y2="803" stroke="#2a78d6" stroke-width="2"/>
+<line x1="1265" y1="679" x2="1265" y2="803" stroke="#2a78d6" stroke-width="2"/>
+<line x1="785" y1="812" x2="1265" y2="812" stroke="#2a78d6" stroke-width="2"/>
+<text x="755" y="836" font-size="18" font-weight="400" fill="#0b0b0b" text-anchor="start">2.5th percentile</text>
+<text x="995" y="836" font-size="18" font-weight="400" fill="#0b0b0b" text-anchor="middle">95% interval</text>
+<text x="1295" y="836" font-size="18" font-weight="400" fill="#0b0b0b" text-anchor="end">97.5th percentile</text>
+</g></svg>

@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">04 · Exploration is a mixture, not Thompson</title><desc id="desc">The shipped policy mixes a greedy choice with a weighted exploration draw. Click probability predicts a response; selection propensity describes a policy’s choice. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">04 · Exploration is a mixture, not Thompson</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">The shipped policy mixes a greedy choice with a weighted exploration draw.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Click probability predicts a response; selection propensity describes a policy’s choice.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Illustrative example, not measured Charade results.</text>
+<text x="50" y="190" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">SHIPPED · weighted epsilon-greedy-style mixture</text>
+<rect x="50" y="213" width="330" height="159" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Eligible candidates</title></rect>
+<line x1="51" y1="231" x2="51" y2="354" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="251" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Eligible candidates</text>
+<text x="70" y="289" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Greedy winner: A</text>
+<text x="70" y="320" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Optimistic A .20 / B .10</text>
+<rect x="455" y="213" width="320" height="159" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Square → normalize</title></rect>
+<line x1="456" y1="231" x2="456" y2="354" stroke="#eb6834" stroke-width="4"/>
+<text x="475" y="251" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Square → normalize</text>
+<text x="475" y="289" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Weights: .04 / .01</text>
+<text x="475" y="320" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Explore q: A .80 / B .20</text>
+<line x1="385" y1="291" x2="449" y2="291" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="860" y="203" width="210" height="91" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>95% greedy</title></rect>
+<text x="880" y="241" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">95% greedy</text>
+<text x="880" y="279" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">A always</text>
+<rect x="860" y="320" width="210" height="91" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>5% explore</title></rect>
+<text x="880" y="358" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">5% explore</text>
+<text x="880" y="396" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Draw from q</text>
+<path d="M 775 253 H 813 V 245 H 854" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"></path>
+<path d="M 775 333 H 813 V 365 H 854" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"></path>
+<rect x="1120" y="232" width="270" height="154" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Final π</title></rect>
+<line x1="1121" y1="250" x2="1121" y2="368" stroke="#1baf7a" stroke-width="4"/>
+<text x="1140" y="270" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Final π</text>
+<text x="1140" y="308" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">A: .95+.05×.8</text>
+<text x="1140" y="339" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">= .99; B = .01</text>
+<path d="M 1070 245 H 1093 V 295 H 1114" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"></path>
+<path d="M 1070 365 H 1093 V 325 H 1114" fill="none" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"></path>
+<text x="50" y="443" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Exploration can still choose A. Gated ads have π = 0.</text>
+<text x="50" y="478" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Optimistic value = clip(raw pCTR × (r + 1.645 SD), 0, 1) × bid × pacing</text>
+<text x="50" y="515" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">SHA256(request_id): first 8 bytes / 2⁶⁴; explore if &lt; .05.</text>
+<text x="50" y="546" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Separate SHA256(&#x27;explore:&#x27; + request_id) draws from q, using the same byte rule.</text>
+<text x="50" y="577" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Same ID AND state → same choice. This is not an exact 5-in-100 quota.</text>
+<line x1="50" y1="602" x2="1390" y2="602" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="645" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">ALTERNATIVE · Thompson sampling</text>
+<rect x="50" y="671" width="390" height="121" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Draw a multiplier</title></rect>
+<line x1="51" y1="689" x2="51" y2="774" stroke="#eb6834" stroke-width="4"/>
+<text x="70" y="709" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Draw a multiplier</text>
+<text x="70" y="747" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">One Gamma draw per state</text>
+<line x1="445" y1="730" x2="486" y2="730" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="492" y="671" width="454" height="121" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Score every candidate</title></rect>
+<text x="512" y="709" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Score every candidate</text>
+<text x="512" y="747" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">raw pCTR × draw × bid × pacing</text>
+<line x1="951" y1="730" x2="992" y2="730" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="998" y="671" width="392" height="121" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Highest value wins</title></rect>
+<line x1="999" y1="689" x2="999" y2="774" stroke="#1baf7a" stroke-width="4"/>
+<text x="1018" y="709" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Highest value wins</text>
+<text x="1018" y="747" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Shared states share one draw</text>
+<text x="50" y="818" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No inherent 95/5 split. Winning probabilities often need integration or simulation.</text>
+<text x="50" y="843" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Schematic draws, not measured curves. A multiplier draw is not a click outcome.</text>
+</g></svg>

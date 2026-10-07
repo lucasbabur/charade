@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">05 · A choice is not an impression</title><desc id="desc">Score first, gate next, then record outcomes only when callers report them. Ranking chooses an ad; impression and click events supply the correction evidence. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">05 · A choice is not an impression</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">Score first, gate next, then record outcomes only when callers report them.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Ranking chooses an ad; impression and click events supply the correction evidence.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Charade implementation guide · Readable text counterpart in the local gallery.</text>
+<rect x="50" y="180" width="1340" height="75" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"></rect>
+<text x="70" y="210" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">STARTUP · once per worker</text>
+<text x="70" y="241" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Load ONNX, feature spec, calibrator, character table, policy, version and store client.</text>
+<rect x="50" y="270" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>1 · Request</title></rect>
+<text x="70" y="308" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">1 · Request</text>
+<text x="70" y="346" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Candidate ads</text>
+<line x1="298" y1="327" x2="319" y2="327" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="324" y="270" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>2 · Validate</title></rect>
+<text x="344" y="308" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">2 · Validate</text>
+<text x="344" y="346" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Deduplicate</text>
+<line x1="572" y1="327" x2="593" y2="327" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="598" y="270" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>3 · Resolve</title></rect>
+<text x="618" y="308" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">3 · Resolve</text>
+<text x="618" y="346" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Character +</text>
+<text x="618" y="377" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">user proxy</text>
+<line x1="846" y1="327" x2="867" y2="327" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="872" y="270" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>4 · Redis read</title></rect>
+<text x="892" y="308" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">4 · Redis read</text>
+<text x="892" y="346" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">User history</text>
+<line x1="1120" y1="327" x2="1141" y2="327" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1146" y="270" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>5 · Features</title></rect>
+<line x1="1147" y1="288" x2="1147" y2="370" stroke="#2a78d6" stroke-width="4"/>
+<text x="1166" y="308" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">5 · Features</text>
+<text x="1166" y="346" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Shared transform</text>
+<path d="M 1268 388 V 402 H 60 V 419" fill="none" stroke="#2a78d6" stroke-width="2" marker-end="url(#arrow)"></path>
+<rect x="50" y="424" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>6 · ONNX</title></rect>
+<line x1="51" y1="442" x2="51" y2="524" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="462" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">6 · ONNX</text>
+<text x="70" y="500" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">ONE batched call</text>
+<line x1="298" y1="480" x2="319" y2="480" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="324" y="424" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>7 · Live state</title></rect>
+<text x="344" y="462" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">7 · Live state</text>
+<text x="344" y="500" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Cap counts +</text>
+<text x="344" y="531" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">correction</text>
+<line x1="572" y1="480" x2="593" y2="480" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="598" y="424" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>8 · Policy</title></rect>
+<text x="618" y="462" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">8 · Policy</text>
+<text x="618" y="500" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Gates + value</text>
+<line x1="846" y1="480" x2="867" y2="480" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="872" y="424" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>9 · Choose</title></rect>
+<text x="892" y="462" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">9 · Choose</text>
+<text x="892" y="500" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Selection + all</text>
+<text x="892" y="531" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">propensities</text>
+<line x1="1120" y1="480" x2="1141" y2="480" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="1146" y="424" width="244" height="118" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>10 · Record</title></rect>
+<text x="1166" y="462" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">10 · Record</text>
+<text x="1166" y="500" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Immutable choice</text>
+<text x="1166" y="531" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Log / response</text>
+<text x="50" y="576" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Scoring happens BEFORE gates. Selection does NOT count an impression.</text>
+<rect x="50" y="595" width="638" height="110" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Impression caller → stored decision</title></rect>
+<line x1="51" y1="613" x2="51" y2="687" stroke="#eb6834" stroke-width="4"/>
+<text x="70" y="633" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Impression caller → stored decision</text>
+<text x="70" y="671" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Exposure count += 1; pair E += raw pCTR</text>
+<rect x="752" y="595" width="638" height="110" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Click caller → recorded impression</title></rect>
+<line x1="753" y1="613" x2="753" y2="687" stroke="#1baf7a" stroke-width="4"/>
+<text x="772" y="633" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Click caller → recorded impression</text>
+<text x="772" y="671" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">User clicks += 1; pair K += 1</text>
+<line x1="692" y1="650" x2="746" y2="650" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="50" y="738" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">All gated → HTTP 200 no-fill; no chosen ad or stored decision.</text>
+<text x="50" y="770" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Redis read fails → cold history + prior; no feedback decision stored; cap may fail open.</text>
+<text x="50" y="802" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Budget gate exists; no live budget feed. Defaults: pacing = 1; budget_exhausted = false.</text>
+<text x="50" y="834" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">No LightGBM or training. API accepts 500; 100 tested; no guaranteed production latency.</text>
+</g></svg>

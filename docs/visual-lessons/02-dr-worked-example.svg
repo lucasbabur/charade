@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 960" role="img" aria-labelledby="title desc" lang="en">
+<title id="title">02 · Doubly robust, one ledger at a time</title><desc id="desc">Reweight a randomized history to estimate a different policy’s click rate. 175 model clicks-equivalent + 25 residual correction = 200 estimated clicks-equivalent. Read the accompanying gallery explanation for a complete text counterpart.</desc>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#52514e"/></marker></defs>
+<rect width="1440" height="960" fill="#fcfcfb"/>
+<g font-family="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#0b0b0b">
+<text x="50" y="90" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">02 · Doubly robust, one ledger at a time</text>
+<text x="50" y="128" font-size="22" font-weight="400" fill="#52514e" text-anchor="start">Reweight a randomized history to estimate a different policy’s click rate.</text>
+<line x1="50" y1="151" x2="1390" y2="151" stroke="#e1e0d9" stroke-width="1.5"/>
+<line x1="50" y1="851" x2="1390" y2="851" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="50" y="879" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">175 model clicks-equivalent + 25 residual correction = 200 estimated clicks-equivalent.</text>
+<text x="50" y="905" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">Illustrative example, not measured Charade results.</text>
+<rect x="50" y="180" width="390" height="150" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>1,000 opportunities</title></rect>
+<line x1="51" y1="198" x2="51" y2="312" stroke="#2a78d6" stroke-width="4"/>
+<text x="70" y="218" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">1,000 opportunities</text>
+<text x="70" y="256" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Old randomized policy</text>
+<text x="70" y="287" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">A 80%  /  B 20%</text>
+<rect x="490" y="180" width="430" height="150" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Logged outcomes</title></rect>
+<line x1="491" y1="198" x2="491" y2="312" stroke="#eb6834" stroke-width="4"/>
+<text x="510" y="218" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Logged outcomes</text>
+<text x="510" y="256" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">A: 800 impressions → 80 clicks</text>
+<text x="510" y="287" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">B: 200 impressions → 60 clicks</text>
+<rect x="970" y="180" width="420" height="150" rx="12" fill="#fcfcfb" stroke="#e1e0d9" stroke-width="1.5"><title>Observed CTR: 14%</title></rect>
+<text x="990" y="218" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Observed CTR: 14%</text>
+<text x="990" y="256" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">(80 + 60) / 1,000</text>
+<text x="990" y="287" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">New target: A 50% / B 50%</text>
+<line x1="444" y1="250" x2="484" y2="250" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<line x1="924" y1="250" x2="964" y2="250" stroke="#52514e" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="50" y="375" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">LightGBM baseline: 0.5 × 0.10 + 0.5 × 0.25 = 0.175</text>
+<text x="70" y="430" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Ad</text>
+<text x="200" y="430" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Expected clicks</text>
+<text x="485" y="430" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Actual</text>
+<text x="675" y="430" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Residual</text>
+<text x="880" y="430" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">π / μ weight</text>
+<text x="1130" y="430" font-size="22" font-weight="600" fill="#0b0b0b" text-anchor="start">Weighted residual</text>
+<line x1="50" y1="447" x2="1390" y2="447" stroke="#e1e0d9" stroke-width="1.5"/>
+<text x="70" y="490" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">A</text>
+<text x="200" y="490" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">800 × .10 = 80</text>
+<text x="485" y="490" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">80</text>
+<text x="675" y="490" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">0</text>
+<text x="880" y="490" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">.5 / .8 = .625</text>
+<text x="1130" y="490" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">0</text>
+<text x="70" y="550" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">B</text>
+<text x="200" y="550" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">200 × .25 = 50</text>
+<text x="485" y="550" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">60</text>
+<text x="675" y="550" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">+10</text>
+<text x="880" y="550" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">.5 / .2 = 2.5</text>
+<text x="1130" y="550" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">+25</text>
+<line x1="50" y1="573" x2="1390" y2="573" stroke="#e1e0d9" stroke-width="1.5"/>
+<rect x="70" y="651" width="980" height="12" rx="3" fill="#e1e0d9" stroke="none" stroke-width="1.5"></rect>
+<rect x="70" y="651" width="857.5" height="12" rx="3" fill="#2a78d6" stroke="none" stroke-width="1.5"><title>175 model clicks-equivalent</title></rect>
+<text x="70" y="641" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">175 model clicks-equivalent</text>
+<rect x="927.5" y="651" width="122.5" height="12" rx="0" fill="#eb6834" stroke="none" stroke-width="1.5"><title>25 clicks-equivalent from residual correction</title></rect>
+<text x="880" y="630" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">+ 25 correction</text>
+<text x="1090" y="665" font-size="40" font-weight="650" fill="#0b0b0b" text-anchor="start">= 200</text>
+<text x="70" y="706" font-size="28" font-weight="600" fill="#0b0b0b" text-anchor="start">Adjustment: 25 / 1,000 = .025 → DR = .175 + .025 = .20</text>
+<text x="70" y="749" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Estimated lift: +6 percentage points; +42.9% relative to 14%.</text>
+<text x="70" y="780" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">200 clicks-equivalent is NOT 200 observed new-policy clicks.</text>
+<text x="70" y="811" font-size="22" font-weight="400" fill="#0b0b0b" text-anchor="start">Needs support + correct propensity OR reward model under the required assumptions.</text>
+<text x="70" y="839" font-size="18" font-weight="400" fill="#52514e" text-anchor="start">No online guarantee. Known randomization here; Charade reconstructs publisher-hour shares.</text>
+</g></svg>
