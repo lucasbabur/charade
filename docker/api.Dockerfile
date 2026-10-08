@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.10
 # Serving image: charade + runtime deps only (no dev tools, no training frameworks).
 
-FROM ghcr.io/astral-sh/uv:0.12.21-python3.12-trixie-slim AS build
+FROM ghcr.io/astral-sh/uv:0.12.24-python3.12-trixie-slim AS build
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PYTHON_DOWNLOADS=never
 WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
