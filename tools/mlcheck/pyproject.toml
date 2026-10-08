@@ -16,7 +16,7 @@ dependencies = [
 mlcheck = "mlcheck.cli:app"
 
 [dependency-groups]
-dev = ["pytest>=8.4", "pytest-cov>=6.2", "ruff>=0.13", "pyright>=1.1.405"]
+dev = ["pytest>=8.4", "pytest-cov>=6.2", "ruff>=0.16.10", "pyright>=1.1.405"]
 
 [build-system]
 requires = ["hatchling"]
