@@ -36,20 +36,20 @@ gpu = ["torch>=2.14"]
 
 [dependency-groups]
 dev = [
-    "fakeredis>=2.38",
+    "fakeredis>=2.39.0",
     "httpx>=0.28",
-    "hypothesis>=6.140",
+    "hypothesis>=6.168.4",
     "import-linter>=2.15",
     "ipykernel>=7.4",
-    "jupytext>=1.19",
+    "jupytext>=1.19.6",
     "nbclient>=0.11",
-    "locust>=2.46",
+    "locust>=2.46.7",
     "mlcheck",
     "poethepoet>=0.48",
     "pyright>=1.1.405",
     "pytest>=8.4",
     "pytest-cov>=6.2",
-    "ruff>=0.13",
+    "ruff>=0.16.10",
     "vulture>=2.14",
 ]
 
