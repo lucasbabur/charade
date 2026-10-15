@@ -5,12 +5,12 @@ description = "Contextual ad CTR prediction and ranking for AI companion chats."
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "fastapi>=0.142",
-    "numpy>=2.1",
-    "onnxruntime>=1.30",
-    "polars>=1.30",
+    "fastapi>=0.143.0",
+    "numpy>=2.5.4",
+    "onnxruntime>=1.31.0",
+    "polars>=2.0.0",
     "prometheus-client>=0.26",
-    "pydantic>=2.11",
+    "pydantic>=2.14.1",
     "pydantic-settings>=2.15",
     "redis>=8.1",
     "structlog>=26.1",
@@ -22,13 +22,13 @@ dependencies = [
 train = [
     "lightgbm>=4.7",
     "matplotlib>=3.11",
-    "onnx>=1.23",
+    "onnx>=1.23.2",
     "onnxscript>=0.7",
     "optuna>=4.5",
     "scikit-learn>=1.9",
     "scipy>=1.18",
     "sentence-transformers>=6.1",
-    "typer>=0.19",
+    "typer>=0.27.3",
 ]
 # Pick exactly one torch build: `--extra cpu` (CI) or `--extra gpu` (CUDA 13, local GTX 1660 SUPER).
 cpu = ["torch>=2.14"]
@@ -36,20 +36,20 @@ gpu = ["torch>=2.14"]
 
 [dependency-groups]
 dev = [
-    "fakeredis>=2.38",
+    "fakeredis>=2.39.0",
     "httpx>=0.28",
-    "hypothesis>=6.140",
+    "hypothesis>=6.169.0",
     "import-linter>=2.15",
     "ipykernel>=7.4",
-    "jupytext>=1.19",
+    "jupytext>=1.19.6",
     "nbclient>=0.11",
-    "locust>=2.46",
+    "locust>=2.46.7",
     "mlcheck",
     "poethepoet>=0.48",
     "pyright>=1.1.405",
     "pytest>=8.4",
     "pytest-cov>=6.2",
-    "ruff>=0.13",
+    "ruff>=0.17.0",
     "vulture>=2.14",
 ]
 
