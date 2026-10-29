@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "grimp>=3.17",
-    "numpy>=2.1",
+    "numpy>=2.5.4",
     "polars>=1.30",
     "pydantic>=2.11",
     "typer>=0.19",
